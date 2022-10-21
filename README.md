@@ -1,4 +1,4 @@
-# Szakdolgozat
+# Szakdolgozat (TODO)
 
 ## Készítője
 Kovács László (CIJ404)
