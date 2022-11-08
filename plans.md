@@ -1,6 +1,6 @@
 # Tervek
 
-Olyan program eszköztár létrehozása, amely megkönnyíti a Linux rendszerek használatát.
+Olyan program eszköztár létrehozása, amely megkönnyíti a Linux rendszerek használatát, szerver programok alapkonfigurációjának létrehozását.
 Támogatni tervezett distrok: Debian, Ubuntu
 
 # Támogatott featurek
