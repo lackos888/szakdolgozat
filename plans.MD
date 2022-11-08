@@ -13,7 +13,10 @@ Támogatni tervezett distrok: Debian, Ubuntu
 - Webadmin felület a kezelésére (szerver leállítás, indítás, felcsatlakozott userek nézése; felhasználónév/jelszó párosok listázása, törlése, módosítása) - erre már van kész webadmin felület
 
 ## Apache, nginx kezelő
-- TODO
+- Honlap hozzáadása (külön dir)
+- Honlap törlése
+- Reverse proxy kezelése
+- SSL kezelése a honlapokon letsencrypt + certbot + dehydrated segítségével (HTTP-01 challenge, DNS-01 challenge, tls-alpn-01 challenge)
 
 ## Tűzfalkezelő (iptables)
 - IPv4:
