@@ -15,7 +15,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
 - Módok közötti váltás: kulcs alapú authentikáció vagy felhasználónév/jelszó páros alapú authentikáció
 - Webadmin nélküli kulcs alapú authentikációkor felhasználói kulcsok kezelése (létrehozás, revoke, kilistázás)
 - Logbeállítások (connection log, stb)
-- Webadmin felület a kezelésére (szerver leállítás, indítás, felcsatlakozott userek nézése; felhasználónév/jelszó párosok listázása, törlése, módosítása) - erre már van kész webadmin felület
+- Webadmin felület a kezelésére (szerver leállítás, indítás, felcsatlakozott userek nézése; előre generált openvpn config letöltése; felhasználónév/jelszó párosok listázása, törlése, módosítása) - erre már van kész webadmin felület
 - screenben futó szerver
 
 ## Apache, nginx kezelő
