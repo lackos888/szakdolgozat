@@ -26,6 +26,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
 - SSL kezelése a honlapokon letsencrypt + certbot + dehydrated segítségével (HTTP-01 challenge, DNS-01 challenge, tls-alpn-01 challenge)
 
 ## Tűzfalkezelő (iptables)
+- Telepítés ha nincs fent
 - IPv4:
   - port nyitása
   - port zárása
