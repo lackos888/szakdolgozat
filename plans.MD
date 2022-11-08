@@ -5,6 +5,16 @@ Támogatni tervezett distrok: Debian, Ubuntu
 
 # Támogatott featurek
 
+## OpenVPN community server kezelő
+- Automata telepítés
+- Módok közötti váltás: kulcs alapú authentikáció vagy felhasználónév/jelszó páros alapú authentikáció
+- Webadmin nélküli kulcs alapú authentikációkor felhasználói kulcsok kezelése (létrehozás, revoke, kilistázás)
+- Logbeállítások (connection log, stb)
+- Webadmin felület a kezelésére (szerver leállítás, indítás, felcsatlakozott userek nézése; felhasználónév/jelszó párosok listázása, törlése, módosítása) - erre már van kész webadmin felület
+
+## Apache, nginx kezelő
+- TODO
+
 ## Tűzfalkezelő (iptables)
 - IPv4:
   - port nyitása
@@ -13,6 +23,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
   - bizonyos IP-re csak bizonyos portra engedélyezni kimenő kapcsolatot
   - rate limit a portokra (hashlimit-et felhasználva)
   - OpenVPN NAT forward
+  - network interface alapú szabályok támogatása
   - iptables ellenőrző (például X port engedélyezve van bejövő forgalomnak, azonban nincs letiltva minden más bejövő forgalom, tehát nem effektív a szabály -> ezt kijelezné)
   - ki-be kapcsolható togglek:
     - bejövő forgalom csak engedélyezettek közül jöhet be (ekkor például SSH portot automatikusan engedélyezne a connection drop elkerülése érdekében)
