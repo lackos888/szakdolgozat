@@ -5,6 +5,11 @@ Támogatni tervezett distrok: Debian, Ubuntu
 
 # Támogatott featurek
 
+## Szöveges fájlok feldolgozása
+- OpenVPN connection log olvasó
+- OpenVPN log olvasó
+- iptables log olvasó
+
 ## OpenVPN community server kezelő
 - Automata telepítés
 - Módok közötti váltás: kulcs alapú authentikáció vagy felhasználónév/jelszó páros alapú authentikáció
