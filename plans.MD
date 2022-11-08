@@ -11,7 +11,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
 - iptables log olvasó
 
 ## OpenVPN community server kezelő
-- Automata telepítés
+- Telepítés
 - Módok közötti váltás: kulcs alapú authentikáció vagy felhasználónév/jelszó páros alapú authentikáció
 - Webadmin nélküli kulcs alapú authentikációkor felhasználói kulcsok kezelése (létrehozás, revoke, kilistázás)
 - Logbeállítások (connection log, stb)
@@ -19,6 +19,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
 - screenben futó szerver
 
 ## Apache, nginx kezelő
+- Telepítés
 - Honlap hozzáadása (külön dir)
 - Honlap törlése
 - Reverse proxy kezelése
