@@ -37,6 +37,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
   - ki-be kapcsolható togglek:
     - bejövő forgalom csak engedélyezettek közül jöhet be (ekkor például SSH portot automatikusan engedélyezne a connection drop elkerülése érdekében)
     - kimenő forgalom csak engedélyezett irányba mehet ki (ekkor például SSH portot automatikusan engedélyezne a connection drop elkerülése érdekében)
+  - hozzáadott/törölt szabályok kiírása az iptables megismerése érdekében
 - IPv6: lásd IPv4
 - Alternatíva: https://wiki.ubuntu.com/UncomplicatedFirewall
 
