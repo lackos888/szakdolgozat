@@ -16,6 +16,7 @@ Támogatni tervezett distrok: Debian, Ubuntu
 - Webadmin nélküli kulcs alapú authentikációkor felhasználói kulcsok kezelése (létrehozás, revoke, kilistázás)
 - Logbeállítások (connection log, stb)
 - Webadmin felület a kezelésére (szerver leállítás, indítás, felcsatlakozott userek nézése; felhasználónév/jelszó párosok listázása, törlése, módosítása) - erre már van kész webadmin felület
+- screenben futó szerver
 
 ## Apache, nginx kezelő
 - Honlap hozzáadása (külön dir)
