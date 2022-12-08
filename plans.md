@@ -129,3 +129,9 @@ A fájlokba ```write``` funkció segítségével írhatunk. Működési elve nag
 
 Ha űríteni szeretnénk az írási puffert (így egyből a fájl írása végrehajtódik) a(z) ```io.flush``` funkcióval tudjuk a default output file bufferjét üríteni, ```filehandle:flush()``` paranccsal pedig egy megadott fájlét.
 
+## Processzből való olvasás
+
+Az ```io.popen (prog [, mode])``` funkció segítségével tudunk új processzt elindítani. A ```prog``` paraméterben kell megadni a processzt az argumentjaival együtt, amit indítani szeretnénk. A ```mode``` paraméterben pedig megadhatjuk, hogy milyen módon szeretnénk megnyitni a processz input pipeját (r/w).
+
+Sikeres lefutás esetén a ```popen``` funkció egy file handleval tér vissza, amit ugyan úgy lehet kezelni, mint a többi handlet.
+
