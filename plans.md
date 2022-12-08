@@ -93,10 +93,11 @@ Egy ilyen handlet a(z) ```io.open (filename [, mode])``` funkcióval nyithatunk 
 ### Fájl bezárása
 
 Egy megnyitott file handlet az ```io.close(filehandle/üres paraméter)```, vagy a ```filehandle:close()``` funkcióval zárhatunk be.
+Az alapértelmezett output fájlt ```io.close()``` funkcióval tudjuk bezárni, amelynek nincsen paramétere.
 
 ### Alapértelmezett írásra, olvasásra kijelölt fájl megadása
 
-A file handlet alapértelmezett olvasási vagy írási fájllá tehetjük a(z) ```io.input(fájlnév/filehandle)```, vagy a(z) ```io.output(fájlnév/filehandle)``` funkció segítségével. Az alapértelmezett output fájlt ```io.close()``` funkcióval tudjuk bezárni, amelynek nincsen paramétere.
+A file handlet alapértelmezett olvasási vagy írási fájllá tehetjük a(z) ```io.input(fájlnév/filehandle)```, vagy a(z) ```io.output(fájlnév/filehandle)``` funkció segítségével.
 
 ### Fájlok "mutatójának" beállítása
 
