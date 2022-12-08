@@ -85,10 +85,26 @@ A LuaRocks segítségével feltelepített csomagok a ```require``` funkció seg�
 A Lua programozási nyelvhez tartozik egy IO "keretrendszer", ezen keretrendszer segítségével tudjuk a fájlokat kezelni. Maga a Lua-beli elérés neve is ```io```.
 
 A C-hez hasonlóan a Luaban is File Handlek alapján működik a fájlok kezelése.
+
+### Fájl megnyitása
+
 Egy ilyen handlet a(z) ```io.open (filename [, mode])``` funkcióval nyithatunk meg. A megnyitási módok teljesen ugyan azok, mint a C nyelvben az ```fopen``` funkciónál használt módok. Sikeres megnyitás esetén egy file handlet ad vissza a funkció. Sikertelen megnyitás esetén pedig első értékként "nil"-lel tér vissza, a második érték a hiba szövege, a harmadik érték pedig a hiba kódja.
 
+### Fájl bezárása
+
 Egy megnyitott file handlet az ```io.close(filehandle/üres paraméter)```, vagy a ```filehandle:close()``` funkcióval zárhatunk be.
+
+### Alapértelmezett írásra, olvasásra kijelölt fájl megadása
+
 A file handlet alapértelmezett olvasási vagy írási fájllá tehetjük a(z) ```io.input(fájlnév/filehandle)```, vagy a(z) ```io.output(fájlnév/filehandle)``` funkció segítségével. Az alapértelmezett output fájlt ```io.close()``` funkcióval tudjuk bezárni, amelynek nincsen paramétere.
+
+### Fájlok "mutatójának" beállítása
+
+Olvasás és írás előtt meg kell bizonyosodnunk róla, hogy jó pozíción van-e a fájl "mutatója".
+Ezt a ```filehandle:seek([whence [, offset]])``` funkcióval tudjuk megtenni.
+A whence paraméter lehet ```set``` (a pozíció a fájl elejétől kezdődik), ```cur``` (jelenlegi pozíció), ```end``` (fájl vége). Az offset megadja a relatív pozíció helyét a ```whence``` paramétertől függően. Hibamentes lefutás esetén visszaadja az új offsetet byteokban számolva, amit a fájl elejétől számol.
+
+### Fájlok olvasása
 
 Az ```io.read```, ```io.lines```, ```filehandle:read()```, ```filehandle:lines()``` funkciókkal tudjuk a fájlokat olvasni. 
 
@@ -96,10 +112,6 @@ Az ```io.read``` kizárólag az alapértelmezett olvasásra megadott fájlból o
 A ```filehandle:read()``` a megadott fájlból olvas (nem az alapértelmezett olvasásra kijelölt fájlból) egy megadott forma alapján.
 A ```filehandle:lines()``` funkció szintén egy megadott fájlból olvas, azonban csak sorokat.
 Az ```io.lines``` funkció bezárja a fájl végigolvasása után a handlet (mivel automatikusan nyitotta meg), azonban a ```filehandle:lines()``` funkció nem zárja be a fájl végigolvasása után a handlet.
-
-Olvasás és írás előtt meg kell bizonyosodnunk róla, hogy jó pozíción van-e a fájl "mutatója".
-Ezt a ```filehandle:seek([whence [, offset]])``` funkcióval tudjuk megtenni.
-A whence paraméter lehet ```set``` (a pozíció a fájl elejétől kezdődik), ```cur``` (jelenlegi pozíció), ```end``` (fájl vége). Az offset megadja a relatív pozíció helyét a ```whence``` paramétertől függően. Hibamentes lefutás esetén visszaadja az új offsetet byteokban számolva, amit a fájl elejétől számol.
 
 A fájlokat ```read``` funkcióval olvasva meg kell adnunk, hogy milyen formátumot várunk el a beolvasástól:
 ```
@@ -109,6 +121,8 @@ A fájlokat ```read``` funkcióval olvasva meg kell adnunk, hogy milyen formátu
 szám megadása esetén - beolvas annyi számú karaktert stringként, amit megadtunk. 
 Ha 0-t adunk meg, akkor üres stringgel tér vissza, kivéve, ha fájl végén vagyunk, mert akkor hibával tér vissza a read.
 ```
+
+### Fájlok írása
 
 A fájlokba ```write``` funkció segítségével írhatunk. Működési elve nagyon egyszerű: ```io.write(string1, string2, ..., string)``` vagy ```filehandle:write(string1, string2, ..., string)```. A funkciók a fájl megnyitásának módját figyelembe véve működnek.
 
