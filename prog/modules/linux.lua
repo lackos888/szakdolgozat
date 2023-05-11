@@ -34,6 +34,44 @@ function module.exec_command(cmd)
     return result;
 end
 
+function module.check_if_user_exists(userName)
+    local retCodeForId = module.exec_command_with_proc_ret_code("id "..userName);
+
+    print(tostring(retCodeForId));
+
+    return retCodeForId == 0;
+end
+
+function module.create_user_with_name(userName, comment, shell)
+    local retCodeForUserCreation = module.exec_command_with_proc_ret_code("useradd -c \""..comment.."\" -m -s "..shell.." "..userName);
+
+    if retCodeForUserCreation ~= 0 and retCodeForUserCreation ~= 9 then
+        return false, retCodeForUserCreation
+    end
+
+    return true;
+end
+
+function module.update_user(userName, comment, shell)
+    local retCodeForUserUpdate = module.exec_command_with_proc_ret_code("usermod -c \""..comment.."\" -s "..shell.." "..userName);
+
+    if retCodeForUserUpdate ~= 0 then
+        return false
+    end
+
+    return true;
+end
+
+function module.get_user_home_dir(userName)
+    local retLines, retCodeForUser = module.exec_command_with_proc_ret_code("cat /etc/passwd | grep \""..userName..":\" | awk -F ':' '{print $6}'", true);
+
+    if #retLines > 0 then
+        return retLines;
+    end
+
+    return false;
+end
+
 function module.exec_command_with_proc_ret_code(cmd, linesReturned, maxLengthForReturnCode, envVariables)
     maxLengthForReturnCode = maxLengthForReturnCode or 1;
 
@@ -50,18 +88,26 @@ function module.exec_command_with_proc_ret_code(cmd, linesReturned, maxLengthFor
 
     local overallReturn = "";
     local lastLine = "";
+    local newLineChar = "\n";
+    local lineNum = 0;
 
     for line in handle:lines() do
-        overallReturn = overallReturn .. line .. "\n";
+        overallReturn = overallReturn .. line .. newLineChar;
         
         lastLine = line;
+
+        lineNum = lineNum + 1;
     end
 
     handle:close();
 
     local retCode = tonumber(lastLine);
 
-    overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine); --skip return code line
+    if lineNum == 1 then
+        overallReturn = "";
+    else
+        overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine - #newLineChar * 2); --skip return code line
+    end
     
     print("[exec_command_with_proc_ret_code] cmd: "..tostring(cmd).." overallReturn: "..tostring(overallReturn).."|||retCode: "..tostring(retCode));
 
@@ -70,6 +116,38 @@ function module.exec_command_with_proc_ret_code(cmd, linesReturned, maxLengthFor
     end
 
     return retCode;
+end
+
+function module.copy(from, to)
+    local retCode = module.exec_command_with_proc_ret_code("cp "..tostring(from).." "..tostring(to));
+
+    return retCode == 0;
+end
+
+function module.copyAndChown(user, from, to)
+    local retCode = module.exec_command_with_proc_ret_code("cp "..tostring(from).." "..tostring(to));
+
+    if retCode == 0 then
+        return module.chown(to, user);
+    end
+
+    return false;
+end
+
+function module.chown(path, userName, isDir)
+    local additionalString = (isDir and (" -hR ") or (""));
+
+    local retCode = module.exec_command_with_proc_ret_code("chown "..additionalString.." "..userName..":"..userName.." "..path);
+
+    return retCode == 0;
+end
+
+function module.chmod(path, perm, isDir)
+    local additionalString = (isDir and (" -R ") or (""));
+
+    local retCode = module.exec_command_with_proc_ret_code("chmod "..additionalString.." "..tostring(perm).." "..path);
+
+    return retCode == 0;
 end
 
 function module.concatPaths(...)
