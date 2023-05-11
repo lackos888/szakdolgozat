@@ -37,8 +37,6 @@ end
 function module.check_if_user_exists(userName)
     local retCodeForId = module.exec_command_with_proc_ret_code("id "..userName);
 
-    print(tostring(retCodeForId));
-
     return retCodeForId == 0;
 end
 
