@@ -654,7 +654,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
     end
 
     if not linux.exists(tlsAuthKeyPath) then
-        local retCode = linux.exec_command_with_proc_ret_code("openvpn --genkey secret "..tlsAuthKeyPath);
+        local retCode = linux.exec_command_with_proc_ret_code("openvpn --genkey tls-auth "..tlsAuthKeyPath);
 
         if retCode ~= 0 then
             return -9
