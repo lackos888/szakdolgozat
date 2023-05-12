@@ -40,8 +40,10 @@ function module.check_if_user_exists(userName)
     return retCodeForId == 0;
 end
 
-function module.create_user_with_name(userName, comment, shell)
-    local retCodeForUserCreation = module.exec_command_with_proc_ret_code("useradd -c \""..comment.."\" -m -s "..shell.." "..userName);
+function module.create_user_with_name(userName, comment, shell, homeDir)
+    local additionalStr = homeDir and (" -d "..homeDir.." ") or ("");
+
+    local retCodeForUserCreation = module.exec_command_with_proc_ret_code("useradd -c \""..comment.."\" -m -s "..shell.." "..additionalStr.." "..userName);
 
     if retCodeForUserCreation ~= 0 and retCodeForUserCreation ~= 9 then
         return false, retCodeForUserCreation
@@ -158,7 +160,7 @@ function module.concatPaths(...)
         if t == #args and v:sub(1, 1) == "/" then
             outputPath = outputPath..(v:sub(2));
         else
-            if v.sub(#v - 1, 1) == "/" then
+            if v:sub(#v, #v) == "/" then
                 outputPath = outputPath..v;
             else
                 outputPath = outputPath..v.."/";
