@@ -19,6 +19,12 @@ function getEasyRSADir()
     return module.formatPathInsideBasedir(module["easy_rsa_installation_dir"]);
 end
 
+function getOpenVPNBaseConfigDir()
+    local retStr, retCode = linux.exec_command_with_proc_ret_code("cat /etc/init.d/openvpn | grep -m 1 \"CONFIG_DIR\" | awk -F '=' '{print $2}'", true);
+
+    return retStr;
+end
+
 function module.is_easy_rsa_installed()
     if linux.isdir(getEasyRSADir()) and linux.exists(getEasyRSADir().."/installed.txt") then
         return true
@@ -499,10 +505,18 @@ local sampleConfigFileContent = [[
     explicit-exit-notify 1    
 ]];
 
-function module.check_server_config(homeDir)
+function module.enable_all_autostart_in_default()
+    return linux.exec_command_with_proc_ret_code("sed -i 's/#AUTOSTART=\"all\"/AUTOSTART=\"all\"/g' /etc/default/openvpn");
+end
+
+function module.systemctl_daemon_reload_and_restart()
+    return linux.exec_command_with_proc_ret_code("systemctl daemon-reload && service openvpn restart");
+end
+
+function module.check_server_config(homeDir, openVPNConfigDir)
     local pwd = linux.exec_command("pwd"):gsub("%s+", "");
 
-    local configFilePath = module.formatPathInsideBasedir("server.conf");
+    local configFilePath = linux.concatPaths(openVPNConfigDir, "/server_"..tostring(module["openvpn_user"])..".conf");
 
     local tlsAuthKeyPath = linux.concatPaths(homeDir, "/ta.key");
 
@@ -674,8 +688,8 @@ function module.check_openvpn_user_existence()
     return linux.check_if_user_exists(module["openvpn_user"]);
 end
 
-function module.create_openvpn_user()
-    return linux.create_user_with_name(module["openvpn_user"], module["openvpn_user_comment"], module["openvpn_user_shell"]);
+function module.create_openvpn_user(homeDir)
+    return linux.create_user_with_name(module["openvpn_user"], module["openvpn_user_comment"], module["openvpn_user_shell"], homeDir);
 end
 
 function module.update_existing_openvpn_user()
@@ -703,10 +717,14 @@ function module.initialize_server()
         return -2;
     end
 
+    local openVPNConfigDir = getOpenVPNBaseConfigDir();
+
+    local homeOfOpenVPNUser = linux.concatPaths(openVPNConfigDir, "h_"..module["openvpn_user"]);
+
     local openVPNUser = module.check_openvpn_user_existence();
 
     if not openVPNUser then
-        local creationRet = module.create_openvpn_user();
+        local creationRet = module.create_openvpn_user(homeOfOpenVPNUser);
 
         if not creationRet then
             print("[OpenVPN] server user creation error: "..tostring(creationRet));
@@ -723,20 +741,28 @@ function module.initialize_server()
         end
     end
 
-    local homeOfOpenVPNUser = module.get_openvpn_home_dir();
-
-    if not linux.isdir(homeOfOpenVPNUser) then
-        print("[OpenVPN] "..module["openvpn_user"].."'s home directory doesn't exist!");
-
-        return -4;
-    end
-
-    local serverConfigCheck = module.check_server_config(homeOfOpenVPNUser);
+    local serverConfigCheck = module.check_server_config(homeOfOpenVPNUser, openVPNConfigDir);
 
     if serverConfigCheck ~= true then
         print("[OpenVPN] Server config check error: "..tostring(serverConfigCheck));
 
+        return -4;
+    end
+
+    local autoStartEnable = module.enable_all_autostart_in_default();
+
+    if autoStartEnable ~= 0 then
+        print("[OpenVPN] autoStartEnable error: "..tostring(autoStartEnable));
+
         return -5;
+    end
+
+    local systemCtlReloadAndServiceRestart = module.systemctl_daemon_reload_and_restart();
+
+    if systemCtlReloadAndServiceRestart ~= 0 then
+        print("[OpenVPN] Systemctl daemon reload & service restart didn't succeed: "..tostring(systemCtlReloadAndServiceRestart));
+
+        return -6;
     end
 
     return true;
