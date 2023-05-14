@@ -5,7 +5,7 @@ local module = {};
 function module.exists(file)
     local ok, err, code = os.rename(file, file)
     if not ok then
-        if code == 13 then
+        if code == 13 or code == 17 then
             return true
         end
     end
