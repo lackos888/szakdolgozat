@@ -71,7 +71,7 @@ function Client:genKeyAndCRT(password)
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
     envVariables["EASYRSA_PASSOUT"] = "pass:"..password;
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, nil, envVariables);
+    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, envVariables);
 
     if retCode ~= 0 then
         return -1;
@@ -153,7 +153,7 @@ function Client:revoke()
     envVariables["EASYRSA_DIGEST"] = "sha512";
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, nil, envVariables);
+    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, envVariables);
 
     if retCode ~= 0 and retCode ~= 1 then
         return -1;
@@ -184,7 +184,7 @@ function module.update_revoke_crl_for_openvpn_daemon()
     envVariables["EASYRSA_DIGEST"] = "sha512";
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, nil, envVariables);
+    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, envVariables);
 
     if retCode ~= 0 then
         return -1;

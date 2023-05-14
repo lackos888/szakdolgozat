@@ -72,9 +72,7 @@ function module.get_user_home_dir(userName)
     return false;
 end
 
-function module.exec_command_with_proc_ret_code(cmd, linesReturned, maxLengthForReturnCode, envVariables)
-    maxLengthForReturnCode = maxLengthForReturnCode or 1;
-
+function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables)
     local exportCmd = "";
 
     if envVariables then

@@ -119,7 +119,7 @@ function module.init_easy_rsa()
             ["EASYRSA_PKI"] = easyRSAPKIDir
         };
 
-        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa init-pki", nil, nil, envVariables);
+        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa init-pki", nil, envVariables);
 
         if retCode ~= 0 then
             return -1
@@ -139,7 +139,7 @@ function module.init_easy_rsa()
         envVariables["EASYRSA_CURVE"] = "ed25519";
         envVariables["EASYRSA_DIGEST"] = "sha512";
 
-        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa build-ca", nil, nil, envVariables);
+        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa build-ca", nil, envVariables);
 
         if retCode ~= 0 then
             return -2
@@ -149,13 +149,13 @@ function module.init_easy_rsa()
 
         envVariables["EASYRSA_REQ_CN"] = nil;
 
-        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa build-server-full "..tostring(module["openvpn_server_name_in_ca"]), nil, nil, envVariables);
+        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa build-server-full "..tostring(module["openvpn_server_name_in_ca"]), nil, envVariables);
 
         if retCode ~= 0 then
             return -3
         end
 
-        local retCode = linux.exec_command_with_proc_ret_code("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, nil, envVariables);
+        local retCode = linux.exec_command_with_proc_ret_code("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, envVariables);
 
         if retCode ~= 0 then
             return -4
@@ -165,7 +165,7 @@ function module.init_easy_rsa()
             ["EASYRSA_PKI"] = easyRSADir.."/pki"
         };
 
-        local retCode = linux.exec_command_with_proc_ret_code("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, nil, envVariables);
+        local retCode = linux.exec_command_with_proc_ret_code("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, envVariables);
 
         if retCode ~= 0 then
             return -5
