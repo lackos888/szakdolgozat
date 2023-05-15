@@ -1,0 +1,52 @@
+% Default fixed font does not support bold face
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{10} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{10}  % for normal
+
+\usepackage{listings}
+
+% Custom colors
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+
+\definecolor{codebg}{rgb}{0.95,0.95,0.95}
+\definecolor{framecolor}{rgb}{0.85,0.85,0.85}
+
+% Lua style for highlighting
+\newcommand\luastyle{\lstset{
+language=[5.2]Lua,
+basicstyle=\ttm,
+backgroundcolor=\color{codebg},
+otherkeywords={self},             % Add keywords here
+keywordstyle=\ttb\color{deepblue},
+emphstyle=\ttb\color{deepred},    % Custom highlighting style
+stringstyle=\color{deepgreen},
+frame=single,                         % Any extra options here
+frameround=tttt,
+showstringspaces=false,            % 
+% numbers=left,
+% numberstyle=\color{gray},
+breaklines=true,
+postbreak=\mbox{\textcolor{deepblue}{$\hookrightarrow$}\space},
+framesep=6pt,
+rulecolor=\color{framecolor},
+numbersep=16pt
+}}
+
+% Lua environment
+\lstnewenvironment{lua}[1][]
+{
+\luastyle
+\lstset{#1}
+}
+{}
+
+% Lua for external files
+\newcommand\luaexternal[2][]{{
+\luastyle
+\lstinputlisting[#1]{#2}}}
+
+% Lua for inline
+\newcommand\luainline[1]{{\luastyle\lstinline!#1!}}
+

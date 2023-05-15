@@ -1,0 +1,17 @@
+@misc{whatisopenvpn,
+	author = {Josh}, title = {What is OpenVPN? How it Works and when to Use It in 2022},
+	howpublished={\url{https://www.allthingssecured.com/vpn/faq/what-is-openvpn/}},
+	note = {megtekintve: 2023. május 15.},
+}
+
+@misc{webservermarketshare,
+	author = {W3Techs}, title = {Usage statistics of web servers},
+	howpublished={\url{https://w3techs.com/technologies/overview/web_server}},
+	note = {megtekintve: 2023. május 15.},
+}
+
+@misc{usageofvpn,
+	author = {Maile McCann, Rob Watts}, title = {What Is A VPN Used For? 9 VPN Uses In 2023},
+	howpublished={\url{https://www.forbes.com/advisor/business/software/why-use-a-vpn/}},
+	note = {megtekintve: 2023. május 15.},
+}
