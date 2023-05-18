@@ -11,7 +11,26 @@
 }
 
 @misc{usageofvpn,
-	author = {Maile McCann, Rob Watts}, title = {What Is A VPN Used For? 9 VPN Uses In 2023},
+	author = {Maile McCann and Rob Watts}, title = {What Is A VPN Used For? 9 VPN Uses In 2023},
 	howpublished={\url{https://www.forbes.com/advisor/business/software/why-use-a-vpn/}},
 	note = {megtekintve: 2023. május 15.},
+}
+
+@misc{ooplua,
+	title = {Object Oriented Programming},
+	howpublished={\url{http://lua-users.org/wiki/ObjectOrientedProgramming}},
+	note = {megtekintve: 2023. május 16.},
+}
+
+@misc{luajit,
+	title = {LuaJIT},
+	howpublished={\url{https://luajit.org/luajit.html}},
+	note = {megtekintve: 2023. május 16.},
+}
+
+@misc{whyisluapopular,
+	author = {Samuel Ogunleke},
+	title = {Why Is Lua Popular for Game Development and How Do You Use It?},
+	howpublished={\url{https://www.makeuseof.com/why-is-lua-popular-for-game-development-how-to-use/}},
+	note = {megtekintve: 2023. május 16.},
 }
