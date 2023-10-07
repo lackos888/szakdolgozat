@@ -1,6 +1,6 @@
 package.path = package.path..";modules/?.lua";
 
-local OpenVPNHandler = require("OpenVPN");
+local OpenVPNHandler = require("vpnHandler/OpenVPN");
 
 OpenVPNHandler.init_dirs();
 
