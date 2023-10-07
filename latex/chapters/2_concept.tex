@@ -19,7 +19,45 @@ Előszeretettel használják a játékfejlesztők is, több neves játékban is 
 
 \Section{Programtól elvárt működés}
 
-To be continued
+Az OpenVPN implementációt a program tudja kezelni, telepíteni. A telepítést az apt-get beépített segédprogrammal végzi. Kezelni tudja az alábbi dolgokat:
+\begin{itemize}
+ \item authentikáció módjának módosítását (kulcsalapú; felhasználónév/jelszó alapú)
+ \item naplózási beállításokat tud módosítani
+ \item WebAdmin felület tud konfigurálni Apache2/Nginx+PHP+MySQL-lel
+ \item kliensek létrehozása (felhasználónév/jelszó alap, vagy kulcs), törlése (kulcs esetén revoke)
+ \item kliensek számára személyre szabott .ovpn config generálás
+ \item init.d beállítások, az eredeti daemon beállítása automatikus indításra
+ \item külön user létrehozása a szerver futtatására
+\end{itemize}
+
+Apache2/Nginx webszervert is tud kezelni a program, ebbe beletartozik:
+
+\begin{itemize}
+	\item telepítés apt-gettel
+	\item honlap hozzáadása külön directoryval, felhasználóval
+	\item honlap törlése
+	\item reverse proxy kezelése
+	\item SSL certificate kezelés többféle segédeszközzel, Let's Encrypton belül dehydrated és certbot segítségével
+\end{itemize}
+
+Tűzfal gyanánt az iptables nevű beépített Linux segédprogramot tudja kezelni többféle aspektusból:
+\begin{itemize}
+	\item telepítés apt-gettel ha nincs fent
+	\item IPv4 és IPv6-ot egyaránt támogat
+	\item Port nyitás, zárás
+	\item Bizonyos portra csak bizonyos IP-ről csatlakozás engedélyezése
+	\item Bizonyos IP cím felé csak bizonyos kimeneti portok felé kimenő kapcsolat engedélyezése
+	\item Rate limit a portokra a hashlimit modul segítségével
+	\item OpenVPN szerverhez köthető NAT Forwardot csinál, ha minden forgalmat a szerverre szeretnénk irányítani
+	\item A fenti szabályok korlátozhatóak az egyes network interfacekra
+	\item Szabályellenőrzés, például ha engedélyezünk egy portot, és nincsenek letiltva a nem engedélyezett bejövő kapcsolatok, akkor figyelmeztetés
+	\item Ki-be kapcsolható kapcsolók:
+		\begin{itemize}
+			\item Bejövő forgalom csak az engedélyezettek közül jöhet be
+			\item Kimenő forgalom csak az engedélyezettek felé mehet ki
+		\end{itemize}
+	\item Hozzáadott, törölt szabályok kiírása tanítási célból
+\end{itemize}
 
 \Section{A fejezet célja}
 
