@@ -1,4 +1,5 @@
 local linux = require("linux");
+local general = require("general");
 local utils = require("utils");
 local config_handler = require("vpnHandler/OpenVPN_config_handler");
 
@@ -26,19 +27,6 @@ cipher AES-256-GCM
 tls-client
 setenv opt block-outside-dns
 verb 3]];
-
-local function readAllFileContents(filePath)
-    local fileHandle = io.open(filePath, "r");
-
-    if not fileHandle then
-        return false;
-    end
-
-    local ret = fileHandle:read("a*");
-    fileHandle:close();
-
-    return ret;
-end
 
 Client = {};
 
@@ -71,7 +59,7 @@ function Client:genKeyAndCRT(password)
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
     envVariables["EASYRSA_PASSOUT"] = "pass:"..password;
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, envVariables);
+    local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, envVariables);
 
     if retCode ~= 0 then
         return -1;
@@ -98,33 +86,33 @@ function Client:generateClientConfig()
 
     local clientConfig = config_handler.write_openvpn_config(configFileContent);
 
-    local serverCAPath = linux.concatPaths(serverImpl.getEasyRSAPKiDir(), "/issued/"..serverImpl["openvpn_server_name_in_ca"]..".crt");
+    local serverCAPath = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/issued/"..serverImpl["openvpn_server_name_in_ca"]..".crt");
 
-    local clientCAPath = linux.concatPaths(serverImpl.getEasyRSAPKiDir(), "/issued/"..self["name"]..".crt");
+    local clientCAPath = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/issued/"..self["name"]..".crt");
 
-    local clientKeyPath = linux.concatPaths(serverImpl.getEasyRSAPKiDir(), "/private/"..self["name"]..".key");
+    local clientKeyPath = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/private/"..self["name"]..".key");
 
-    local tlsCryptKeyPath = linux.concatPaths(serverImpl.get_openvpn_home_dir(), "/ta.key");
+    local tlsCryptKeyPath = general.concatPaths(serverImpl.get_openvpn_home_dir(), "/ta.key");
 
-    local serverCACrt = readAllFileContents(serverCAPath);
+    local serverCACrt = general.readAllFileContents(serverCAPath);
 
     if not serverCACrt then
         return -1;
     end
 
-    local clientCACrt = readAllFileContents(clientCAPath);
+    local clientCACrt = general.readAllFileContents(clientCAPath);
 
     if not clientCACrt then
         return -2;
     end
 
-    local clientKey = readAllFileContents(clientKeyPath);
+    local clientKey = general.readAllFileContents(clientKeyPath);
 
     if not clientKey then
         return -3;
     end
 
-    local tlsCryptKey = readAllFileContents(tlsCryptKeyPath);
+    local tlsCryptKey = general.readAllFileContents(tlsCryptKeyPath);
 
     if not tlsCryptKey then
         return -4;
@@ -153,7 +141,7 @@ function Client:revoke()
     envVariables["EASYRSA_DIGEST"] = "sha512";
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, envVariables);
+    local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, envVariables);
 
     if retCode ~= 0 and retCode ~= 1 then
         return -1;
@@ -184,14 +172,14 @@ function module.update_revoke_crl_for_openvpn_daemon()
     envVariables["EASYRSA_DIGEST"] = "sha512";
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..linux.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, envVariables);
+    local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, envVariables);
 
     if retCode ~= 0 then
         return -1;
     end
 
-    local crlPathInPKI = linux.concatPaths(serverImpl.getEasyRSAPKiDir(), "/crl.pem");
-    local crlPathInOpenVPNDir = linux.concatPaths(serverImpl.get_openvpn_home_dir(), "/crl.pem");
+    local crlPathInPKI = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/crl.pem");
+    local crlPathInOpenVPNDir = general.concatPaths(serverImpl.get_openvpn_home_dir(), "/crl.pem");
 
     if not linux.copy(crlPathInPKI, crlPathInOpenVPNDir) then
         return -2;
@@ -205,7 +193,7 @@ function module.get_valid_clients()
 end
 
 local function get_valid_clients_from_PKI_database()
-    local retStr, retCode = linux.exec_command_with_proc_ret_code("cat "..linux.concatPaths(serverImpl.getEasyRSAPKiDir(), "/index.txt").." | awk '{if($1 == \"V\"){ print $5; } }' | awk -F '/CN=' '{print $2; }'", true);
+    local retStr, retCode = linux.exec_command_with_proc_ret_code("cat "..general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/index.txt").." | awk '{if($1 == \"V\"){ print $5; } }' | awk -F '/CN=' '{print $2; }'", true);
 
     local validClients = {};
 
