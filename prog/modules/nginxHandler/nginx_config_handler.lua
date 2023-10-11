@@ -340,6 +340,7 @@ function module.parse_nginx_config(linesInStr)
                 needsResettingStuff = true;
 
                 local paramName = currentParams[1];
+                local realParamName = paramName.data;
 
                 table.remove(currentParams, 1);
 
@@ -347,11 +348,11 @@ function module.parse_nginx_config(linesInStr)
                 
                 table.insert(parsedLines, {["block"] = currentBlock, ["blockDeepness"] = currentBlockDeepness, ["paramName"] = paramName, ["args"] = currentParams});
 
-                if not paramToLine[paramName] then
-                    paramToLine[paramName] = {};
+                if not paramToLine[realParamName] then
+                    paramToLine[realParamName] = {};
                 end
                 
-                table.insert(paramToLine[paramName], #parsedLines);
+                table.insert(paramToLine[realParamName], #parsedLines);
 
                 lastParamLine = lineCounter;
 
@@ -391,8 +392,8 @@ function module.parse_nginx_config(linesInStr)
         return false;
     end
 
-    print("<================>");
-    print(inspect(parsedLines));
+    --print("<================>");
+    --print(inspect(parsedLines));
 
     return parsedLines, paramToLine;
 end

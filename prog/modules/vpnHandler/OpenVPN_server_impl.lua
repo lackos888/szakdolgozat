@@ -1,6 +1,7 @@
 local os = require("os");
 local packageManager = require("apt_packages");
 local linux = require("linux");
+local general = require("general");
 local config_handler = require("vpnHandler/OpenVPN_config_handler");
 local client_handler = false;
 
@@ -44,7 +45,7 @@ function module.formatPathInsideEasyRSAInstallCache(path)
 end
 
 function module.formatPathInsideBasedir(path)
-    return module["base_dir"].."/"..path;
+    return general.concatPaths(module["base_dir"], "/", path);
 end
 
 function module.init_dirs()
@@ -522,11 +523,11 @@ end
 function module.check_server_config(homeDir, openVPNConfigDir)
     local pwd = linux.exec_command("pwd"):gsub("%s+", "");
 
-    local configFilePath = linux.concatPaths(openVPNConfigDir, "/server_"..tostring(module["openvpn_user"])..".conf");
+    local configFilePath = general.concatPaths(openVPNConfigDir, "/server_"..tostring(module["openvpn_user"])..".conf");
 
-    local tlsAuthKeyPath = linux.concatPaths(homeDir, "/ta.key");
+    local tlsAuthKeyPath = general.concatPaths(homeDir, "/ta.key");
 
-    local crlPemPath = linux.concatPaths(homeDir, "/crl.pem");
+    local crlPemPath = general.concatPaths(homeDir, "/crl.pem");
 
     if not linux.exists(crlPemPath) then
         local crlPemHandle = io.open(crlPemPath, "wb");
@@ -548,7 +549,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         return -16
     end
 
-    local askPassPath = linux.concatPaths(homeDir, "/openvpn-server.txt");
+    local askPassPath = general.concatPaths(homeDir, "/openvpn-server.txt");
 
     if not linux.exists(askPassPath) then
         local askPassHandle = io.open(askPassPath, "wb");
@@ -582,8 +583,8 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         if paramsToLines["ca"] then
             local paramTbl = configFileContent[paramsToLines["ca"]];
 
-            local origCrtPathInPKI = linux.concatPaths(pwd, module.getEasyRSAPKiDir(), "/ca.crt");
-            local crtPathInsideHome = linux.concatPaths(homeDir, "/ca.crt");
+            local origCrtPathInPKI = general.concatPaths(pwd, module.getEasyRSAPKiDir(), "/ca.crt");
+            local crtPathInsideHome = general.concatPaths(homeDir, "/ca.crt");
 
             if not linux.copyAndChown(module["openvpn_user"], origCrtPathInPKI, crtPathInsideHome) then
                 return -5
@@ -595,8 +596,8 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         if paramsToLines["cert"] then
             local paramTbl = configFileContent[paramsToLines["cert"]];
 
-            local origCrtPathInPKI = linux.concatPaths(pwd, module.getEasyRSAPKiDir(), "issued", "/"..tostring(module["openvpn_server_name_in_ca"])".crt");
-            local crtPathInsideHome = linux.concatPaths(homeDir, "/"..tostring(module["openvpn_server_name_in_ca"])..".crt");
+            local origCrtPathInPKI = general.concatPaths(pwd, module.getEasyRSAPKiDir(), "issued", "/"..tostring(module["openvpn_server_name_in_ca"])".crt");
+            local crtPathInsideHome = general.concatPaths(homeDir, "/"..tostring(module["openvpn_server_name_in_ca"])..".crt");
 
             if not linux.copyAndChown(module["openvpn_user"], origCrtPathInPKI, crtPathInsideHome) then
                 return -6
@@ -608,8 +609,8 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         if paramsToLines["key"] then
             local paramTbl = configFileContent[paramsToLines["key"]];
 
-            local origKeyPathInPKI = linux.concatPaths(pwd, module.getEasyRSAPKiDir(), "private", "/"..tostring(module["openvpn_server_name_in_ca"])..".key");
-            local keyPathInsideHome = linux.concatPaths(homeDir, "/"..tostring(module["openvpn_server_name_in_ca"])..".key");
+            local origKeyPathInPKI = general.concatPaths(pwd, module.getEasyRSAPKiDir(), "private", "/"..tostring(module["openvpn_server_name_in_ca"])..".key");
+            local keyPathInsideHome = general.concatPaths(homeDir, "/"..tostring(module["openvpn_server_name_in_ca"])..".key");
 
             if not linux.copyAndChown(module["openvpn_user"], origKeyPathInPKI, keyPathInsideHome) then
                 return -7
@@ -667,7 +668,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         end
     end
 
-    local tmpDirForOpenVPN = linux.concatPaths(homeDir, "tmp");
+    local tmpDirForOpenVPN = general.concatPaths(homeDir, "tmp");
 
     if not linux.isdir(tmpDirForOpenVPN) then
         if not linux.mkdir(tmpDirForOpenVPN) then
@@ -725,7 +726,7 @@ function module.initialize_server()
 
     local openVPNConfigDir = module.getOpenVPNBaseConfigDir();
 
-    local homeOfOpenVPNUser = linux.concatPaths(openVPNConfigDir, "h_"..module["openvpn_user"]);
+    local homeOfOpenVPNUser = general.concatPaths(openVPNConfigDir, "h_"..module["openvpn_user"]);
 
     local openVPNUser = module.check_openvpn_user_existence();
 

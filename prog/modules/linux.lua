@@ -26,6 +26,17 @@ function module.mkdir(path)
     return true;
 end
 
+function module.deleteFile(path)
+    local retCodeForDelete = module.exec_command_with_proc_ret_code("rm "..path);
+
+    if retCodeForDelete ~= 0 then --file don't exist anymore or perm problems
+        return false;
+    end
+
+    return true;
+end
+
+
 function module.exec_command(cmd)
     local handle = io.popen(cmd);
     local result = handle:read("*a");
