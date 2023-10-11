@@ -1,12 +1,14 @@
 local module = {};
-local CR = "\r";
-local LF = "\n";
+local CR = '\r';
+local LF = '\n';
 local NGX_ERROR = 0;
 local NGX_CONF_BLOCK_DONE = 1;
 local NGX_CONF_FILE_DONE = 2;
 local NGX_CONF_BLOCK_START = 3;
 local NGX_CONF_BLOCK_DONE = 4;
 local NGX_OK = 5;
+local NGX_CONF_MAX_ARGS = 8;
+local inspect = require("inspect");
 
 function ltrim(s)
     return s:match'^%s*(.*)'
@@ -93,6 +95,8 @@ function module.parse_nginx_config(linesInStr)
     local lineChars = "";
 
     for ch in linesInStr:gmatch"." do
+        local quoteStatus = false;
+
         offset = offset + 1;
 
         local needsResettingStuff = false;
@@ -165,9 +169,11 @@ function module.parse_nginx_config(linesInStr)
 
                 needsResettingStuff = true;
 
-                currentBlock = lastDataParsed;
+                currentBlock = table.concat(lastDataParsed, " ");
 
                 insertBlockStart();
+
+                lastDataParsed = false;
 
                 print("=> NGX_CONF_BLOCK_START #1");
 
@@ -178,7 +184,7 @@ function module.parse_nginx_config(linesInStr)
                 last_space = true;
                 need_space = false;
             else
-                print("[nginx config parse error] unexpected "..tostring(ch).." at offset: "..tostring(offset));
+                print("[nginx config parse error] unexpected "..tostring(ch).." instead of ) character at offset: "..tostring(offset).." lineCounter: "..tostring(lineCounter));
 
                 return false;
             end
@@ -191,29 +197,43 @@ function module.parse_nginx_config(linesInStr)
                 goto continue
             end
 
-            if ch == '{' then --nginx block start
-                status = NGX_CONF_BLOCK_START;
+            if ch == '{' or ch == ';' then --nginx block start/nginx ok
+                if not lastDataParsed or #lastDataParsed == 0 then
+                    print("[nginx config error] unexpected character "..tostring(ch).." when expecting a block start at offset: "..tostring(offset).." lineCounter: "..tostring(lineCounter));
 
-                needsResettingStuff = true;
+                    return false;
+                end
 
-                currentBlock = lastDataParsed;
+                if ch == '{' then
+                    status = NGX_CONF_BLOCK_START;
 
-                insertBlockStart();
+                    needsResettingStuff = true;
 
-                print("==> NGX_CONF_BLOCK_START #2");
+                    currentBlock = table.concat(lastDataParsed, " ");
+
+                    insertBlockStart();
+
+                    lastDataParsed = false;
+
+                    print("==> NGX_CONF_BLOCK_START #2");
+                else
+                    local data = string.sub(linesInStr, start, offset - 1):gsub('"', ""):gsub('\'', ""):gsub('\\', "");
+
+                    status = NGX_OK;
+    
+                    needsResettingStuff = true;
+    
+                    print("==> NGX_OK #2 | data: "..tostring(data).." | start: "..tostring(start).." | endSubstr: "..tostring(offset - 1));
+                end
                 
                 goto continue
-            elseif ch == ';' then --nginx ok
-                local data = string.sub(linesInStr, start, offset - 1):gsub('"', ""):gsub('\'', ""):gsub('\\', "");
-
-                status = NGX_OK;
-
-                needsResettingStuff = true;
-
-                print("==> NGX_OK #2 | data: "..tostring(data).." | start: "..tostring(start).." | endSubstr: "..tostring(offset - 1));
-
-                goto continue
             elseif ch == '}' then
+                if lastDataParsed and #lastDataParsed ~= 0 then
+                    print("[nginx config error] unexpected arguments ("..tostring(inspect(lastDataParsed))..") when expecting block ending at offset: "..tostring(offset).." lineCounter: "..tostring(lineCounter));
+
+                    return false;
+                end
+
                 status = NGX_CONF_BLOCK_DONE;
 
                 needsResettingStuff = true;
@@ -272,12 +292,16 @@ function module.parse_nginx_config(linesInStr)
                 d_quoted = false;
                 need_space = true;
                 found = true;
+
+                quoteStatus = "d";
             end
         elseif s_quoted then
             if ch == '\'' then
                 s_quoted = false;
                 need_space = true;
                 found = true;
+
+                quoteStatus = "s";
             end
         elseif (ch == ' ' or ch == '\t' or ch == CR or ch == LF or ch == ';' or ch == '{') then
             last_space = true;
@@ -287,17 +311,28 @@ function module.parse_nginx_config(linesInStr)
         end
 
         if found then
+            ::foundLabel::
             local data = ltrim(tostring(string.sub(linesInStr, start, offset - 1)):gsub(CR, ""):gsub(LF, ""):gsub("\t", ""));
 
-            lastDataParsed = data;
+            if not lastDataParsed then
+                lastDataParsed = {};
+            end
 
+            table.insert(lastDataParsed, data);
+
+            if #lastDataParsed > NGX_CONF_MAX_ARGS then
+                print("[nginx config error] arguments exceeded at offset: "..tostring(offset).." lineCounter: "..tostring(lineCounter).." args: "..tostring(inspect(lastDataParsed)));
+
+                return false;
+            end
+            
             print("===> data: "..tostring(data).." start: "..tostring(start).." offset: "..tostring(offset));
 
             if not currentParams then
                 currentParams = {};
             end
 
-            table.insert(currentParams, data);
+            table.insert(currentParams, {["data"] = data, ["quoteStatus"] = quoteStatus});
 
             if ch == ';' then --nginx ok
                 status = NGX_OK;
@@ -308,7 +343,7 @@ function module.parse_nginx_config(linesInStr)
 
                 table.remove(currentParams, 1);
 
-                print("====> NGX_OK #4 | stripped currentParams: "..require("inspect")(currentParams).." paramName: "..tostring(paramName).." lineCounter: "..tostring(lineCounter));
+                print("====> NGX_OK #4 | stripped currentParams: "..inspect(currentParams).." paramName: "..inspect(paramName).." lineCounter: "..tostring(lineCounter));
                 
                 table.insert(parsedLines, {["block"] = currentBlock, ["blockDeepness"] = currentBlockDeepness, ["paramName"] = paramName, ["args"] = currentParams});
 
@@ -321,6 +356,8 @@ function module.parse_nginx_config(linesInStr)
                 lastParamLine = lineCounter;
 
                 currentParams = false;
+
+                lastDataParsed = false;
 
                 goto continue
             end
@@ -348,10 +385,47 @@ function module.parse_nginx_config(linesInStr)
         end
     end    
 
+    if lastDataParsed and #lastDataParsed > 0 and not last_space then
+        print("[nginx config error] unexpected end of parameter at file end, expecting \";\"");
+
+        return false;
+    end
+
     print("<================>");
-    print(require("inspect")(parsedLines));
+    print(inspect(parsedLines));
 
     return parsedLines, paramToLine;
+end
+
+function formatDataAccordingQuoting(tbl)
+    local argsStr = "";
+    local idx = 0;
+
+    if #tbl == 0 then
+        tbl = {tbl};
+    end
+
+    for t2, v2 in pairs(tbl) do
+        idx = idx + 1;
+
+        local str = "";
+
+        if v2["quoteStatus"] == "d" then
+            str = '"'..v2["data"]..'"';
+        elseif v2["quoteStatus"] == "s" then
+            str = '\''..v2["data"]..'\'';
+        else
+            str = v2["data"];
+        end
+
+        if idx > 1 then
+            argsStr = argsStr.." "..str;
+        else
+            argsStr = str;
+        end
+    end
+
+    return argsStr;
 end
 
 function doPaddingWithBlockDeepness(blockDeepness)
@@ -369,6 +443,10 @@ function doPaddingWithBlockDeepness(blockDeepness)
 end
 
 function module.write_nginx_config(parsedLines)
+    if not parsedLines then
+        return "";
+    end
+
     local lines = "";
 
     for t, v in pairs(parsedLines) do
@@ -381,7 +459,7 @@ function module.write_nginx_config(parsedLines)
         elseif v["paramName"] then
             local additionalStr2 = v["comment"] and " #"..tostring(v["comment"]) or "";
 
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..v["paramName"].." "..tostring(table.concat(v["args"], " "))..";"..additionalStr2..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"]).." "..formatDataAccordingQuoting(v["args"])..";"..additionalStr2..CR..LF;
         elseif v["comment"] then
             lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..("#"..v["comment"])..CR..LF;
         end

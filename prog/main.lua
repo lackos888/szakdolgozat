@@ -9,7 +9,7 @@ local nginxConfigHandler = require("nginxHandler/nginx_config_handler");
 --OpenVPNHandler.init_dirs();
 nginxHandler.init_dirs();
 
-local nginxConfigParsedLines, paramsLines = nginxConfigHandler.parse_nginx_config(require("general").readAllFileContents("/home/lackos/nginx.conf"));
+local nginxConfigParsedLines, paramsLines = nginxConfigHandler.parse_nginx_config(require("general").readAllFileContents("/home/lackos/default"));
 
 local testNginxConf = io.open("testnginx.conf", "wb");
 
