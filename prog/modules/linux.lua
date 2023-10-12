@@ -16,6 +16,21 @@ function module.isdir(path)
     return module.exists(path.."/")
 end
 
+function module.listDirFiles(path)
+    local retLines, retCode = module.exec_command_with_proc_ret_code("dir "..tostring(path), true, nil, true);
+
+    local files = {};
+
+    if retCode == 0 then
+        for filePath in string.gmatch(retLines, "[^\r\n]+") do
+            table.insert(files, filePath);
+        end
+        --print("retLines: "..tostring(retLines));
+    end
+
+    return files;
+end
+
 function module.mkdir(path)
     local retCodeForMkdir = module.exec_command_with_proc_ret_code("mkdir "..path);
 
@@ -36,6 +51,15 @@ function module.deleteFile(path)
     return true;
 end
 
+function module.deleteDirectory(path)
+    local retCodeForDelete = module.exec_command_with_proc_ret_code("rm -r "..path);
+
+    if retCodeForDelete ~= 0 then --dir don't exist anymore or perm problems
+        return false;
+    end
+
+    return true;
+end
 
 function module.exec_command(cmd)
     local handle = io.popen(cmd);
@@ -83,7 +107,7 @@ function module.get_user_home_dir(userName)
     return false;
 end
 
-function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables)
+function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables, redirectStdErrToStdIn)
     local exportCmd = "";
 
     if envVariables then
@@ -92,7 +116,7 @@ function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables
         end
     end
 
-    local handle = io.popen(exportCmd..cmd.."; echo $?");
+    local handle = io.popen(exportCmd..cmd..tostring(redirectStdErrToStdIn and " 2>&1" or "").."; echo $?");
     handle:flush();
 
     local overallReturn = "";

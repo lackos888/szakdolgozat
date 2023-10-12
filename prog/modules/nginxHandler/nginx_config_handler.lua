@@ -16,7 +16,7 @@ end
 
 --based on https://github.com/nginx/nginx/blob/master/src/core/ngx_conf_file.c | ngx_conf_read_token & ngx_conf_parse
 
-function module.parse_nginx_config(linesInStr)
+local function parse_nginx_config(linesInStr)
     --escape empty lines: [^\r\n]+
     --not escaping empty lines: ([^\n]*)\n?
 
@@ -115,6 +115,8 @@ function module.parse_nginx_config(linesInStr)
             if sharp_comment then
                 sharp_comment = false;
 
+                currentComment = currentComment:gsub(CR, ""):gsub(LF, "");
+
                 if not currentParams then
                     if lastParamLine == lineCounter - 1 then
                         parsedLines[#parsedLines]["comment"] = currentComment;
@@ -159,7 +161,7 @@ function module.parse_nginx_config(linesInStr)
 
                 needsResettingStuff = true;
 
-                print("=> NGX_OK #1");
+                --print("=> NGX_OK #1");
 
                 goto continue
             end
@@ -175,7 +177,7 @@ function module.parse_nginx_config(linesInStr)
 
                 lastDataParsed = false;
 
-                print("=> NGX_CONF_BLOCK_START #1");
+                --print("=> NGX_CONF_BLOCK_START #1");
 
                 goto continue
             end
@@ -215,15 +217,15 @@ function module.parse_nginx_config(linesInStr)
 
                     lastDataParsed = false;
 
-                    print("==> NGX_CONF_BLOCK_START #2");
+                    --print("==> NGX_CONF_BLOCK_START #2");
                 else
-                    local data = string.sub(linesInStr, start, offset - 1):gsub('"', ""):gsub('\'', ""):gsub('\\', "");
+                    --local data = string.sub(linesInStr, start, offset - 1):gsub('"', ""):gsub('\'', ""):gsub('\\', "");
 
                     status = NGX_OK;
     
                     needsResettingStuff = true;
     
-                    print("==> NGX_OK #2 | data: "..tostring(data).." | start: "..tostring(start).." | endSubstr: "..tostring(offset - 1));
+                    --print("==> NGX_OK #2 | data: "..tostring(data).." | start: "..tostring(start).." | endSubstr: "..tostring(offset - 1));
                 end
                 
                 goto continue
@@ -242,7 +244,7 @@ function module.parse_nginx_config(linesInStr)
 
                 currentBlock = false;
 
-                print("==> NGX_CONF_BLOCK_DONE #3");
+                --print("==> NGX_CONF_BLOCK_DONE #3");
 
                 goto continue
             elseif ch == '#' then
@@ -326,7 +328,7 @@ function module.parse_nginx_config(linesInStr)
                 return false;
             end
             
-            print("===> data: "..tostring(data).." start: "..tostring(start).." offset: "..tostring(offset));
+            --print("===> data: "..tostring(data).." start: "..tostring(start).." offset: "..tostring(offset));
 
             if not currentParams then
                 currentParams = {};
@@ -344,7 +346,7 @@ function module.parse_nginx_config(linesInStr)
 
                 table.remove(currentParams, 1);
 
-                print("====> NGX_OK #4 | stripped currentParams: "..inspect(currentParams).." paramName: "..inspect(paramName).." lineCounter: "..tostring(lineCounter));
+                --print("====> NGX_OK #4 | stripped currentParams: "..inspect(currentParams).." paramName: "..inspect(paramName).." lineCounter: "..tostring(lineCounter));
                 
                 table.insert(parsedLines, {["block"] = currentBlock, ["blockDeepness"] = currentBlockDeepness, ["paramName"] = paramName, ["args"] = currentParams});
 
@@ -368,9 +370,13 @@ function module.parse_nginx_config(linesInStr)
 
                 needsResettingStuff = true;
 
-                print("====> NGX_CONF_BLOCK_START #4");
+                --print("====> NGX_CONF_BLOCK_START #4");
 
-                currentBlock = data;
+                currentBlock = table.concat(lastDataParsed, " ");
+
+                insertBlockStart();
+
+                lastDataParsed = false;
 
                 goto continue
             end
@@ -398,7 +404,7 @@ function module.parse_nginx_config(linesInStr)
     return parsedLines, paramToLine;
 end
 
-function formatDataAccordingQuoting(tbl)
+local function formatDataAccordingQuoting(tbl)
     local argsStr = "";
     local idx = 0;
 
@@ -429,7 +435,7 @@ function formatDataAccordingQuoting(tbl)
     return argsStr;
 end
 
-function doPaddingWithBlockDeepness(blockDeepness)
+local function doPaddingWithBlockDeepness(blockDeepness)
     if not blockDeepness then
         return "";
     end
@@ -443,7 +449,7 @@ function doPaddingWithBlockDeepness(blockDeepness)
     return str;
 end
 
-function module.write_nginx_config(parsedLines)
+local function write_nginx_config(parsedLines)
     if not parsedLines then
         return "";
     end
@@ -467,6 +473,102 @@ function module.write_nginx_config(parsedLines)
     end
 
     return lines;
+end
+
+nginxConfigHandler = {};
+
+function nginxConfigHandler:new(linesInStr, paramToLine)
+    local o = {
+        ["parsedLines"] = linesInStr,
+        ["paramToLine"] = paramToLine
+    };
+
+    if linesInStr and not paramToLine then
+        local parsedLinesNew, paramToLineNew = parse_nginx_config(linesInStr);
+
+        if not parsedLinesNew then
+            return false;
+        end
+
+        o["parsedLines"] = parsedLinesNew;
+        o["paramToLine"] = paramToLineNew;
+    end
+
+    setmetatable(o, self);
+    self.__index = self;
+
+    return o;
+end
+
+function nginxConfigHandler:getParsedLines()
+    return self["parsedLines"];
+end
+
+function nginxConfigHandler:getParamsToIdx()
+    return self["paramToLine"];
+end
+
+function nginxConfigHandler:insertNewData(dataTbl, pos)
+    local idx = -1;
+
+    if #dataTbl == 0 then --object, not array -> convert object to array
+        dataTbl = {dataTbl};
+    end
+
+    if pos then
+        idx = pos;
+
+        for t, v in pairs(dataTbl) do
+            table.insert(self["parsedLines"], pos, v);
+        end
+    else
+        idx = #self["parsedLines"];
+
+        for t, v in pairs(dataTbl) do
+            table.insert(self["parsedLines"], v);
+        end
+    end
+
+    for paramName, paramArrayOfIndexes in pairs(self["paramToLine"]) do
+        for arrayIdx, arrayValue in pairs(paramArrayOfIndexes) do
+            if arrayValue > idx then
+                paramArrayOfIndexes[arrayIdx] = paramArrayOfIndexes[arrayIdx] + #dataTbl;
+            end
+        end
+    end
+
+    for t, v in pairs(dataTbl) do
+        local realParamName = false;
+
+        if v["paramName"] then
+            realParamName = tostring(v["paramName"].data);
+        elseif dataTbl["blockStart"] then
+            realParamName = "block:"..tostring(dataTbl["blockStart"]);
+        elseif dataTbl["blockEnd"] then
+            realParamName = "blockend:"..tostring(dataTbl["blockEnd"]);
+        end
+
+        if realParamName ~= false then
+            local paramToLine = self["paramToLine"];
+
+            if not paramToLine[realParamName] then
+                paramToLine[realParamName] = {};
+            end
+            
+            table.insert(paramToLine[realParamName], idx + t);
+
+            table.sort(paramToLine[realParamName]);
+        end
+    end
+
+    return true;
+end
+
+function nginxConfigHandler:deleteData(pos)
+end
+
+function nginxConfigHandler:toString()
+    return write_nginx_config(self["parsedLines"]);
 end
 
 return module;
