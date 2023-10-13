@@ -320,9 +320,9 @@ function module.initialize_server()
 
     print("=> currentWebsitesAvailable after: "..tostring(inspect(module.get_current_available_websites())));
 
-    print("lszlo.ltd deletion ret: "..tostring(module.delete_website("lszlo.ltd")));
+    --print("lszlo.ltd deletion ret: "..tostring(module.delete_website("lszlo.ltd")));
 
-    print("=> currentWebsitesAvailable after: "..tostring(inspect(module.get_current_available_websites())));
+    --print("=> currentWebsitesAvailable after: "..tostring(inspect(module.get_current_available_websites())));
 
     return true;
 end

@@ -3,11 +3,15 @@ package.path = package.path..";modules/?.lua";
 --import handlers
 local OpenVPNHandler = require("vpnHandler/OpenVPN");
 local nginxHandler = require("nginxHandler/nginx");
+local apacheHandler = require("apacheHandler/apache");
 local nginxConfigHandler = require("nginxHandler/nginx_config_handler");
+local certbotHandler = require("certbotHandler/certbot");
 
 --initialize handlers
 --OpenVPNHandler.init_dirs();
-nginxHandler.init_dirs();
+--nginxHandler.init_dirs(); --TODO: reverse proxy + certbot
+apacheHandler.init_dirs();
+--TODO: certbotHandler.init();
 
 --[[
 local nginxConfigParsedLines, paramsLines = nginxConfigHandler.parse_nginx_config(require("general").readAllFileContents("/home/lackos/default"));
