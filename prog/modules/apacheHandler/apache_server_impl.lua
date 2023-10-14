@@ -18,7 +18,7 @@ function module.init_dirs()
 end
 
 function module.initialize_server()
-    local apacheConfFile = "/etc/apache2/sites-enabled/000-default.conf";
+    local apacheConfFile = "/etc/apache2/apache2.conf";
 
     local apacheFileContents = general.readAllFileContents(apacheConfFile);
 
@@ -51,6 +51,16 @@ function module.initialize_server()
 
     print("<==PARSEDDATALINES==>");
     print(tostring(inspect(parsedapacheConfDataLines)));
+
+    local documentRoot = parsedapacheConfDataLines["DocumentRoot"];
+
+    if documentRoot then
+        for t, v in pairs(documentRoot) do
+            local data = parsedapacheConfDataRaw[v];
+
+            print("DocumentRoot "..tostring(t).." => "..tostring(data.args[1].data));
+        end
+    end
 
     return true;
 end

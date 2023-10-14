@@ -193,15 +193,42 @@ local function parse_apache_config(linesInStr)
         end
 
         if insideBlockStartOrEnd then
-            if ch == "/" then
+            if ch == "/" and insideBlockStartOrEnd == true then --block ending directive like </
                 insideBlockStartOrEnd = 3;
                 currentParsedDetails["type"] = "blockEnd";
             elseif ch ~= " " then
-                if ch ~= ">" then
-                    tempString = tempString..ch;
+                if ch ~= ">" then --block definition ending character
+                    if ch == '"' then
+                        if quoteStatus == "d" then
+                            currentParsedDetails["quote"] = quoteStatus;
+        
+                            registerCurrentArg();
+                        elseif quoteStatus == "s" then
+                            print("[apache conf error] block argument "..tostring(#currentParsedDetails["args"] + 1).." should be quoted with \" but instead it is quoted with ' at line "..tostring(lineCounter));
+                            return false;
+                        else
+                            quoteStatus = "d";
+                        end
+                    elseif ch == '\'' then
+                        if quoteStatus == "s" then
+                            currentParsedDetails["quote"] = quoteStatus;
+        
+                            registerCurrentArg();
+                        elseif quoteStatus == "d" then
+                            print("[apache conf error] block argument "..tostring(#currentParsedDetails["args"] + 1).." should be quoted with ' but instead it is quoted with \" at line "..tostring(lineCounter));
+                            return false;
+                        else
+                            quoteStatus = "s";
+                        end
+                    else
+                        tempString = tempString..ch;
+                    end
                 else
                     if insideBlockStartOrEnd == 2 or insideBlockStartOrEnd == 3 then
-                        registerCurrentArg();
+                        if tempString and #tempString > 0 then
+                            registerCurrentArg();
+                        end
+                        
                         tempString = "";
                     end
 
