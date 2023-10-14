@@ -43,6 +43,15 @@ function module.initialize_server()
     local parsedapacheConfDataRaw = apacheConfigInstance:getParsedLines();
     local parsedapacheConfDataLines = apacheConfigInstance:getParamsToIdx();
 
+    print("<==NEW CONFIG==>");
+    print(tostring(apacheConfigInstance:toString()));
+
+    print("<==PARSEDDATARAW==>");
+    print(tostring(inspect(parsedapacheConfDataRaw)));
+
+    print("<==PARSEDDATALINES==>");
+    print(tostring(inspect(parsedapacheConfDataLines)));
+
     return true;
 end
 

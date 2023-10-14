@@ -32,7 +32,7 @@ local function parse_apache_config(linesInStr)
     local insideBlockStartOrEnd = false;
     local quoteStatus = false;
 
-    local currentArgs = {};
+    local currentParsedDetails = {};
 
     local insertBlockStart = function()
         table.insert(currentBlocks, currentBlock);
@@ -40,7 +40,7 @@ local function parse_apache_config(linesInStr)
 
         currentBlockDeepness = currentBlockDeepness + 1;
 
-        table.insert(parsedLines, {["blockStart"] = currentBlock, ["args"] = currentArgs["args"], ["blockDeepness"] = currentBlockDeepness - 1});
+        table.insert(parsedLines, {["blockStart"] = currentBlock, ["args"] = currentParsedDetails["args"], ["blockDeepness"] = currentBlockDeepness - 1});
                 
         if not paramToLine["block:"..tostring(currentBlock)] then
             paramToLine["block:"..tostring(currentBlock)] = {};
@@ -64,21 +64,23 @@ local function parse_apache_config(linesInStr)
         table.insert(paramToLine["blockend:"..tostring(currentBlock)], #parsedLines);
     end
 
-    local registerCurrentArg = function()
-        if not tempString or #tempString == 0 then
-            return;
-        end
-
+    local registerCurrentArg = function(lastLine)
         local swapped = tempString:gsub(LF, ""):gsub(CR, "");
 
         if swapped:sub(-1) == "\\" then
             swapped = swapped:sub(1, #swapped - 1);
         end
 
-        table.insert(currentArgs["args"], {["quoteStatus"] = currentArgs["quote"], ["data"] = swapped});
+        if lastLine and swapped and #swapped == 0 and currentParsedDetails["multipleLine"] then
+            local args = currentParsedDetails["args"];
+            args[#args].multipleLine = true;
+        else
+            table.insert(currentParsedDetails["args"], {["quoteStatus"] = currentParsedDetails["quote"], ["data"] = swapped, ["multipleLine"] = currentParsedDetails["multipleLine"]});
+        end
+
         tempString = "";
         quoteStatus = false;
-        currentArgs["quote"] = nil;
+        currentParsedDetails["quote"] = nil;
     end;
 
     local lineCounter = 1;
@@ -101,13 +103,17 @@ local function parse_apache_config(linesInStr)
             if sharpComment then
                 sharpComment = false;
 
-                print("Comment at: "..tostring(lineCounter).." comment: "..tostring(currentComment));
+                currentComment = currentComment:gsub(LF, ""):gsub(CR, ""):gsub('\t', "");
+
+                table.insert(parsedLines, {["comment"] = currentComment, ["blockDeepness"] = currentBlockDeepness});
+
+                --print("Comment at: "..tostring(lineCounter).." comment: "..tostring(currentComment));
 
                 currentComment = "";
 
                 tempString = "";
                 lineChars = "";
-                currentArgs = {};
+                currentParsedDetails = {};
 
                 goto continue;
             end
@@ -115,24 +121,44 @@ local function parse_apache_config(linesInStr)
             if lineChars == " " or lineChars == "" or lineChars == CR or lineChars == CR..LF then
                 tempString = "";
                 lineChars = "";
-                currentArgs = {};
+                currentParsedDetails = {};
 
-                print("Found blank line at "..tostring(lineCounter));
+                table.insert(parsedLines, {["spacer"] = true});
+
+                --print("Found blank line at "..tostring(lineCounter));
 
                 goto continue;
             end
 
-            if currentArgs and currentArgs["type"] == "directive" then
-                registerCurrentArg();
+            if currentParsedDetails and currentParsedDetails["type"] == "directive" then
+                registerCurrentArg(true);
 
-                print("==> Directive found at "..tostring(lineCounter).." args: "..tostring(inspect(currentArgs)));
+                --print("==> Directive found at "..tostring(lineCounter).." args: "..tostring(inspect(currentParsedDetails)));
             end
 
             tempString = "";
             lineChars = "";
 
-            if not currentArgs or not currentArgs["multipleLine"] then
-                currentArgs = {};
+            if currentParsedDetails and currentParsedDetails["args"] and not currentParsedDetails["multipleLine"] then
+                local args = {table.unpack(currentParsedDetails["args"])};
+
+                local paramName = args[1];
+
+                local realParamName = paramName.data;
+
+                table.remove(args, 1);
+
+                table.insert(parsedLines, {["paramName"] = paramName, ["args"] = args, ["blockDeepness"] = currentBlockDeepness});
+
+                if not paramToLine[realParamName] then
+                    paramToLine[realParamName] = {};
+                end
+
+                table.insert(paramToLine[realParamName], #parsedLines);
+            end
+
+            if not currentParsedDetails or not currentParsedDetails["multipleLine"] then
+                currentParsedDetails = {};
             end
 
             goto continue;
@@ -140,8 +166,8 @@ local function parse_apache_config(linesInStr)
             lineChars = lineChars..ch;
         end
 
-        if currentArgs then
-            currentArgs["multipleLine"] = nil;
+        if currentParsedDetails then
+            currentParsedDetails["multipleLine"] = nil;
         end
 
         if sharpComment then
@@ -169,7 +195,7 @@ local function parse_apache_config(linesInStr)
         if insideBlockStartOrEnd then
             if ch == "/" then
                 insideBlockStartOrEnd = 3;
-                currentArgs["type"] = "blockEnd";
+                currentParsedDetails["type"] = "blockEnd";
             elseif ch ~= " " then
                 if ch ~= ">" then
                     tempString = tempString..ch;
@@ -180,23 +206,23 @@ local function parse_apache_config(linesInStr)
                     end
 
                     if insideBlockStartOrEnd == 3 then
-                        print("[apache] block end "..tostring(inspect(currentArgs)).." at "..tostring(offset).." lineCounter: "..tostring(lineCounter));
+                        --print("[apache] block end "..tostring(inspect(currentParsedDetails)).." at "..tostring(offset).." lineCounter: "..tostring(lineCounter));
 
                         insertBlockEnd();
                     else
                         insertBlockStart();
 
-                        print("[apache] block start "..tostring(currentBlock).." at "..tostring(offset).." lineCounter: "..tostring(lineCounter).." args: "..tostring(inspect(currentArgs)));
+                        --print("[apache] block start "..tostring(currentBlock).." at "..tostring(offset).." lineCounter: "..tostring(lineCounter).." args: "..tostring(inspect(currentParsedDetails)));
                     end
 
                     insideBlockStartOrEnd = false;
 
-                    currentArgs = {};
+                    currentParsedDetails = {};
                 end
             else
                 if insideBlockStartOrEnd == true then
-                    currentArgs["type"] = "blockStart";
-                    currentArgs["args"] = {tempString};
+                    currentParsedDetails["type"] = "blockStart";
+                    currentParsedDetails["args"] = {};
                     currentBlock = tempString;
                     insideBlockStartOrEnd = 2;
                 elseif insideBlockStartOrEnd == 2 then
@@ -211,33 +237,33 @@ local function parse_apache_config(linesInStr)
                 return false;
             end
 
-            currentArgs = {["args"] = {}};
+            currentParsedDetails = {["args"] = {}};
             insideBlockStartOrEnd = true;
             tempString = "";
         else
-            if not currentArgs["type"] then
-                currentArgs["type"] = "directive";
-                currentArgs["args"] = {};
+            if not currentParsedDetails["type"] then
+                currentParsedDetails["type"] = "directive";
+                currentParsedDetails["args"] = {};
             end
 
             if ch == '"' then
                 if quoteStatus == "d" then
-                    currentArgs["quote"] = quoteStatus;
+                    currentParsedDetails["quote"] = quoteStatus;
 
                     registerCurrentArg();
                 elseif quoteStatus == "s" then
-                    print("[apache conf error] directive argument "..tostring(#currentArgs["args"] + 1).." should be quoted with \" but instead it is quoted with ' at line "..tostring(lineCounter));
+                    print("[apache conf error] directive argument "..tostring(#currentParsedDetails["args"] + 1).." should be quoted with \" but instead it is quoted with ' at line "..tostring(lineCounter));
                     return false;
                 else
                     quoteStatus = "d";
                 end
             elseif ch == '\'' then
                 if quoteStatus == "s" then
-                    currentArgs["quote"] = quoteStatus;
+                    currentParsedDetails["quote"] = quoteStatus;
 
                     registerCurrentArg();
                 elseif quoteStatus == "d" then
-                    print("[apache conf error] directive argument "..tostring(#currentArgs["args"] + 1).." should be quoted with ' but instead it is quoted with \" at line "..tostring(lineCounter));
+                    print("[apache conf error] directive argument "..tostring(#currentParsedDetails["args"] + 1).." should be quoted with ' but instead it is quoted with \" at line "..tostring(lineCounter));
                     return false;
                 else
                     quoteStatus = "s";
@@ -246,11 +272,11 @@ local function parse_apache_config(linesInStr)
                 tempString = tempString..ch;
 
                 if ch == "\\" then
-                    currentArgs["multipleLine"] = true;
+                    currentParsedDetails["multipleLine"] = true;
                 else
-                    currentArgs["multipleLine"] = nil;
+                    currentParsedDetails["multipleLine"] = nil;
                 end
-            elseif ch == " " and not quoteStatus and not currentArgs["quote"] then
+            elseif ch == " " and not quoteStatus and not currentParsedDetails["quote"] then
                 registerCurrentArg();
             elseif ch == " " and quoteStatus then
                 tempString = tempString..ch;
@@ -258,21 +284,29 @@ local function parse_apache_config(linesInStr)
         end
 
         ::continue::
-    end    
-
-    if lastDataParsed and #lastDataParsed > 0 and not last_space then
-        print("[apache config error] unexpected end of parameter at file end, expecting \";\"");
-
-        return false;
     end
 
-    print("<================>");
-    print(inspect(parsedLines));
+    --print("<================>");
+    --print(inspect(parsedLines));
 
     return parsedLines, paramToLine;
 end
 
-local function formatDataAccordingQuoting(tbl)
+local function doPaddingWithBlockDeepness(blockDeepness)
+    if not blockDeepness then
+        return "";
+    end
+
+    local str = "";
+
+    for i = 1, blockDeepness do
+        str = str.."\t";
+    end
+
+    return str;
+end
+
+local function formatDataAccordingQuoting(tbl, blockDeepness)
     local argsStr = "";
     local idx = 0;
 
@@ -294,27 +328,21 @@ local function formatDataAccordingQuoting(tbl)
         end
 
         if idx > 1 then
-            argsStr = argsStr.." "..str;
+            if not v2["multipleLine"] and not tbl[t2 - 1]["multipleLine"] then
+                argsStr = argsStr.." "..str;
+            else
+                argsStr = argsStr..str;
+            end
         else
             argsStr = str;
+        end
+
+        if v2["multipleLine"] then
+            argsStr = argsStr.." \\"..CR..LF..tostring(doPaddingWithBlockDeepness(blockDeepness));
         end
     end
 
     return argsStr;
-end
-
-local function doPaddingWithBlockDeepness(blockDeepness)
-    if not blockDeepness then
-        return "";
-    end
-
-    local str = "";
-
-    for i = 1, blockDeepness do
-        str = str.."\t";
-    end
-
-    return str;
 end
 
 local function write_apache_config(parsedLines)
@@ -328,13 +356,13 @@ local function write_apache_config(parsedLines)
         if v["spacer"] then
             lines = lines..CR..LF;
         elseif v["blockStart"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..v["blockStart"].." {"..CR..LF;
-        elseif v["blockEnd"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."}"..CR..LF;
-        elseif v["paramName"] then
-            local additionalStr2 = v["comment"] and " #"..tostring(v["comment"]) or "";
+            local additionalStr = (v["args"] and #v["args"] > 0) and (" "..tostring(formatDataAccordingQuoting(v["args"], v["blockDeepness"]))) or "";
 
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"]).." "..formatDataAccordingQuoting(v["args"])..";"..additionalStr2..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."<"..tostring(v["blockStart"])..""..additionalStr..">"..CR..LF;
+        elseif v["blockEnd"] then
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."</"..tostring(v["blockEnd"])..">"..CR..LF;
+        elseif v["paramName"] then
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"], v["blockDeepness"]).." "..formatDataAccordingQuoting(v["args"], v["blockDeepness"])..CR..LF;
         elseif v["comment"] then
             lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..("#"..v["comment"])..CR..LF;
         end
