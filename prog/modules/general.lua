@@ -31,6 +31,10 @@ function module.concatPaths(...)
     return outputPath;
 end
 
+function module.extractDirFromPath(path)
+    return path:gsub('\\', "/"):match("(.*".."/"..")");
+end
+
 function module.readAllFileContents(filePath)
     local fileHandle = io.open(filePath, "r");
 

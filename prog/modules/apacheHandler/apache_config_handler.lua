@@ -31,6 +31,7 @@ local function parse_apache_config(linesInStr)
     local lastParamLine = false;
     local insideBlockStartOrEnd = false;
     local quoteStatus = false;
+    local lastChar = false;
 
     local currentParsedDetails = {};
 
@@ -71,6 +72,14 @@ local function parse_apache_config(linesInStr)
             swapped = swapped:sub(1, #swapped - 1);
         end
 
+        if not swapped or #swapped == 0 then
+            local args = currentParsedDetails["args"];
+
+            if args[#args]["quoteStatus"] then
+                return;
+            end
+        end
+
         if lastLine and swapped and #swapped == 0 and currentParsedDetails["multipleLine"] then
             local args = currentParsedDetails["args"];
             args[#args].multipleLine = true;
@@ -103,9 +112,9 @@ local function parse_apache_config(linesInStr)
             if sharpComment then
                 sharpComment = false;
 
-                currentComment = currentComment:gsub(LF, ""):gsub(CR, ""):gsub('\t', "");
+                --currentComment = currentComment:gsub(LF, ""):gsub(CR, ""):gsub('\t', "");
 
-                table.insert(parsedLines, {["comment"] = currentComment, ["blockDeepness"] = currentBlockDeepness});
+                table.insert(parsedLines, {["comment"] = currentComment, ["blockDeepness"] = 0});
 
                 --print("Comment at: "..tostring(lineCounter).." comment: "..tostring(currentComment));
 
@@ -198,7 +207,7 @@ local function parse_apache_config(linesInStr)
                 currentParsedDetails["type"] = "blockEnd";
             elseif ch ~= " " then
                 if ch ~= ">" then --block definition ending character
-                    if ch == '"' then
+                    if ch == '"' and lastChar ~= "\\" then
                         if quoteStatus == "d" then
                             currentParsedDetails["quote"] = quoteStatus;
         
@@ -209,7 +218,7 @@ local function parse_apache_config(linesInStr)
                         else
                             quoteStatus = "d";
                         end
-                    elseif ch == '\'' then
+                    elseif ch == '\'' and lastChar ~= "\\" then
                         if quoteStatus == "s" then
                             currentParsedDetails["quote"] = quoteStatus;
         
@@ -228,7 +237,7 @@ local function parse_apache_config(linesInStr)
                         if tempString and #tempString > 0 then
                             registerCurrentArg();
                         end
-                        
+
                         tempString = "";
                     end
 
@@ -273,7 +282,7 @@ local function parse_apache_config(linesInStr)
                 currentParsedDetails["args"] = {};
             end
 
-            if ch == '"' then
+            if ch == '"' and lastChar ~= "\\" then
                 if quoteStatus == "d" then
                     currentParsedDetails["quote"] = quoteStatus;
 
@@ -284,7 +293,7 @@ local function parse_apache_config(linesInStr)
                 else
                     quoteStatus = "d";
                 end
-            elseif ch == '\'' then
+            elseif ch == '\'' and lastChar ~= "\\" then
                 if quoteStatus == "s" then
                     currentParsedDetails["quote"] = quoteStatus;
 
@@ -311,6 +320,7 @@ local function parse_apache_config(linesInStr)
         end
 
         ::continue::
+        lastChar = ch;
     end
 
     --print("<================>");

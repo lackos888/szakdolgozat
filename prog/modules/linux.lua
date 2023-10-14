@@ -78,7 +78,7 @@ end
 function module.create_user_with_name(userName, comment, shell, homeDir)
     local additionalStr = homeDir and (" -d "..homeDir.." ") or ("");
 
-    local retCodeForUserCreation = module.exec_command_with_proc_ret_code("useradd -c \""..comment.."\" -m -s "..shell.." "..additionalStr.." "..userName);
+    local retCodeForUserCreation = module.exec_command_with_proc_ret_code("useradd -c \""..comment.."\" -m -s "..shell.." "..additionalStr..""..userName);
 
     if retCodeForUserCreation ~= 0 and retCodeForUserCreation ~= 9 then
         return false, retCodeForUserCreation
@@ -168,17 +168,17 @@ function module.copyAndChown(user, from, to)
 end
 
 function module.chown(path, userName, isDir)
-    local additionalString = (isDir and (" -hR ") or (""));
+    local additionalString = (isDir and (" -hR") or (""));
 
-    local retCode = module.exec_command_with_proc_ret_code("chown "..additionalString.." "..userName..":"..userName.." "..path);
+    local retCode = module.exec_command_with_proc_ret_code("chown"..additionalString.." "..userName..":"..userName.." "..path);
 
     return retCode == 0;
 end
 
 function module.chmod(path, perm, isDir)
-    local additionalString = (isDir and (" -R ") or (""));
+    local additionalString = (isDir and (" -R") or (""));
 
-    local retCode = module.exec_command_with_proc_ret_code("chmod "..additionalString.." "..tostring(perm).." "..path);
+    local retCode = module.exec_command_with_proc_ret_code("chmod"..additionalString.." "..tostring(perm).." "..path);
 
     return retCode == 0;
 end
