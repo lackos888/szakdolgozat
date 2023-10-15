@@ -461,12 +461,15 @@ function module.get_current_available_websites()
                 local serverName = "";
                 local rootPath = "";
 
+                local websiteUrls = {};
+
                 local serverNameIdxes = paramsToIdx["server_name"];
                 if serverNameIdxes then
-                    local paramIdx = serverNameIdxes[1];
-                    local paramData = parsedConfigInstance:getParsedLines()[paramIdx];
-                    if paramData then
-                        serverName = paramData.args[1].data;
+                    for _, paramIdx in pairs(serverNameIdxes) do
+                        local paramData = parsedConfigInstance:getParsedLines()[paramIdx];
+                        if paramData then
+                            table.insert(websiteUrls, paramData.args[1].data);
+                        end
                     end
                 end
 
@@ -479,7 +482,13 @@ function module.get_current_available_websites()
                     end
                 end
 
-                table.insert(websites, {websiteUrl = serverName, rootPath = rootPath, configPath = configFilePath});
+                if #websiteUrls > 0 then
+                    for _, url in pairs(websiteUrls) do
+                        table.insert(websites, {websiteUrl = url, rootPath = rootPath, configPath = configFilePath});
+                    end
+                else
+                    table.insert(websites, {websiteUrl = "unknown", rootPath = rootPath, configPath = configFilePath});
+                end
             end
         end
     end

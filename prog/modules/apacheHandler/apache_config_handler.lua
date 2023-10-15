@@ -114,7 +114,7 @@ local function parse_apache_config(linesInStr)
 
                 --currentComment = currentComment:gsub(LF, ""):gsub(CR, ""):gsub('\t', "");
 
-                table.insert(parsedLines, {["comment"] = currentComment, ["blockDeepness"] = 0});
+                table.insert(parsedLines, {["comment"] = currentComment});
 
                 --print("Comment at: "..tostring(lineCounter).." comment: "..tostring(currentComment));
 
@@ -187,6 +187,7 @@ local function parse_apache_config(linesInStr)
 
         if ch == "#" then
             sharpComment = true;
+            currentComment = lineChars;
 
             goto continue;
         end
@@ -401,7 +402,7 @@ local function write_apache_config(parsedLines)
         elseif v["paramName"] then
             lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"], v["blockDeepness"]).." "..formatDataAccordingQuoting(v["args"], v["blockDeepness"])..CR..LF;
         elseif v["comment"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..("#"..v["comment"])..CR..LF;
+            lines = lines..tostring(v["comment"])..CR..LF;
         end
     end
 
@@ -502,6 +503,80 @@ end
 
 function apacheConfigHandler:toString()
     return write_apache_config(self["parsedLines"]);
+end
+
+apacheEnvvarsHandler = {};
+
+local function parse_envvar_args_from_line(line)
+    if line:find("#", 1, true) then
+        return false;
+    end
+
+    local exportStr = "export ";
+
+    local exportFound = line:find(exportStr, 1, true);
+    if exportFound then
+        local exportNameEnd = line:find("=", exportFound + #exportStr, 1, true);
+        if exportNameEnd then
+            local exportName = line:sub(exportFound + #exportStr, exportNameEnd - 1);
+            return {exportName = exportName, val = line:sub(exportNameEnd + 1)};
+        end
+    end
+
+    return false;
+end
+
+function apacheEnvvarsHandler:new(linesInStr)
+    local o = {
+        ["lines"] = linesInStr,
+        ["args"] = {},
+        ["lineOverride"] = {}
+    };
+
+    if linesInStr and type(linesInStr) == "string" then
+        o["lines"] = {};
+        
+        for line in string.gmatch(linesInStr, "[^\r\n]+") do
+            table.insert(o["lines"], line);
+        end
+    end
+
+    for t, v in pairs(o["lines"]) do
+        local argsFound = parse_envvar_args_from_line(v);
+
+        if argsFound then
+            o["args"][argsFound.exportName] = argsFound.val;
+        end
+    end
+
+    setmetatable(o, self);
+    self.__index = self;
+
+    return o;
+end
+
+function apacheEnvvarsHandler:getArgs()
+    return self["args"];
+end
+
+local function escape_magic(s) --from https://stackoverflow.com/questions/29503721/lua-plain-searching-with-string-gsub
+    return (s:gsub('[%^%$%(%)%%%.%[%]%*%+%-%?]','%%%1'))
+end
+
+function apacheEnvvarsHandler:toString()
+    local ret = "";
+    
+    for t, v in pairs(self["lines"]) do
+        local argsFound = parse_envvar_args_from_line(v);
+
+        if argsFound then
+            v = v:gsub(escape_magic("="..tostring(argsFound.val)), "="..tostring(self["args"][argsFound.exportName]));
+        end
+
+        ret = ret..v.."\r\n";
+    end
+
+    return ret;
 end
 
 return module;
