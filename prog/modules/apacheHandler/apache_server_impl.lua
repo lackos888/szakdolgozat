@@ -14,33 +14,33 @@ local module = {
 
 local sampleConfigForWebsite = [[
 <VirtualHost *:80>
-    # The ServerName directive sets the request scheme, hostname and port that
-    # the server uses to identify itself. This is used when creating
-    # redirection URLs. In the context of virtual hosts, the ServerName
-    # specifies what hostname must appear in the request's Host: header to
-    # match this virtual host. For the default virtual host (this file) this
-    # value is not decisive as it is used as a last resort host regardless.
-    # However, you must set it for any further virtual host explicitly.
-    ServerName www.example.com
+        # The ServerName directive sets the request scheme, hostname and port that
+        # the server uses to identify itself. This is used when creating
+        # redirection URLs. In the context of virtual hosts, the ServerName
+        # specifies what hostname must appear in the request's Host: header to
+        # match this virtual host. For the default virtual host (this file) this
+        # value is not decisive as it is used as a last resort host regardless.
+        # However, you must set it for any further virtual host explicitly.
+        ServerName www.example.com
 
-    ServerAdmin webmaster@localhost
-    DocumentRoot /home/wwwdata/
+        ServerAdmin webmaster@localhost
+        DocumentRoot /home/wwwdata/
 
-    # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
-    # error, crit, alert, emerg.
-    # It is also possible to configure the loglevel for particular
-    # modules, e.g.
-    #LogLevel info ssl:warn
+        # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+        # error, crit, alert, emerg.
+        # It is also possible to configure the loglevel for particular
+        # modules, e.g.
+        #LogLevel info ssl:warn
 
-    ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
 
-    # For most configuration files from conf-available/, which are
-    # enabled or disabled at a global level, it is possible to
-    # include a line for only one particular virtual host. For example the
-    # following line enables the CGI configuration for this host only
-    # after it has been globally disabled with "a2disconf".
-    #Include conf-available/serve-cgi-bin.conf
+        # For most configuration files from conf-available/, which are
+        # enabled or disabled at a global level, it is possible to
+        # include a line for only one particular virtual host. For example the
+        # following line enables the CGI configuration for this host only
+        # after it has been globally disabled with "a2disconf".
+        #Include conf-available/serve-cgi-bin.conf
 </VirtualHost>
 
 # vim: syntax=apache ts=4 sw=4 sts=4 sr noet
@@ -256,7 +256,42 @@ function module.initialize_server()
         configFileHandle:close();
     end
 
-    print("[apache] available websites: "..tostring(inspect(module.get_current_available_websites("/etc/apache2/sites-enabled/*.conf"))));
+    local apacheConfigDir = general.extractDirFromPath(apacheConfFile);
+    local envVarsPath = general.concatPaths(apacheConfigDir, "/envvars");
+
+    local envVarsContents = general.readAllFileContents(envVarsPath);
+
+    if not envVarsContents then
+        print("[apache init] Couldn't read envvars content at path "..tostring(envVarsPath));
+
+        return false;
+    end
+
+    local apacheEnvVarsInstance = apacheEnvvarsHandler:new(envVarsContents);
+    local envvarsArgs = apacheEnvVarsInstance:getArgs();
+
+    if envvarsArgs["APACHE_RUN_USER"] ~= module["apache_user"] or envvarsArgs["APACHE_RUN_GROUP"] ~= module["apache_user"] then
+        envvarsArgs["APACHE_RUN_USER"] = module["apache_user"];
+        envvarsArgs["APACHE_RUN_GROUP"] = module["apache_user"];
+
+        local envvarsFileHandle = io.open(envVarsPath, "w");
+
+        if not envvarsFileHandle then
+            print("[apache init] Couldn't open envvars at path "..tostring(envVarsPath).." for writing!");
+
+            return false;
+        end
+
+        envvarsFileHandle:write(apacheEnvVarsInstance:toString());
+        envvarsFileHandle:flush();
+        envvarsFileHandle:close();
+    end
+
+    -- print("[apache] available websites: "..tostring(inspect(module.get_current_available_websites())));
+    -- print("[apache] lszlo.ltd website creation ret: "..tostring(module.create_new_website("lszlo.ltd")));
+    -- print("[apache] => available websites: "..tostring(inspect(module.get_current_available_websites())));
+    -- print("[apache] lszlo.ltd deletion ret: "..tostring(module.delete_website("lszlo.ltd")));
+    -- print("[apache] => available websites: "..tostring(inspect(module.get_current_available_websites())));
 
     --[[
     print("<==NEW CONFIG==>");
