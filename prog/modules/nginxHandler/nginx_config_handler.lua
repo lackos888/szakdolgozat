@@ -9,6 +9,7 @@ local NGX_CONF_BLOCK_DONE = 4;
 local NGX_OK = 5;
 local NGX_CONF_MAX_ARGS = 8;
 local inspect = require("inspect");
+local general = require("general");
 
 function ltrim(s)
     return s:match'^%s*(.*)'
@@ -458,17 +459,17 @@ local function write_nginx_config(parsedLines)
 
     for t, v in pairs(parsedLines) do
         if v["spacer"] then
-            lines = lines..CR..LF;
+            lines = lines..tostring(general.lineEnding);
         elseif v["blockStart"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..v["blockStart"].." {"..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..v["blockStart"].." {"..tostring(general.lineEnding);
         elseif v["blockEnd"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."}"..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."}"..tostring(general.lineEnding);
         elseif v["paramName"] then
             local additionalStr2 = v["comment"] and " #"..tostring(v["comment"]) or "";
 
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"]).." "..formatDataAccordingQuoting(v["args"])..";"..additionalStr2..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"]).." "..formatDataAccordingQuoting(v["args"])..";"..additionalStr2..tostring(general.lineEnding);
         elseif v["comment"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..("#"..v["comment"])..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..("#"..v["comment"])..tostring(general.lineEnding);
         end
     end
 

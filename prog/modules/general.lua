@@ -1,5 +1,11 @@
 local module = {};
 
+function module.getOSType()
+    return package.config:sub(1,1) == "\\" and "win" or "unix";
+end
+
+module.lineEnding = module.getOSType() == "unix" and "\n" or "\r\n";
+
 function module.concatPaths(...)
     local outputPath = "";
     local args = {...};

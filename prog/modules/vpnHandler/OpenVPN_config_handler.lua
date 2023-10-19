@@ -1,4 +1,5 @@
 local module = {};
+local general = require("general");
 
 --based on src/openvpn/options.c
   
@@ -113,9 +114,9 @@ function module.write_openvpn_config(parsedLines)
     for t, v in pairs(parsedLines) do
         if not v["params"] then
             if v["comment"] then
-                lines = lines..v["comment"].."\r\n";
+                lines = lines..v["comment"]..tostring(general.lineEnding);
             else
-                lines = lines.."\r\n";
+                lines = lines..tostring(general.lineEnding);
             end
         else
             for _, paramsV in pairs(v["params"]) do
@@ -131,9 +132,9 @@ function module.write_openvpn_config(parsedLines)
             end
 
             if v["comment"] then
-                lines = lines..v["comment"].."\r\n";
+                lines = lines..v["comment"]..tostring(general.lineEnding);
             else
-                lines = lines.."\r\n";
+                lines = lines..tostring(general.lineEnding);
             end
         end
     end

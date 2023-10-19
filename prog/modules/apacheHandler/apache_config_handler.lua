@@ -2,6 +2,7 @@ local module = {};
 local CR = '\r';
 local LF = '\n';
 local inspect = require("inspect");
+local general = require("general");
 
 function ltrim(s)
     return s:match'^%s*(.*)'
@@ -376,7 +377,7 @@ local function formatDataAccordingQuoting(tbl, blockDeepness)
         end
 
         if v2["multipleLine"] then
-            argsStr = argsStr.." \\"..CR..LF..tostring(doPaddingWithBlockDeepness(blockDeepness));
+            argsStr = argsStr.." \\"..tostring(general.lineEnding)..tostring(doPaddingWithBlockDeepness(blockDeepness));
         end
     end
 
@@ -392,17 +393,17 @@ local function write_apache_config(parsedLines)
 
     for t, v in pairs(parsedLines) do
         if v["spacer"] then
-            lines = lines..CR..LF;
+            lines = lines..tostring(general.lineEnding);
         elseif v["blockStart"] then
             local additionalStr = (v["args"] and #v["args"] > 0) and (" "..tostring(formatDataAccordingQuoting(v["args"], v["blockDeepness"]))) or "";
 
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."<"..tostring(v["blockStart"])..""..additionalStr..">"..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."<"..tostring(v["blockStart"])..""..additionalStr..">"..tostring(general.lineEnding);
         elseif v["blockEnd"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."</"..tostring(v["blockEnd"])..">"..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"]).."</"..tostring(v["blockEnd"])..">"..tostring(general.lineEnding);
         elseif v["paramName"] then
-            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"], v["blockDeepness"]).." "..formatDataAccordingQuoting(v["args"], v["blockDeepness"])..CR..LF;
+            lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"], v["blockDeepness"]).." "..formatDataAccordingQuoting(v["args"], v["blockDeepness"])..tostring(general.lineEnding);
         elseif v["comment"] then
-            lines = lines..tostring(v["comment"])..CR..LF;
+            lines = lines..tostring(v["comment"])..tostring(general.lineEnding);
         end
     end
 
@@ -536,7 +537,7 @@ function apacheEnvvarsHandler:new(linesInStr)
     if linesInStr and type(linesInStr) == "string" then
         o["lines"] = {};
         
-        for line in string.gmatch(linesInStr, "[^\r\n]+") do
+        for line in string.gmatch(linesInStr, "([^\n]*)\n?") do
             table.insert(o["lines"], line);
         end
     end
@@ -573,7 +574,7 @@ function apacheEnvvarsHandler:toString()
             v = v:gsub(escape_magic("="..tostring(argsFound.val)), "="..tostring(self["args"][argsFound.exportName]));
         end
 
-        ret = ret..v.."\r\n";
+        ret = ret..v..tostring(general.lineEnding);
     end
 
     return ret;
