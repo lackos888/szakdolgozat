@@ -111,7 +111,15 @@ function module.get_apache_master_config_path_from_daemon()
     return confPath;
 end
 
+local isInited = false;
+
 function module.init_dirs()
+    if isInited then
+        return true;
+    end
+
+    isInited = true;
+
     if not module.check_apache_user_existence() then
         local ret, retForUserCreation = module.create_apache_user();
     
@@ -274,7 +282,7 @@ function module.initialize_server()
         envvarsArgs["APACHE_RUN_USER"] = module["apache_user"];
         envvarsArgs["APACHE_RUN_GROUP"] = module["apache_user"];
 
-        local envvarsFileHandle = io.open(envVarsPath, "w");
+        local envvarsFileHandle = io.open(envVarsPath, "wb");
 
         if not envvarsFileHandle then
             print("[apache init] Couldn't open envvars at path "..tostring(envVarsPath).." for writing!");

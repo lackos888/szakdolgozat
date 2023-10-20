@@ -9,9 +9,9 @@ local certbotHandler = require("certbotHandler/certbot");
 
 --initialize handlers
 --OpenVPNHandler.init_dirs();
---nginxHandler.init_dirs(); --TODO: reverse proxy + certbot
-apacheHandler.init_dirs();
---TODO: certbotHandler.init();
+nginxHandler.init_dirs(); --TODO: reverse proxy
+--apacheHandler.init_dirs(); --TODO: reverse proxy
+certbotHandler.init();
 
 --[[
 local nginxConfigParsedLines, paramsLines = nginxConfigHandler.parse_nginx_config(require("general").readAllFileContents("/home/lackos/default"));

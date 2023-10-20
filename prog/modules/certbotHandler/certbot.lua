@@ -2,7 +2,11 @@ local os = require("os");
 local aptPackageManager = require("apt_packages");
 local snapPackageManager = require("snapd");
 local linux = require("linux");
+local inspect = require("inspect");
 local nginx = require("nginxHandler/nginx");
+local apache = require("apacheHandler/apache");
+local certFileName = "fullchain.pem";
+local keyFileName = "privkey.pem";
 
 local module = {};
 
@@ -68,38 +72,104 @@ module.NON_EXISTENT_WEBSITE = -2;
 module.CERTBOT_IS_NOT_INSTALLED = -3;
 module.CERTBOT_ERROR = -4;
 
+function module.get_cert_datas(domain)
+    local retLines, retCode = linux.exec_command_with_proc_ret_code(domain and ("certbot certificates -d "..tostring(domain)) or ("certbot certificates"), true);
+
+    if retCode ~= 0 then
+        return false;
+    end
+
+    local linesIterator = retLines:gmatch("[^\r\n]+");
+    local str1 = "Domains: ";
+    local str2 = "Certificate Path: ";
+    local str3 = "Private Key Path: ";
+    local certDatas = {};
+    local currentDomain = "";
+
+    for line in linesIterator do
+        local foundLoc1 = line:find(str1, 0, true);
+        if foundLoc1 then
+            currentDomain = line:sub(foundLoc1 + #str1);
+            certDatas[currentDomain] = {};
+        end
+
+        local foundLoc2 = line:find(str2, 0, true);
+        if foundLoc2 then
+            certDatas[currentDomain]["certPath"] = line:sub(foundLoc2 + #str2);
+        end
+
+        local foundLoc3 = line:find(str3, 0, true);
+        if foundLoc3 then
+            certDatas[currentDomain]["keyPath"] = line:sub(foundLoc3 + #str2);
+        end
+    end
+
+    return certDatas;
+end
+
 function module.try_ssl_certification_creation(method, domain, webserverType)
     if webserverType ~= "nginx" and webserverType ~= "apache" then
         return module.INVALID_WEBSERVER_TYPE;
     end
 
     if method == "http-01" then
+        local websites = {};
+
         if webserverType == "nginx" then
-            if not module.install_certbot() then
-                return module.CERTBOT_IS_NOT_INSTALLED;
-            end
+            nginx.init_dirs();
 
-            local websites = nginx.server_impl.get_current_available_websites();
+            websites = nginx.server_impl.get_current_available_websites();
+        elseif webserverType == "apache" then
+            apache.init_dirs();
 
-            local websiteData = false;
+            websites = apache.server_impl.get_current_available_websites();
+        end
 
-            for t, v in pairs(websites) do
-                if v.websiteUrl == domain then
-                    websiteData = v;
-                    break;
-                end
-            end
+        if not module.install_certbot() then
+            return module.CERTBOT_IS_NOT_INSTALLED;
+        end
 
-            if not websiteData then
-                return module.NON_EXISTENT_WEBSITE;
-            end
+        local websiteData = false;
 
-            local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly --agree-tos --no-eff-email --email \"\"--nginx -d "..tostring(domain), true, nil, true);
-
-            if retCode == 1 then
-                return module.CERTBOT_ERROR, retCode, retLines;
+        for t, v in pairs(websites) do
+            if v.websiteUrl == domain then
+                websiteData = v;
+                break;
             end
         end
+
+        if not websiteData then
+            return module.NON_EXISTENT_WEBSITE;
+        end
+
+        local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly -n --agree-tos --no-eff-email --email \"\" --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+
+        local hasCertificate = retCode == 0;
+        local certAndKeyDir = "/etc/letsencrypt/live/"..tostring(domain).."/";
+
+        if retLines and retLines:find("You have an existing certificate that has exactly the same domains or certificate name you requested and isn't close to expiry.", 0, true) then
+            hasCertificate = true;
+        elseif retLines and retLines:find("Successfully received certificate.") then
+            hasCertificate = true;
+        end
+
+        if retCode ~= 0 then
+            return module.CERTBOT_ERROR, retCode, retLines;
+        end
+
+        if webserverType == "nginx" then
+            nginx.server_impl.init_ssl_for_website(domain, {
+                certPath = certAndKeyDir..certFileName,
+                keyPath = certAndKeyDir..keyFileName
+            });
+        elseif webserverType == "apache" then
+            apache.server_impl.init_ssl_for_website(domain, {
+                certPath = certAndKeyDir..certFileName,
+                keyPath = certAndKeyDir..keyFileName
+            });
+        end
+
+        return true;
     end
 
     return false;
@@ -107,6 +177,8 @@ end
 
 function module.init()
     print("Certbot install ret: "..tostring(module.install_certbot()));
+    print("certdatas: "..tostring(inspect(module.get_cert_datas())));
+    print("ssl certificate creation: "..tostring(module.try_ssl_certification_creation("http-01", "lszlo.ltd", "nginx")));
 end
 
 return module

@@ -91,7 +91,15 @@ function module.formatPathInsideBasedir(path)
     return general.concatPaths(module["base_dir"], "/", path);
 end
 
+local isInited = false;
+
 function module.init_dirs()
+    if isInited then
+        return true;
+    end
+
+    isInited = true;
+
     if not module.check_nginx_user_existence() then
         local ret, retForUserCreation = module.create_nginx_user();
     
