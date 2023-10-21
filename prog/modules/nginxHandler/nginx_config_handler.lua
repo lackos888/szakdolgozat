@@ -17,6 +17,30 @@ end
 
 --based on https://github.com/nginx/nginx/blob/master/src/core/ngx_conf_file.c | ngx_conf_read_token & ngx_conf_parse
 
+function concatArgsProperlyForBlockName(args)
+    local concattedStr = "";
+
+    for t, v in pairs(args) do
+        local tempStr = v["data"];
+
+        if v["quoteStatus"] == "d" then
+            tempStr = '"'..tostring(v["data"])..'"';
+        elseif v["quoteStatus"] == "s" then
+            tempStr = "'"..tostring(v["data"]).."'";
+        end
+
+        if t == 1 then
+            concattedStr = tempStr;
+        elseif v["data"] ~= ")" then
+            concattedStr = concattedStr.." "..tempStr;
+        else
+            concattedStr = concattedStr..tempStr;
+        end
+    end
+
+    return concattedStr;
+end
+
 local function parse_nginx_config(linesInStr)
     --escape empty lines: [^\r\n]+
     --not escaping empty lines: ([^\n]*)\n?
@@ -107,7 +131,7 @@ local function parse_nginx_config(linesInStr)
         if ch == LF then
             lineCounter = lineCounter + 1;
 
-            if lineChars == " " or lineChars == "" or lineChars == CR or lineChars == CR..LF then
+            if lineChars == " " or lineChars == "" or lineChars == CR or lineChars == CR..LF or lineChars == LF then
                 table.insert(parsedLines, {["spacer"] = true, ["block"] = currentBlock, ["blockDeepness"] = currentBlockDeepness});
             end
 
@@ -162,7 +186,7 @@ local function parse_nginx_config(linesInStr)
 
                 needsResettingStuff = true;
 
-                --print("=> NGX_OK #1");
+                -- print("=> NGX_OK #1");
 
                 goto continue
             end
@@ -172,13 +196,7 @@ local function parse_nginx_config(linesInStr)
 
                 needsResettingStuff = true;
 
-                currentBlock = table.concat(lastDataParsed, " ");
-
-                insertBlockStart();
-
-                lastDataParsed = false;
-
-                --print("=> NGX_CONF_BLOCK_START #1");
+                -- print("=> NGX_CONF_BLOCK_START #1");
 
                 goto continue
             end
@@ -194,7 +212,7 @@ local function parse_nginx_config(linesInStr)
         end
 
         if last_space then
-            start = offset - 1;
+            start = offset;
 
             if (ch == ' ' or ch == '\t' or ch == CR or ch == LF) then
                 goto continue
@@ -212,13 +230,7 @@ local function parse_nginx_config(linesInStr)
 
                     needsResettingStuff = true;
 
-                    currentBlock = table.concat(lastDataParsed, " ");
-
-                    insertBlockStart();
-
-                    lastDataParsed = false;
-
-                    --print("==> NGX_CONF_BLOCK_START #2");
+                    -- print("==> NGX_CONF_BLOCK_START #2");
                 else
                     --local data = string.sub(linesInStr, start, offset - 1):gsub('"', ""):gsub('\'', ""):gsub('\\', "");
 
@@ -226,6 +238,7 @@ local function parse_nginx_config(linesInStr)
     
                     needsResettingStuff = true;
     
+                    -- print("==> NGX_OK #2");
                     --print("==> NGX_OK #2 | data: "..tostring(data).." | start: "..tostring(start).." | endSubstr: "..tostring(offset - 1));
                 end
                 
@@ -240,10 +253,6 @@ local function parse_nginx_config(linesInStr)
                 status = NGX_CONF_BLOCK_DONE;
 
                 needsResettingStuff = true;
-
-                insertBlockEnd();
-
-                currentBlock = false;
 
                 --print("==> NGX_CONF_BLOCK_DONE #3");
 
@@ -314,14 +323,13 @@ local function parse_nginx_config(linesInStr)
         end
 
         if found then
-            ::foundLabel::
-            local data = ltrim(tostring(string.sub(linesInStr, start, offset - 1)):gsub(CR, ""):gsub(LF, ""):gsub("\t", ""));
+            local data = tostring(string.sub(linesInStr, start, offset - 1)):gsub('\\"', ""):gsub('\\\'', ""):gsub('\\\\', "");
 
             if not lastDataParsed then
                 lastDataParsed = {};
             end
 
-            table.insert(lastDataParsed, data);
+            table.insert(lastDataParsed, {data = data, quoteStatus = quoteStatus});
 
             if #lastDataParsed > NGX_CONF_MAX_ARGS then
                 print("[nginx config error] arguments exceeded at offset: "..tostring(offset).." lineCounter: "..tostring(lineCounter).." args: "..tostring(inspect(lastDataParsed)));
@@ -329,7 +337,7 @@ local function parse_nginx_config(linesInStr)
                 return false;
             end
             
-            --print("===> data: "..tostring(data).." start: "..tostring(start).." offset: "..tostring(offset));
+            --print("===> data: "..tostring(data).." start: "..tostring(start).." offset: "..tostring(offset).." quoteStatus: "..tostring(quoteStatus).." last_space: "..tostring(last_space));
 
             if not currentParams then
                 currentParams = {};
@@ -342,12 +350,31 @@ local function parse_nginx_config(linesInStr)
 
                 needsResettingStuff = true;
 
+                goto continue
+            end
+
+            if ch == '{' then --nginx block start
+                status = NGX_CONF_BLOCK_START;
+
+                needsResettingStuff = true;
+
+                goto continue
+            end
+
+            found = false;
+
+            --print("===> resetting found, continuing");
+        end
+
+        ::continue::
+        if needsResettingStuff then
+            if status == NGX_OK then
                 local paramName = currentParams[1];
                 local realParamName = paramName.data;
 
                 table.remove(currentParams, 1);
 
-                --print("====> NGX_OK #4 | stripped currentParams: "..inspect(currentParams).." paramName: "..inspect(paramName).." lineCounter: "..tostring(lineCounter));
+                -- print("====> NGX_OK #3 | stripped currentParams: "..inspect(currentParams).." paramName: "..inspect(paramName).." lineCounter: "..tostring(lineCounter));
                 
                 table.insert(parsedLines, {["block"] = currentBlock, ["blockDeepness"] = currentBlockDeepness, ["paramName"] = paramName, ["args"] = currentParams});
 
@@ -362,33 +389,18 @@ local function parse_nginx_config(linesInStr)
                 currentParams = false;
 
                 lastDataParsed = false;
-
-                goto continue
-            end
-
-            if ch == '{' then --nginx block start
-                status = NGX_CONF_BLOCK_START;
-
-                needsResettingStuff = true;
-
-                --print("====> NGX_CONF_BLOCK_START #4");
-
-                currentBlock = table.concat(lastDataParsed, " ");
+            elseif status == NGX_CONF_BLOCK_START then
+                currentBlock = concatArgsProperlyForBlockName(lastDataParsed);
 
                 insertBlockStart();
 
                 lastDataParsed = false;
+            elseif status == NGX_CONF_BLOCK_DONE then
+                insertBlockEnd();
 
-                goto continue
+                currentBlock = false;
             end
 
-            found = false;
-
-            --print("===> resetting found, continuing");
-        end
-
-        ::continue::
-        if needsResettingStuff then
             resetAllVariablesExceptPositions();
         end
     end    

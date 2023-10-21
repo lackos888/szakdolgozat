@@ -2,11 +2,13 @@ local os = require("os");
 local aptPackageManager = require("apt_packages");
 local snapPackageManager = require("snapd");
 local linux = require("linux");
+local general = require("general");
 local inspect = require("inspect");
 local nginx = require("nginxHandler/nginx");
 local apache = require("apacheHandler/apache");
 local certFileName = "fullchain.pem";
 local keyFileName = "privkey.pem";
+local dhParamFileName = "dhparam.pem";
 
 local module = {};
 
@@ -45,6 +47,12 @@ function module.is_certbot_installed()
     return snapPackageManager.is_package_installed("certbot");
 end
 
+function module.create_certbot_symlink()
+    if not linux.exists("/usr/bin/certbot") then
+        linux.exec_command_with_proc_ret_code("ln -s /snap/bin/certbot /usr/bin/certbot");
+    end
+end
+
 function module.install_certbot()
     if not isSnapdInstalled() then
         if not installSnapd() then
@@ -53,13 +61,13 @@ function module.install_certbot()
     end
 
     if module.is_certbot_installed() then
-        linux.exec_command_with_proc_ret_code("ln -s /snap/bin/certbot /usr/bin/certbot");
+        module.create_certbot_symlink();
 
         return module.ALREADY_INSTALLED_ERROR;
     end
 
     if snapPackageManager.install_package("certbot", true) then
-        linux.exec_command_with_proc_ret_code("ln -s /snap/bin/certbot /usr/bin/certbot");
+        module.create_certbot_symlink();
 
         return true;
     end
@@ -71,6 +79,7 @@ module.INVALID_WEBSERVER_TYPE = -1;
 module.NON_EXISTENT_WEBSITE = -2;
 module.CERTBOT_IS_NOT_INSTALLED = -3;
 module.CERTBOT_ERROR = -4;
+module.OPENSSL_DHPARAM_GENERATING_ERROR = -5;
 
 function module.get_cert_datas(domain)
     local retLines, retCode = linux.exec_command_with_proc_ret_code(domain and ("certbot certificates -d "..tostring(domain)) or ("certbot certificates"), true);
@@ -143,9 +152,10 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly -n --agree-tos --no-eff-email --email \"\" --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+        -- local retCode = 0; --FOR TESTING PURPOSES
 
         local hasCertificate = retCode == 0;
-        local certAndKeyDir = "/etc/letsencrypt/live/"..tostring(domain).."/";
+        local domainPath = "/etc/letsencrypt/live/"..tostring(domain).."/";
 
         if retLines and retLines:find("You have an existing certificate that has exactly the same domains or certificate name you requested and isn't close to expiry.", 0, true) then
             hasCertificate = true;
@@ -157,15 +167,28 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             return module.CERTBOT_ERROR, retCode, retLines;
         end
 
+        --Diffie-Hellman Ephemeral algorithm
+        local filePathForDHParam = domainPath..dhParamFileName;
+
+        if not linux.exists(filePathForDHParam) then
+            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." 4096");
+
+            if retCode ~= 0 then
+                return module.OPENSSL_DHPARAM_GENERATING_ERROR;
+            end
+        end
+
         if webserverType == "nginx" then
             nginx.server_impl.init_ssl_for_website(domain, {
-                certPath = certAndKeyDir..certFileName,
-                keyPath = certAndKeyDir..keyFileName
+                certPath = domainPath..certFileName,
+                keyPath = domainPath..keyFileName,
+                dhParamPath = filePathForDHParam
             });
         elseif webserverType == "apache" then
             apache.server_impl.init_ssl_for_website(domain, {
-                certPath = certAndKeyDir..certFileName,
-                keyPath = certAndKeyDir..keyFileName
+                certPath = domainPath..certFileName,
+                keyPath = domainPath..keyFileName,
+                dhParamPath = filePathForDHParam
             });
         end
 
@@ -177,8 +200,8 @@ end
 
 function module.init()
     print("Certbot install ret: "..tostring(module.install_certbot()));
-    print("certdatas: "..tostring(inspect(module.get_cert_datas())));
-    print("ssl certificate creation: "..tostring(module.try_ssl_certification_creation("http-01", "lszlo.ltd", "nginx")));
+    --print("certdatas: "..tostring(inspect(module.get_cert_datas())));
+    --print("ssl certificate creation: "..tostring(module.try_ssl_certification_creation("http-01", "lszlo.ltd", "nginx")));
 end
 
 return module
