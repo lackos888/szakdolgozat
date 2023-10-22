@@ -11,10 +11,11 @@ local general = require("general");
 --initialize handlers
 --OpenVPNHandler.init_dirs();
 nginxHandler.init_dirs(); --TODO: reverse proxy
---apacheHandler.init_dirs(); --TODO: reverse proxy
+apacheHandler.init_dirs(); --TODO: reverse proxy
 certbotHandler.init();
 
-print("Certbot test: "..tostring(certbotHandler.try_ssl_certification_creation("http-01", "lszlo.ltd", "nginx")));
+print("Apache website creation: "..tostring(apacheHandler.server_impl.create_new_website("lszlo.ltd")));
+print("Certbot test: "..tostring(certbotHandler.try_ssl_certification_creation("http-01", "lszlo.ltd", "apache")));
 
 --[[
 local configFileContents = general.readAllFileContents("/home/nginx-www/websiteconfigs/lszlo.ltd.conf");

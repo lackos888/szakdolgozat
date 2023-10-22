@@ -113,9 +113,9 @@ local function parse_apache_config(linesInStr)
             if sharpComment then
                 sharpComment = false;
 
-                --currentComment = currentComment:gsub(LF, ""):gsub(CR, ""):gsub('\t', "");
+                currentComment = currentComment:gsub(LF, ""):gsub(CR, ""):gsub('\t', "");
 
-                table.insert(parsedLines, {["comment"] = currentComment});
+                table.insert(parsedLines, {["comment"] = currentComment, ["blockDeepness"] = currentBlockDeepness});
 
                 --print("Comment at: "..tostring(lineCounter).." comment: "..tostring(currentComment));
 
@@ -403,7 +403,11 @@ local function write_apache_config(parsedLines)
         elseif v["paramName"] then
             lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..formatDataAccordingQuoting(v["paramName"], v["blockDeepness"]).." "..formatDataAccordingQuoting(v["args"], v["blockDeepness"])..tostring(general.lineEnding);
         elseif v["comment"] then
-            lines = lines..tostring(v["comment"])..tostring(general.lineEnding);
+            if v["blockDeepness"] then
+                lines = lines..doPaddingWithBlockDeepness(v["blockDeepness"])..tostring(v["comment"])..tostring(general.lineEnding);
+            else
+                lines = lines..tostring(v["comment"])..tostring(general.lineEnding);
+            end
         end
     end
 

@@ -529,26 +529,37 @@ function module.init_ssl_for_website(webUrl, certDetails)
     local serverNameData = rawData[serverNameIdx];
     local posStart = serverNameIdx + 1;
 
-    --Only use secure protocols
-    local ssl_protocolsIdx = paramsToIdx["ssl_protocols"];
-    local currentSSLProtocols = {{data = "TLSv1.2"}, {data = "TLSv1.3"}};
+    --Include best practices from Let's Encrypt
+    local includeIdx = paramsToIdx["include"];
+    local letsEncryptIncludeFound = false;
+    local letsEncryptIncludePath = "/etc/letsencrypt/options-ssl-nginx.conf";
+
+    if includeIdx then
+        for _, v in pairs(includeIdx) do
+            local data = rawData[v];
+
+            if data.args[1].data == letsEncryptIncludePath then
+                letsEncryptIncludeFound = true;
+                break;
+            end
+        end
+    end
+
     local insertEndingComment = false;
 
-    if ssl_protocolsIdx then
-        local data = rawData[ssl_protocolsIdx[1]];
-
-        data.args = currentSSLProtocols;
-    else
+    if not letsEncryptIncludeFound then
         configInstance:insertNewData({["comment"] = " SSL Configuration based on https://upcloud.com/resources/tutorials/install-lets-encrypt-nginx & https://beguier.eu/nicolas/articles/nginx-tls-security-configuration.html", blockDeepness = serverNameData.blockDeepness}, posStart);
         posStart = posStart + 1;
 
-        insertEndingComment = true;
-
         configInstance:insertNewData({["paramName"] = {
-            data = "ssl_protocols",
-        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = currentSSLProtocols}, posStart);
+            data = "include",
+        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {
+            {data = letsEncryptIncludePath, quoteStatus = "d"}
+        }}, posStart);
 
         posStart = posStart + 1;
+
+        insertEndingComment = true;
     end
 
     --Enable HTTP Strict Transport Security (HSTS)
@@ -571,39 +582,8 @@ function module.init_ssl_for_website(webUrl, certDetails)
         configInstance:insertNewData({["paramName"] = {
             data = "add_header",
         }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {
-            {data = "Strict-Transport-Security"}, {data = "max-age=31536000; includeSubdomains", quoteStatus = "d"}
+            {data = "Strict-Transport-Security"}, {data = "max-age=31536000; includeSubdomains; preload", quoteStatus = "d"}
         }}, posStart);
-
-        posStart = posStart + 1;
-    end
-
-    --Enhance cypher suites
-    local ssl_ciphersIdx = paramsToIdx["ssl_ciphers"];
-    local currentSSLCiphers = {{data = "ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-CCM:DHE-RSA-AES256-CCM8:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-CCM:DHE-RSA-AES128-CCM8:DHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256"}};
-
-    if ssl_ciphersIdx then
-        local data = rawData[ssl_ciphersIdx[1]];
-
-        data.args = currentSSLCiphers;
-    else
-        configInstance:insertNewData({["paramName"] = {
-            data = "ssl_ciphers",
-        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = currentSSLCiphers}, posStart);
-
-        posStart = posStart + 1;
-    end
-
-    
-    local ssl_prefer_server_ciphersIdx = paramsToIdx["ssl_prefer_server_ciphers"];
-
-    if ssl_prefer_server_ciphersIdx then
-        local data = rawData[ssl_prefer_server_ciphersIdx[1]];
-
-        data.args = {{data = "on"}};
-    else
-        configInstance:insertNewData({["paramName"] = {
-            data = "ssl_prefer_server_ciphers",
-        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = "on"}}}, posStart);
 
         posStart = posStart + 1;
     end
@@ -618,7 +598,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
     else
         configInstance:insertNewData({["paramName"] = {
             data = "ssl_dhparam",
-        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = certDetails.dhParamPath}}}, posStart);
+        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = certDetails.dhParamPath, quoteStatus = "d"}}}, posStart);
 
         posStart = posStart + 1;
     end
@@ -633,7 +613,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
     else
         configInstance:insertNewData({["paramName"] = {
             data = "ssl_certificate",
-        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = certDetails.certPath}}}, posStart);
+        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = certDetails.certPath, quoteStatus = "d"}}}, posStart);
 
         posStart = posStart + 1;
     end
@@ -647,7 +627,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
     else
         configInstance:insertNewData({["paramName"] = {
             data = "ssl_certificate_key",
-        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = certDetails.keyPath}}}, posStart);
+        }, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {{data = certDetails.keyPath, quoteStatus = "d"}}}, posStart);
 
         posStart = posStart + 1;
     end

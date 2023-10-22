@@ -14,33 +14,33 @@ local module = {
 
 local sampleConfigForWebsite = [[
 <VirtualHost *:80>
-        # The ServerName directive sets the request scheme, hostname and port that
-        # the server uses to identify itself. This is used when creating
-        # redirection URLs. In the context of virtual hosts, the ServerName
-        # specifies what hostname must appear in the request's Host: header to
-        # match this virtual host. For the default virtual host (this file) this
-        # value is not decisive as it is used as a last resort host regardless.
-        # However, you must set it for any further virtual host explicitly.
+# The ServerName directive sets the request scheme, hostname and port that
+# the server uses to identify itself. This is used when creating
+# redirection URLs. In the context of virtual hosts, the ServerName
+# specifies what hostname must appear in the request's Host: header to
+# match this virtual host. For the default virtual host (this file) this
+# value is not decisive as it is used as a last resort host regardless.
+# However, you must set it for any further virtual host explicitly.
         ServerName www.example.com
 
         ServerAdmin webmaster@localhost
         DocumentRoot /home/wwwdata/
 
-        # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
-        # error, crit, alert, emerg.
-        # It is also possible to configure the loglevel for particular
-        # modules, e.g.
-        #LogLevel info ssl:warn
+# Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+# error, crit, alert, emerg.
+# It is also possible to configure the loglevel for particular
+# modules, e.g.
+#LogLevel info ssl:warn
 
         ErrorLog ${APACHE_LOG_DIR}/error.log
         CustomLog ${APACHE_LOG_DIR}/access.log combined
 
-        # For most configuration files from conf-available/, which are
-        # enabled or disabled at a global level, it is possible to
-        # include a line for only one particular virtual host. For example the
-        # following line enables the CGI configuration for this host only
-        # after it has been globally disabled with "a2disconf".
-        #Include conf-available/serve-cgi-bin.conf
+# For most configuration files from conf-available/, which are
+# enabled or disabled at a global level, it is possible to
+# include a line for only one particular virtual host. For example the
+# following line enables the CGI configuration for this host only
+# after it has been globally disabled with "a2disconf".
+#Include conf-available/serve-cgi-bin.conf
 </VirtualHost>
 
 # vim: syntax=apache ts=4 sw=4 sts=4 sr noet
@@ -220,7 +220,7 @@ function module.initialize_server()
         for t, v in pairs(IncludeOptional) do
             local data = parsedApacheConfDataRaw[v];
 
-            if data.args[1].data == websiteConfigsFinalPathForApache then
+            if data and data.args and data.args[1] and data.args[1].data == websiteConfigsFinalPathForApache then
                 foundOurIncludeOptionalInsideHTTPBlock = true;
 
                 break;
@@ -246,6 +246,69 @@ function module.initialize_server()
         else
             apacheConfigInstance:insertNewData(newDataToInsert);
         end
+
+        configNeedsRefreshing = true;
+    end
+
+    local ourWWWDataIsIncluded = false;
+
+    local directoryIdx = parsedApacheConfDataLines["block:Directory"];
+    if directoryIdx then
+        for t, v in pairs(directoryIdx) do
+            local data = parsedApacheConfDataRaw[v];
+
+            if data.args and data.args[1] and data.args[1].data == module["www_datas_dir"] then
+                ourWWWDataIsIncluded = true;
+                break;
+            end
+        end
+    end
+
+    if not ourWWWDataIsIncluded then
+        local blockDeepness = 0;
+
+        apacheConfigInstance:insertNewData({
+            blockStart = "Directory",
+            args = {
+                {data = module["www_datas_dir"], quoteStatus = "d"}
+            },
+            blockDeepness = blockDeepness
+        });
+
+            blockDeepness = blockDeepness + 1;
+
+            apacheConfigInstance:insertNewData({
+                paramName = {data = "Options"},
+                args = {
+                    {data = "Indexes"},
+                    {data = "FollowSymLinks"}
+                },
+                blockDeepness = blockDeepness
+            });
+
+            apacheConfigInstance:insertNewData({
+                paramName = {data = "AllowOverride"},
+                args = {
+                    {data = "None"},
+                },
+                blockDeepness = blockDeepness
+            });
+
+            apacheConfigInstance:insertNewData({
+                paramName = {data = "Require"},
+                args = {
+                    {data = "all"},
+                    {data = "granted"}
+                },
+                blockDeepness = blockDeepness
+            });
+
+        blockDeepness = blockDeepness - 1;
+
+        apacheConfigInstance:insertNewData({
+            blockEnd = "Directory",
+            blockDeepness = blockDeepness
+        });
 
         configNeedsRefreshing = true;
     end
@@ -493,6 +556,298 @@ function module.get_current_available_websites(dirPath)
     end
 
     return websites;
+end
+
+module.CONFIG_FILE_COULDNT_BE_READ = -4;
+module.CONFIG_FILE_COULDNT_BE_PARSED = -5;
+module.CONFIG_FILE_COULDNT_BE_WRITTEN = -5;
+module.COULDNT_ENABLE_HEADERS_MODULE = -6;
+module.COULDNT_ENABLE_SSL_MODULE = -6;
+
+function module.init_ssl_for_website(webUrl, certDetails)
+    if linux.exec_command_with_proc_ret_code("a2enmod headers") ~= 0 then
+        return module.COULDNT_ENABLE_HEADERS_MODULE;
+    end
+
+    if linux.exec_command_with_proc_ret_code("a2enmod ssl") ~= 0 then
+        return module.COULDNT_ENABLE_SSL_MODULE;
+    end
+
+    local websites = module.get_current_available_websites();
+    local data = false;
+
+    for t, v in pairs(websites) do
+        if v.websiteUrl == webUrl then
+            data = v;
+
+            break;
+        end
+    end
+
+    if not data then
+        return module.WEBSITE_DOESNT_EXIST;
+    end
+
+    local configFileContents = general.readAllFileContents(data.configPath);
+
+    if not configFileContents then
+        return module.CONFIG_FILE_COULDNT_BE_READ;
+    end
+
+    local configInstance = apacheConfigHandler:new(configFileContents);
+
+    if not configInstance then
+        return module.CONFIG_FILE_COULDNT_BE_PARSED;
+    end
+
+    local rawData = configInstance:getParsedLines();
+    local paramsToIdx = configInstance:getParamsToIdx();
+
+    local isSSLFound = false;
+
+    local includeIdx = paramsToIdx["Include"];
+    local pathForLetsEncryptApacheConfig = "/etc/letsencrypt/options-ssl-apache.conf";
+
+    if includeIdx then
+        for t, v in pairs(includeIdx) do
+            local data = rawData[v];
+
+            if data.args and data.args[1] and data.args[1].data == pathForLetsEncryptApacheConfig then
+                isSSLFound = true;
+
+                break;
+            end
+        end
+    end
+
+    if isSSLFound then
+        return true;
+    end
+
+    local posStart = #rawData;
+    local blockDeepness = 0;
+
+    --position variable is not needed here, because it is incremental from the end
+    --based on https://pramodshehan.medium.com/ssl-enabled-with-apache-and-certbot-lets-encrypt-3fda4ef92bbc and https://upcloud.com/resources/tutorials/install-lets-encrypt-apache
+
+    configInstance:insertNewData({
+        comment = "# SSL Configuration start based on https://pramodshehan.medium.com/ssl-enabled-with-apache-and-certbot-lets-encrypt-3fda4ef92bbc and https://upcloud.com/resources/tutorials/install-lets-encrypt-apache",
+        blockDeepness = blockDeepness
+    });
+
+    configInstance:insertNewData({
+        blockStart = "IfModule",
+        args = {
+            {data = "mod_ssl.c"}
+        },
+        blockDeepness = blockDeepness
+    });
+
+        blockDeepness = blockDeepness + 1;
+
+        configInstance:insertNewData({
+            blockStart = "VirtualHost",
+            args = {
+                {data = "*:443"}
+            },
+            blockDeepness = blockDeepness
+        });
+
+        blockDeepness = blockDeepness + 1;
+
+            local tempDataContainer = {};
+
+            local serverNameIdx = paramsToIdx["ServerName"]; 
+            if serverNameIdx then
+                for t, v in pairs(serverNameIdx) do
+                    local data = rawData[v];
+
+                    table.insert(tempDataContainer, data);
+                end
+            end
+
+            for _, data in pairs(tempDataContainer) do
+                configInstance:insertNewData({
+                    paramName = {data = "ServerName"},
+                    args = data.args,
+                    blockDeepness = blockDeepness
+                });
+            end
+
+            tempDataContainer = {};
+
+            local serverAliasIdx = paramsToIdx["ServerAlias"]; 
+            if serverAliasIdx then
+                for t, v in pairs(serverAliasIdx) do
+                    local data = rawData[v];
+
+                    table.insert(tempDataContainer, data);
+                end
+            end
+
+            for _, data in pairs(tempDataContainer) do
+                configInstance:insertNewData({
+                    paramName = {data = "ServerAlias"},
+                    args = data.args,
+                    blockDeepness = blockDeepness
+                });
+            end
+
+            configInstance:insertNewData({
+                paramName = {data = "DocumentRoot"},
+                args = {
+                    {data = data.rootPath}
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "ErrorLog"},
+                args = {
+                    {data = "${APACHE_LOG_DIR}/error_ssl.log"}
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "CustomLog"},
+                args = {
+                    {data = "${APACHE_LOG_DIR}/access_ssl.log"},
+                    {data = "combined"}
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "Include"},
+                args = {
+                    {data = pathForLetsEncryptApacheConfig, quoteStatus = "d"},
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "SSLCertificateFile"},
+                args = {
+                    {data = certDetails.certPath, quoteStatus = "d"},
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "SSLCertificateKeyFile"},
+                args = {
+                    {data = certDetails.keyPath, quoteStatus = "d"},
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "SSLOpenSSLConfCmd"},
+                args = {
+                    {data = "DHParameters"},
+                    {data = certDetails.dhParamPath, quoteStatus = "d"},
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "SSLCompression"},
+                args = {
+                    {data = "off"}
+                },
+                blockDeepness = blockDeepness
+            });
+
+            configInstance:insertNewData({
+                paramName = {data = "Header"},
+                args = {
+                    {data = "always"},
+                    {data = "set"},
+                    {data = "Strict-Transport-Security"},
+                    {data = "max-age=31536000; includeSubDomains; preload", quoteStatus = "d"}
+                },
+                blockDeepness = blockDeepness
+            });
+
+        blockDeepness = blockDeepness - 1;
+
+        configInstance:insertNewData({
+            blockEnd = "VirtualHost",
+            blockDeepness = blockDeepness
+        });
+
+    blockDeepness = blockDeepness - 1;
+
+    configInstance:insertNewData({
+        blockEnd = "IfModule",
+        blockDeepness = blockDeepness
+    });
+
+    configInstance:insertNewData({
+        comment = "# Redirect every http connection to https",
+        blockDeepness = blockDeepness
+    });
+
+    configInstance:insertNewData({
+        blockStart = "IfModule",
+        args = {
+            {data = "mod_rewrite.c"}
+        },
+        blockDeepness = blockDeepness
+    });
+
+        blockDeepness = blockDeepness + 1;
+
+        configInstance:insertNewData({
+            paramName = {data = "RewriteEngine"},
+            args = {
+                {data = "On"},
+            },
+            blockDeepness = blockDeepness
+        });
+
+        configInstance:insertNewData({
+            paramName = {data = "RewriteCond"},
+            args = {
+                {data = "%{HTTPS}"},
+                {data = "off"}
+            },
+            blockDeepness = blockDeepness
+        });
+
+        configInstance:insertNewData({
+            paramName = {data = "RewriteRule"},
+            args = {
+                {data = "^"},
+                {data = "https://%{HTTP_HOST}%{REQUEST_URI}"}
+            },
+            blockDeepness = blockDeepness
+        });
+
+    blockDeepness = blockDeepness - 1;
+
+    configInstance:insertNewData({
+        blockEnd = "IfModule",
+        blockDeepness = blockDeepness
+    });
+
+    configInstance:insertNewData({
+        comment = "# SSL Configuration end",
+        blockDeepness = blockDeepness
+    });
+
+    local fileHandle = io.open(data.configPath, "wb");
+
+    if not fileHandle then
+        return module.CONFIG_FILE_COULDNT_BE_WRITTEN;
+    end
+
+    fileHandle:write(configInstance:toString());
+    fileHandle:flush();
+    fileHandle:close();
+
+    return true;
 end
 
 return module;
