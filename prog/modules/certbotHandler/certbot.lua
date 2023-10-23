@@ -267,13 +267,14 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local cleanupCertBot = function(killPID)
             linux.deleteFile(tempFileName);
             linux.deleteFile(tempFileNameForStdOut);
-            linux.deleteFile("certbot_pid.txt");
 
             local certbotPIDStuff = general.readAllFileContents("certbot_pid.txt");
 
             if certbotPIDStuff and killPID then
                 os.execute("kill -9 "..tostring(certbotPIDStuff));
             end
+
+            linux.deleteFile("certbot_pid.txt");
         end;
 
         print("[Certbot DNS] Waiting for certbot start!");
