@@ -264,13 +264,26 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local timeoutCounter = 0;
         local retCode = -1;
 
+        local cleanupCertBot = function(killPID)
+            linux.deleteFile(tempFileName);
+            linux.deleteFile(tempFileNameForStdOut);
+            linux.deleteFile("certbot_pid.txt");
+
+            local certbotPIDStuff = general.readAllFileContents("certbot_pid.txt");
+
+            if certbotPIDStuff and killPID then
+                os.execute("kill -9 "..tostring(certbotPIDStuff));
+            end
+        end;
+
         print("[Certbot DNS] Waiting for certbot start!");
+        
         while true do
+            timeoutCounter = timeoutCounter + 1;
+
             local fileHandle = io.open(tempFileName, "r");
 
-            if not fileHandle then
-                timeoutCounter = timeoutCounter + 1;
-            else
+            if fileHandle then
                 local readData = fileHandle:read("*a");
                 fileHandle:close();
 
@@ -312,6 +325,8 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
                         if not writeFileHandle then
                             print("[Certbot DNS] error while opening "..tostring(tempFileName).." for writing!");
 
+                            cleanupCertBot(true);
+
                             return false;
                         end
 
@@ -323,6 +338,8 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             end
 
             if timeoutCounter >= 60 then
+                cleanupCertBot(true);
+
                 return module.CERTBOT_TIMEOUT_ERROR;
             end
 
@@ -331,9 +348,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
 
         local retLines = general.readAllFileContents(tempFileNameForStdOut);
 
-        linux.deleteFile(tempFileName);
-        linux.deleteFile(tempFileNameForStdOut);
-        linux.deleteFile("certbot_pid.txt");
+        cleanupCertBot();
 
         print("[Certbot DNS] retcode: "..tostring(retCode).." retLines: "..tostring(retLines));
 
