@@ -6,16 +6,21 @@ local nginxHandler = require("nginxHandler/nginx");
 local apacheHandler = require("apacheHandler/apache");
 local nginxConfigHandlerObject = require("nginxHandler/nginx_config_handler");
 local certbotHandler = require("certbotHandler/certbot");
+local iptables = require("iptablesHandler/iptables");
 local general = require("general");
+local inspect = require("inspect");
 
 --initialize handlers
 --OpenVPNHandler.init_dirs();
-nginxHandler.init_dirs(); --TODO: reverse proxy
-apacheHandler.init_dirs(); --TODO: reverse proxy
-certbotHandler.init();
+-- nginxHandler.init_dirs(); --TODO: reverse proxy
+-- apacheHandler.init_dirs(); --TODO: reverse proxy
+-- certbotHandler.init();
 
-print("Apache website creation: "..tostring(apacheHandler.server_impl.create_new_website("lszlo.ltd")));
-print("Certbot test: "..tostring(certbotHandler.try_ssl_certification_creation("dns", "lszlo.ltd", "apache")));
+-- print("Apache website creation: "..tostring(apacheHandler.server_impl.create_new_website("lszlo.ltd")));
+-- print("Certbot test: "..tostring(certbotHandler.try_ssl_certification_creation("dns", "lszlo.ltd", "apache")));
+
+print("ssh port: "..tostring(inspect(iptables.get_current_ssh_ports())));
+print("module init: "..tostring(iptables.init_module()));
 
 --[[
 local configFileContents = general.readAllFileContents("/home/nginx-www/websiteconfigs/lszlo.ltd.conf");
