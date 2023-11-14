@@ -4,10 +4,6 @@ local LF = '\n';
 local inspect = require("inspect");
 local general = require("general");
 
-function ltrim(s)
-    return s:match'^%s*(.*)'
-end  
-
 --based on https://httpd.apache.org/docs/2.4/configuring.html
 
 local function parse_apache_config(linesInStr)

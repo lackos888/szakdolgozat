@@ -24,7 +24,7 @@ module.ALREADY_INSTALLED_ERROR = -1;
 module.SNAPD_INSTALL_ERROR = -2;
 
 local function isSnapdInstalled()
-    return aptPackageManager.is_package_is_installed("snapd");
+    return aptPackageManager.is_package_installed("snapd");
 end
 
 local function installSnapd()

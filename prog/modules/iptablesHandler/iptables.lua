@@ -7,7 +7,7 @@ local inspect = require("inspect");
 local module = {};
 
 function module.is_iptables_installed()
-    return packageManager.is_package_is_installed("iptables");
+    return packageManager.is_package_installed("iptables");
 end
 
 function module.install_iptables()

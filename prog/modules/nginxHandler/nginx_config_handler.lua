@@ -11,13 +11,9 @@ local NGX_CONF_MAX_ARGS = 8;
 local inspect = require("inspect");
 local general = require("general");
 
-function ltrim(s)
-    return s:match'^%s*(.*)'
-end  
-
 --based on https://github.com/nginx/nginx/blob/master/src/core/ngx_conf_file.c | ngx_conf_read_token & ngx_conf_parse
 
-function concatArgsProperlyForBlockName(args)
+local function concatArgsProperlyForBlockName(args)
     local concattedStr = "";
 
     for t, v in pairs(args) do

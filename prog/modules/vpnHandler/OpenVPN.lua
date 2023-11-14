@@ -4,7 +4,7 @@ local packageManager = require("apt_packages");
 local module = {};
 
 function module.is_openvpn_installed()
-    return packageManager.is_package_is_installed("openvpn");
+    return packageManager.is_package_installed("openvpn");
 end
 
 function module.install_openvpn()

@@ -3,11 +3,23 @@
 \usepackage{styles/dolgozat}
 \usepackage{tabularx}
 	\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+	\newcolumntype{D}{>{\arraybackslash}X}
 \usepackage{listings}
 \usepackage{styles/cpp}
 \usepackage{styles/python}
 \usepackage{styles/lua}
 \usepackage{url}
+\usepackage{tikz}
+\usepackage{pgf-umlcd}
+
+%% fix inconsistent class name box heights
+%\tikzset{
+%    umlcd style class/.append style={
+%        execute at begin node=\strut}}
+%% fix inconsistent operation/attribute row heights
+%\usepackage{xpatch}
+%\xpatchcmd{\pgfumlcd@operation}{\break}{\break\strut}{}{}
+%\xpatchcmd{\pgfumlcd@attribute}{\break}{\break\strut}{}{}
 
 \usepackage{hyperref}
 

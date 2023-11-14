@@ -4,7 +4,7 @@ local packageManager = require("apt_packages");
 local module = {};
 
 function module.is_nginx_installed()
-    return packageManager.is_package_is_installed("nginx");
+    return packageManager.is_package_installed("nginx");
 end
 
 function module.install_nginx()

@@ -1,6 +1,6 @@
 local module = {};
 
-function module.tprint (tbl, indent)
+function module.tprint(tbl, indent)
     if type(tbl) == "function" then
         local ret = "";
 

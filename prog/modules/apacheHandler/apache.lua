@@ -4,7 +4,7 @@ local packageManager = require("apt_packages");
 local module = {};
 
 function module.is_apache_installed()
-    return packageManager.is_package_is_installed("apache2");
+    return packageManager.is_package_installed("apache2");
 end
 
 function module.install_apache()

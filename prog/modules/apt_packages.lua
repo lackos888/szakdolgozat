@@ -3,7 +3,7 @@ local linux = require("linux");
 
 local module = {};
 
-function module.is_package_is_installed(packageName)
+function module.is_package_installed(packageName)
     local resultForWhereis = linux.exec_command("whereis "..packageName):gsub("%s+", "");
 
     if resultForWhereis ~= packageName..":" then

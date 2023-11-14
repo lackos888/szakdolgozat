@@ -19,7 +19,9 @@ A Lua programnyelvhez csomagkezelő is készült, amelyet LuaRocksnak hívnak, f
 
 Előszeretettel használják a játékfejlesztők is, több neves játékban is előfordul, például World of Warcraft, PayDay 2, Saints Row széria, Crysis, Roblox, FiveM, MTA:SA. \cite{usageoflua}
 
-\subsection{Lua sajátosság: metatáblák}
+\pagebreak
+
+\Section{Lua sajátosság: metatáblák}
 Az előző szekcióban kifejtettem, hogy néhány programozási paradigma nincs előre implementálva, ezeket nekünk kell implementálunk. Öröklődést, osztályokat metatáblák segítségével tudunk implementálni.
 A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata típus adatok tárolására szolgál, a C API készíti, és az eltárolt adatok memóriacíme alapján működik (ez lehet az alap Lua IO library által megnyitott fájlok handleja (amelyek garbage collect esetén bezárják a file handleket a \detokenize{__}\textbf{gc} metametódus segítségével), vagy például játékok esetében akár játékosadat, járműadat, satöbbi).
 
@@ -52,16 +54,19 @@ Jó szokás a lehető legtöbb metametódust definiálni az új metatáblánkban
 
 Mivel a metatáblák átlagos táblák, ezért nem kötelező csak a metametódusokat tartalmazniuk, tartalmazhatnak tetszőleges adatokat is, amelyeket a bennük definiált funkciók felhasználhatnak. Például a \textit{tostring} funkció a metatáblában meghívja a \detokenize{__}\textbf{tostring} nevű funkciót (amely igazából egyedi metametódusnak is tekinthető), ha létezik, majd azt adja vissza, amit a funkció meghívásából visszakapott. \cite{metatable1}
 
-\subsection{Lua sajátosság: osztályok, öröklődések implementálása\\metatáblák segítségével}
-
-Az előző szekcióban megemlített \detokenize{__}\textbf{index} metametódussal tudunk osztályokat implementálni. Minden objektumnak van egy adott állapota, a tábláknak is. A tábláknak van egy identitásuk, amely független a bennük tárolt értékektől, két tábla ugyan azokkal az értékekkel különböző objektumok is lehetnek, mindeközben egy objektum különböző értékekkel rendelkezhet különböző időkben, mégis ugyan az az objektum.
 \pagebreak
+
+\Section{Lua sajátosság: osztályok, öröklődések implementálása\\metatáblák segítségével}
+
+Az előző szekcióban megemlített \detokenize{__}\textbf{index} metametódussal tudunk osztályokat implementálni. Minden objektumnak van egy adott állapota, a tábláknak is.
+
+A tábláknak van egy identitásuk, amely független a bennük tárolt értékektől, két tábla ugyan azokkal az értékekkel különböző objektumok is lehetnek, mindeközben egy objektum különböző értékekkel rendelkezhet különböző időkben, mégis ugyan az az objektum.
 
 A tábláknak is van saját életciklusuk, amelyek függetlenek attól, hogy hol lettek létrehozva, vagy hogy ki hozta őket létre.
 
 Az objektumoknak saját metódusai, műveletei vannak, csakúgy mint egy táblának.
 
-\subsubsection{Táblaműveletek, self kulcsszó}
+\SubSection{Táblaműveletek, self kulcsszó}
 Példakód táblaműveletre:
 \begin{lua}
 Account = {balance = 0}
@@ -97,7 +102,6 @@ A self paraméter bevezetésével már nem csak arra az objektumra/táblára ér
 
 Viszont ebben a nyelvben létezik a \textit{self} kulcsszó, változó. A self változó mindig az adott objektumra/táblára mutat, vagyis önmagára. Ez egy nagy segítség az \textbf{OOP} implementálása során.
 
-\pagebreak
 A Lua nyelvben a self változót kétféle képpen használhatjuk:
 
 \hspace{10mm}\textit{1}. megoldás: az előző példakódban tárgyalt 1. argument bevezetése. Abban a példakódban a self argumentumnevet igazából bármire kicserélhetjük, mivel a Lua nyelv akkor is oda fogja rakni első argumentként az objektumot, ha úgy használjuk, hogy: \textit{Account:withdraw(v)}.
@@ -125,7 +129,7 @@ a2:withdraw(260.00) -- OK
 Ebben az esetben a withdraw funkciót használva mindig a saját objektumunkra fog mutatni a self változó, kivéve akkor, ha két paraméter segítségével használjuk, és az első paraméter az objektum.
 
 Most már az objektumjainknak van állapota, identitása, metódusai. Azonban nincsenek rendes osztályok, öröklődések, láthatósági szabályok.\pagebreak
-\subsubsection{Konstruktor, Objektum realizálás}
+\SubSection{Konstruktor, Objektum példányosítás}
 A korábban említett \detokenize{__}\textbf{index} metódus segítségével tudunk osztályainknak "konstruktort" írni:
 \begin{lua}
 Account = {}
@@ -161,16 +165,16 @@ Az "o" táblára pedig saját magát, vagyis a jelenlegi objektumot (Account) á
 
 Így létrehozhatjuk az \textit{a} változónév alatt eltárolt új objektumunk realizációját, amely most már bármire átnevezhető, bármikor törölhető. Az \textit{a} objektumnak saját állapota lesz, saját belső változókkal, ugyanakkor az előre definiált \textit{deposit} és \textit{withdraw} funkciók ugyan úgy működni fognak. Ha az \textit{a} objektumon meghívjuk ezeket a funkciókat, akkor a \textit{self} keyword magára az \textit{a} táblára fog mutatni, így lesz saját állapota az objektumnak.
 
-\subsubsection{Destruktor}
+\SubSection{Destruktor}
 A korábban említett \detokenize{__}\textbf{gc} metódus segítségével tudunk destruktort írni objektjeinknek, ez lefut, mielőtt a garbage collector felszabadítaná őket. Hasznos lehet olyan erőforrások bezárására, amelyek maguktól nem szabadulnak fel.
 \pagebreak
-\subsubsection{Öröklődés}
+\SubSection{Öröklődés}
 Az előző, legutolsó példakódot felhasználva könnyedén tudunk öröklődést implementálni. Ne felejtsük el, hogy a \textit{self} változó mindig önmagunkra mutat. Az alábbi példakódban megtekinthető az öröklődés mechanizmusa:
 
 \begin{lua}
 SpecialAccount = Account:new() --letrehozunk egy uj Account objektumot, amelyet SpecialAccountkent nevezunk el. Azonban a SpecialAccount minden olyan tulajdonsaggal rendelkezik, mint az Account.
 
-s = SpecialAccount:new{limit=1000.00, balance=0} --Ezert lehet ugyan ugy realizalni ot is, mint az Account objektumot.
+s = SpecialAccount:new{limit=1000.00, balance=0} --Ezert lehet ugyan ugy peldanyositani ot is, mint az Account objektumot.
 s:deposit(100.00) --ebben az esetben a self parameter a SpecialAccountra mutat. Az "s" metatablaja SpecialAccount lesz. Ezaltal az "s" orokli a SpecialAccountot, ami pedig orokli az Accountot.
 --mivel a Lua nem talalja meg a deposit funkciot SpecialAccountban, ezert tovabb megy, es az Accountban megtalalja, meghivja azt. Azonban a metodusok felulirhatoak az uj objektumban:
 
@@ -194,7 +198,7 @@ end
 s:withdraw(200.00) --ekkor a Lua a SpecialAccount withdrawjat fogja meghivni, viszont a getLimit funkcio a "self" miatt az "s" objektum felulirt funkcioja lesz, azt fogja meghivni.
 \end{lua}
 \pagebreak
-\subsubsection{Láthatósági szabályok osztályokon belül}
+\SubSection{Láthatósági szabályok osztályokon belül}
 A többi nyelvhez hasonlóan itt is lehet alapszintű láthatóságot beállítani az osztályokon belül. Alapvetőleg ez sincs implementálva a nyelvben, azonban a Lua flexibilis nyelvnek készült, ezáltal mi magunk elkészíthetjük. Egy tábla helyett két táblát fogunk használni egy objektum reprezentálására:
 egyet az állapotára, a másikat pedig interfaceként, amelyen keresztül interaktálni tudunk vele. A belső -\textit{állapot}- táblát pedig csak a definiált funkciók érik el. Az előzőekhez hasonló példakód:
 
@@ -234,9 +238,12 @@ print(acc1.getBalance())     --> 60
 Ebben a példakódban a newAccount a konstruktorunk, amely vár egy értéket, hogy a bankszámlánk mennyi pénzzel indul. Létrehoz egy belső táblát, amely csak a belső scopen belül létezik, self néven. Ez lesz az állapot tábla. Minden benne tárolt érték "private" láthatóságúak. 
 
 A többi funkciót ugyan abban a belső scopeban definiálja, ezért alapvetőleg nem is lennének elérhetőek kívülről, azonban egy új tábla hozódik létre, az interface tábla return valueként, mely elérhetővé teszi ebben a belső scopeban létrehozott funkciókat.
+
+Ebben az esetben a \textit{self} keyword nem a szokványos változó lesz, hanem egy elnevezett változó a belső scopeban. 
+
 \pagebreak
 
-Ebben az esetben a \textit{self} keyword nem a szokványos változó lesz, hanem egy elnevezett változó a belső scopeban. A definiált funkciók folyton arra a "self" változóra fognak hivatkozni, amelyet mi definiáltunk, ezért nem fogad extra argumentet arról, hogy melyik objektum tartalmazza az állapotot.
+A definiált funkciók folyton arra a "self" változóra fognak hivatkozni, amelyet mi definiáltunk, ezért nem fogad extra argumentet arról, hogy melyik objektum tartalmazza az állapotot.
 
 Emiatt a ":" használatát mellőznünk kell, csak a "." használatával tudjuk használni a funkciókat. Definiáltunk egy olyan funkciót is, amely szintén "private" láthatóságú, ez az \textit{extra} nevű funkció. \cite {classes}
 
@@ -263,11 +270,9 @@ Apache2 és Nginx webszervert is tud kezelni a program, ebbe beletartozik:
 	\item honlap hozzáadása külön directoryval
 	\item honlap törlése
 	\item reverse proxy kezelése
-	\item SSL certificate kezelés Let's Encrypton belül certbot segítségével, a certbot snapd-n keresztül települ
+	\item SSL certificate kezelés Let's Encrypton belül certbot segítségével, a certbot snapd-n keresztül települ; up-to-date SSL beállításokra törekszik a program
 	\item külön user a daemonoknak mind Apache2, mind nginx esetében
-	\item a jelenlegi implementáció csak statikus weboldalakat támogat, ezért egy user van egy egész daemonnak, nincs külön weboldalanként user.
-	\item PHP/bármilyen szerveroldali kiegészítő esetén célszerű különböző usereket használni weboldalanként
-	\item up-to-date SSL beállítások
+	\item a jelenlegi implementáció csak statikus weboldalakat támogat, ezért egy user van egy egész daemonnak, nincs külön weboldalanként user\\PHP/bármilyen szerveroldali kiegészítő esetén célszerű különböző usereket használni weboldalanként
 \end{itemize}
 
 Szintén konfigurációbeállítást végez a program a webszerverek esetében is, teljes mértékben nem tudja a config fájlok helyességét ellenőrizni, sem megjavítani őket, ha már alapból hibásak.
@@ -291,7 +296,7 @@ Tűzfal gyanánt az iptables nevű beépített Linux segédprogramot tudja kezel
 	\item Hozzáadott, törölt szabályok kiírása tanítási célból
 \end{itemize}
 
-\subsubsection{Mi az a tls-crypt?} \label{ref:tls-crypt}
+\SubSection{Mi az a tls-crypt?} \label{ref:tls-crypt}
 A tls-crypt egy OpenVPN beállítás, amely lehetővé teszi, hogy az összes csomag digitálisan legyen aláírva, továbbá titkosítva akár szimmetrikus eljárásokkal. Ez a key-exchange előtt is már alkalmazásra kerül. \cite{openvpnmanual}
 Többféle előnye is van:
 \begin{itemize}
@@ -300,7 +305,7 @@ Többféle előnye is van:
 	\item Man-in-the-middle támadás ellen is védhet, továbbá DoS támadások ellen is
 \end{itemize}
 
-\subsubsection{Mi az a chroot?} \label{ref:chroot}
+\SubSection{Mi az a chroot?} \label{ref:chroot}
 A chroot\textit{(const char *path)} egy olyan C API hívás, amely a jelenlegi gyökérkönyvtárat átváltoztatja arra, amelyet az első argumentben megadnak neki. Ez azt jelenti, hogy a jövőben az összes fájlművelet ehhez a gyökérkönyvtárhoz lesz relatív, abban a processzben, ha \textit{/}-lel kezdődik a megnyitott fájl pathja. Kiterjed az összes child-processzre is a változtatás. \cite{chroot}
 
 Csak privilegizált programok tudják általában ezt a C API hívást meghívni. Vigyázni kell programozói szempontból a használatával, mivel ez igazából csak a védelem egy alapját adhatja meg, bizonyos módszerekkel kikerülhető.
@@ -308,7 +313,7 @@ Csak privilegizált programok tudják általában ezt a C API hívást meghívni
 \Section{Hasonló alkalmazások}
 Az Interneten sokaságában sok hasonló funkcionalitást implementáló alkalmazást lelhetünk fel.
 
-\subsubsection{Apache2 és nginx}
+\SubSection{Apache2 és nginx}
 Többféle neves implementáció is létezik az Apache2 és nginx kezelésére. Legelőször személy szerint a \textbf{VHCS} vagyis a Virtual Hosting Control Systemmel találkoztam jópár évvel ezelőtt. A VHCS már nincs aktívan fejlesztve, az utolsó kiadott verzió belőle a 2.4.8-as verzió, amely 2009-ben jelent meg. \cite{vhcs} Többféle szervert is tudott kezelni, néhány ezek közül: Apache, ProFTPD, MySQL, Bind. A későbbiekben az ispCP projekt erre épült. \cite{ispcp} 
 
 Az \textbf{ispCP} projektből alakult ki az \textbf{i-MSCP}, amelynek a legutolsó kiadott verziója 2018-ban lett kiadva \cite{imscp}. Ez már több featureval rendelkezik:
@@ -364,7 +369,7 @@ Testreszabhatóság & Léteznek hozzá modulok, pluginok & Léteznek hozzá modu
 \end{tabularx}
 \end{table}
 
-\subsubsection{Tűzfal}
+\SubSection{Tűzfal}
 Tűzfalak terén a Linux rendszerekben a legelterjedtebb netfilter implementációk jelenleg az iptables és az nftables. 
 
 Az \textbf{iptables} legelső releaseja 1998-ban jelent meg, a legutolsó stabil kiadása 2022. május 13.-án került kiadásra. C-ben íródott. \cite{iptables}
@@ -405,74 +410,37 @@ Támogatott protokollok & TCP, UDP. A ping engedélyezéséhez már iptables sza
 Testreszabhatóság & nincsenek hozzá pluginok & nincsenek hozzá pluginok \\
 \end{tabularx}
 \end{table}
-\subsubsection{OpenVPN}
+
+\pagebreak
+
+\SubSection{OpenVPN}
 A következő táblázatban a saját implementációmat, amely OpenVPN Community-t használ hasonlítom össze az OpenVPN Access Server-rel.
 
-Fontos megemlíteni, hogy OpenVPN szerver menedzser implementáció több is létezik, létezik C\#-ban írt, létezik Bash Scriptben írt is. A minél nagyobb cross-platform támogatás lehetősége miatt azonban véleményem szerint mégis volt célja ennek a programnak az implementálásában, a Lua nyelv egyszerűsége, nagyszerű cross-platform támogatása miatt. Értelemszerűen a Bash Script implementációk csak Linuxra korlátozódnak. GitHubon létezik web alapú interface is az OpenVPN Community Serverhez.
+Fontos megemlíteni, hogy OpenVPN szerver menedzser implementáció több is létezik, létezik C\#-ban írt, létezik Bash Scriptben írt is. A minél nagyobb cross-platform támogatás lehetősége miatt azonban úgy gondolom mégis helyt áll a program létezése, a Lua nyelv egyszerűsége, nagyszerű cross-platform támogatása miatt. Értelemszerűen a Bash Script implementációk csak Linuxra korlátozódnak. GitHubon létezik web alapú interface is az OpenVPN Community Serverhez.
 
 \begin{table}[h]
-\centering
-\caption{OpenVPN Access Server \cite{openvpnaccessserver} összehasonlítása saját implementációval (OpenVPN Community) - folytatás a következő oldalon}
 \label{tab:openvpn_apps}
-\begin{tabularx}{\linewidth}{l|L|L}
- & OpenVPN Access Server & Saját implementáció (OpenVPN Community) \\
+\begin{tabularx}{\textwidth}{l|D|D}
+ & OpenVPN Access Server \cite{openvpnaccessserver} & Saját implementáció (OpenVPN Community) \\
 \hline
 Ingyenes & nem & igen \\
 \hline
 Kliens támogatott OS & Cross-platform & Cross-platform \\
 \hline
-Szerver kezelés támogatott OS & a legtöbb támogatott & kizárólag Linux support (véleményem szerint könnyedén bővíthető Windowsra is) \\
+Szerver kezelés támogatott OS & a legtöbb támogatott & kizárólag Linux support\\
 \hline
 User authentikáció módja & webes alapú felhasználónév-jelszó, PAM, LDAP \newline RADIUS, SAML, stb. Saját auth script is készíthető. & kizárólag kulcs alapú (ez bővíthető saját auth scriptekkel, továbbá pluginokkal, például: PAM pluginnal). \\
 \hline
 Többfaktoros hitelesítés & beépített lehetőségek, továbbá pluginokkal bővíthető lehetőségek & saját auth scripttel kivitelezhető a 2FA, vagy akár pluginként \\
 \hline
-Access Control (ACL) & beépített lehetőségek, hogy ki milyen IP címhez férhessen hozzá, hogy érje el a VPN-t & saját auth scripttel, vagy tűzfallal kivitelezhető \\
+Access Control (ACL) & beépített lehetőségek & saját auth scripttel, vagy tűzfallal kivitelezhető \\
 \hline
-Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával, továbbá a \textit{route} program használatával, szintén a konfigurációban \\
+Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával (a \textit{route} program használatával) \\
 \hline
 Support & professzionális support ticketing rendszerrel & OpenVPN community fórum, Community Ticket report \\
-\end{tabularx}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{\aref{tab:openvpn_apps} táblázat folytatása}
-\begin{tabularx}{\linewidth}{l|L|L}
- & OpenVPN Access Server & Saját implementáció (OpenVPN Community) \\
 \hline
 Certificatek kezelése & automata, beépített tanusítványkezelés van, külső infrastruktúrát is lehet használni & saját, automatizált tanusítványkezelés \\
 \hline
 Kezelőfelület & webes alapú, command line & alapvetőleg command line, azonban webes alapú felület is lehetséges 3rd party szoftverekkel
 \end{tabularx}
 \end{table}
-\pagebreak
- 
-\Section{A fejezet célja}
-
-Ez a fejezet még nem a saját eredményekkel foglalkozik, hanem bemutatja, mi a problémakör, milyen módszerekkel, milyeneredményeket sikerült elérni eddig másoknak.
-
-A hivatkozások jelentős része ehhez a fejezethez szokott kötődni.
-(Egy hivatkozás például így néz ki \cite{coombs1987markup}.)
-Itt lehet bemutatni a hasonló alkalmazásokat.
-
-\Section{Tartalom és felépítés}
-
-A fejezet tartalma témától függően változhat. Az alábbiakat attól függően különböző arányban tartalmazhatják.
-\begin{itemize}
-\item Irodalomkutatás. Amennyiben a dolgozat egy módszer kidolgozására, kifejlesztésére irányul, akkor itt lehet részletesen végignézni (módszertani vagy időrendi bontásban), hogy az eddigiekben milyen eredmények születtek a témakörben.
-\item Technológia. Mivel jellemzően kutatásról vagy szoftverfejlesztésről van szó, ezért annak a jellemző elemeit, technikai részleteit itt kell bemutatni.
-Ez tehát egy módszeres bevezetés ahhoz, hogy ha valaki nem jártas a témakörben, akkor tudja, hogy a dolgozat milyen aktuálisan elérhető eredményeket, eszközöket használt fel.
-\item Piackutatás. Bizonyos témáknál új termék vagy szolgáltatás kifejlesztése a cél.
-Ekkor érdemes annak alaposan utánanézni, hogy aktuálisan milyen eszközök érhetők el a piacon.
-Ez szoftverek esetében a hasonló alkalmazások bemutatását, táblázatos formában történő összehasonlítását jelentheti.
-Szerepelhetnek képek és észrevételek a viszonyításként bemutatott alkalmazásokhoz.
-\item Követelmény specifikáció. Külön szakaszban érdemes részletesen kitérni az elkészítendő alkalmazással kapcsolatos követelményekre.
-Ehhez tartozhatnak forgatókönyvek (\textit{scenario}-k).
-A szemléletesség kedvéért lehet hozzájuk képernyőkép vázlatokat is készíteni, vagy a használati eseteket más módon szemléltetni.
-\end{itemize}
-
-\Section{Amit csak említés szintjén érdemes szerepeltetni}
-
-Az olvasóról annyit feltételezhetünk, hogy programozásban valamilyen szinten járatos, és a matematikai alapfogalmakkal sem ebben a dolgozatban kell megismertetni.
-A speciális eszközök, programozási nyelvek, matematikai módszerekk és jelölések persze jó, hogy ha említésre kerülnek, de nem kell nagyon belemenni a közismertnek tekinthető dolgokba.
