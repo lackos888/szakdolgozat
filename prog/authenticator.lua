@@ -16,6 +16,13 @@ if #args < 1 then
 	return os.exit(1);
 end
 
+--from http://lua-users.org/wiki/SleepFunction
+local clock = os.clock
+function sleep(n)  -- seconds
+  local t0 = clock()
+  while clock() - t0 <= n do end
+end
+
 local fileName = args[1];
 local fileHandle = io.open(fileName, "w");
 fileHandle:write(formattedDomainTXTName);
@@ -28,13 +35,6 @@ fileHandle:flush();
 fileHandle:close();
 
 print("Data written to "..tostring(fileName).." ... waiting!");
-
---from http://lua-users.org/wiki/SleepFunction
-local clock = os.clock
-function sleep(n)  -- seconds
-  local t0 = clock()
-  while clock() - t0 <= n do end
-end
 
 while true do
 	local fileHandle = io.open(fileName, "r");

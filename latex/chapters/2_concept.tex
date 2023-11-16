@@ -15,7 +15,7 @@ A nyelv önmagában eléggé jó teljesítménnyel rendelkezik, jónéhány benc
 
 A \textbf{LuaJIT} a Lua olyan verziója, amely Just-In-Time compilert tartalmaz, alapjaiban is gyorsabb, mint a Lua. A LuaJIT bytecode formátuma teljesen más, mint a sima Lua-é, gyorsabb az instrukciók dekódolása. A virtuális gépe is közvetlenül Assembly-ben íródott. A LuaJIT implementáció szinten nem kötődik hivatalosan a Lua programnyelvhez, attól független, más emberek fejlesztik. \cite {luajit}
 
-A Lua programnyelvhez csomagkezelő is készült, amelyet LuaRocksnak hívnak, funkcionalitása hasonló a NodeJS \textit{npm} csomagkezelőjéhez.
+A Lua programnyelvhez csomagkezelő is készült, amelyet LuaRocksnak hívnak, funkcionalitása hasonló a NodeJS \texttt{npm} csomagkezelőjéhez.
 
 Előszeretettel használják a játékfejlesztők is, több neves játékban is előfordul, például World of Warcraft, PayDay 2, Saints Row széria, Crysis, Roblox, FiveM, MTA:SA. \cite{usageoflua}
 
@@ -27,11 +27,11 @@ A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata t
 
 A \textbf{metatábla} egy olyan szokványos Lua tábla, amely meghatározza bizonyos műveletek viselkedését. Értelemszerűen egy metatáblát több táblára is fel lehet használni. A metatáblák legközelebbi rokonjai véleményem szerint a JavaScript nyelv Proxy-jai, azonban hasonlítanak a C++ nyelvben használt operator overloadingokra is. 
 
-A metatáblákban találhatóak meg a \textbf{metametódusok}, amelyek meghívódhatnak bizonyos műveletekkor. Nevük két alsóvonallal kezdődnek, majd a metametódus neve követi. Például: \textit{\detokenize{__add}}.
+A metatáblákban találhatóak meg a \textbf{metametódusok}, amelyek meghívódhatnak bizonyos műveletekkor. Nevük két alsóvonallal kezdődnek, majd a metametódus neve követi. Például: \texttt{\detokenize{__add}}.
 
-A metatáblák beállíthatóak a \textit{setmetatable} funkcióval, továbbá lekérhetőek a \textit{getmetatable} funkcióval. A metatáblákon belüli értéklekérésre célszerű a \textit{rawget} funkciót használni (ez kikerüli a metatáblák lefutását, vizsgálatát), ha le szeretnénk kérni az egyes eltárolt értékeket benne.
+A metatáblák beállíthatóak a \texttt{setmetatable} funkcióval, továbbá lekérhetőek a \texttt{getmetatable} funkcióval. A metatáblákon belüli értéklekérésre célszerű a \texttt{rawget} funkciót használni (ez kikerüli a metatáblák lefutását, vizsgálatát), ha le szeretnénk kérni az egyes eltárolt értékeket benne.
 
-Alapvetőleg csak tábláknak és userdata-knak van metatáblájuk. Minden más típusú adat saját \textit{-a típusának megfelelő-} metatáblát használ (például van külön számoknak, szövegeknek, satöbbi). Alapvetőleg egy értéknek nincs metatáblája, viszont például a beépített string library hozzáad a szöveg típusú értékeknek saját metatáblát (ezzel használható például a string:sub, string:gsub funkció is).
+Alapvetőleg csak tábláknak és userdata-knak van metatáblájuk. Minden más típusú adat saját \texttt{-a típusának megfelelő-} metatáblát használ (például van külön számoknak, szövegeknek, satöbbi). Alapvetőleg egy értéknek nincs metatáblája, viszont például a beépített string library hozzáad a szöveg típusú értékeknek saját metatáblát (ezzel használható például a string:sub, string:gsub funkció is).
 
 Néhány érdekesebb, akár a program által is felhasznált metametódusok:
 \begin{itemize}
@@ -40,19 +40,19 @@ Néhány érdekesebb, akár a program által is felhasznált metametódusok:
 	\item \detokenize{__}\textbf{concat}: az összefűzés (Luaban: ..) művelete. Hasonló az \detokenize{__}\textbf{add} metametódushoz, ellenben ha bármelyik operandus nem szám és nem is szöveg (vagy szám alapú szöveg), máris megpróbálja az interpreter meghívni a metametódust.
 	\item \detokenize{__}\textbf{len}: a hossz lekérdezés művelete (Luaban: \#). Ha az objektum nem szöveg, akkor ez a metódus meg lesz hívva. Ha nincs ilyen metódus, és az objektum egy tábla, akkor az alap hossz lekérdezés operátor lép működésbe. A meghívás return value-ja a visszaadott érték.
 	\pagebreak
-	\item \detokenize{__}\textbf{index}: Az egyik véleményem szerint legtöbbször felülírt metametódus. Alapját adja az \textbf{OOP} programozásnak a nyelvben. \textit{obj}\detokenize{[key]} alapú értéklekérdezéskor hívódhat meg. Több esetben is meghívódhat:
+	\item \detokenize{__}\textbf{index}: Az egyik véleményem szerint legtöbbször felülírt metametódus. Alapját adja az \textbf{OOP} programozásnak a nyelvben. \texttt{obj}\detokenize{[key]} alapú értéklekérdezéskor hívódhat meg. Több esetben is meghívódhat:
 		\begin{itemize}
 			\item ha az objektumunk \textbf{nem} tábla
 			\item ha az objektumunk tábla: akkor hívódik meg, ha a táblában nem található a keresett kulcsú érték
-		\end{itemize} Az index metametódus nem csak funkció lehet, hanem tábla is. Ha funkció, akkor meghívódik, két argumenttal: az \textit{1.} argumentum maga az objektum lesz, a \textit{2.} pedig a keresett kulcs. Tábla esetén pedig ott próbálja megkeresni az adott kulcsú értéket, ilyenkor ez a lekérdezés sem kerüli ki a metatáblákat.
-	\item \detokenize{__}\textbf{newindex}: Működése hasonló az \detokenize{__}\textbf{index} metametódushoz. Akkor hívódik meg, amikor egy objektumon egy \textit{obj}\detokenize{[key]} = value értéket beállítanak. A beállított érték szintén lehet funkció, vagy tábla, mint az \detokenize{__}\textbf{index} metametódusnál. Tábla argumentum esetén azon a táblán állítja be az értéket az interpreter, funkció esetén pedig meghívódik a következő argumentumokkal: objektum, key, value. Ekkor a meghívott funkció a \textit{rawset} funkció segítségével állíthat az objektumon értékeket (kikerülve a rekurzív metametódus meghívásokat).
+		\end{itemize} Az index metametódus nem csak funkció lehet, hanem tábla is. Ha funkció, akkor meghívódik, két argumenttal: az \texttt{1.} argumentum maga az objektum lesz, a \texttt{2.} pedig a keresett kulcs. Tábla esetén pedig ott próbálja megkeresni az adott kulcsú értéket, ilyenkor ez a lekérdezés sem kerüli ki a metatáblákat.
+	\item \detokenize{__}\textbf{newindex}: Működése hasonló az \detokenize{__}\textbf{index} metametódushoz. Akkor hívódik meg, amikor egy objektumon egy \texttt{obj}\detokenize{[key]} = value értéket beállítanak. A beállított érték szintén lehet funkció, vagy tábla, mint az \detokenize{__}\textbf{index} metametódusnál. Tábla argumentum esetén azon a táblán állítja be az értéket az interpreter, funkció esetén pedig meghívódik a következő argumentumokkal: objektum, key, value. Ekkor a meghívott funkció a \texttt{rawset} funkció segítségével állíthat az objektumon értékeket (kikerülve a rekurzív metametódus meghívásokat).
 	\item \detokenize{__}\textbf{call}: Meghívás operátor: \emph{func(args)}. Akkor hívódik meg ez a metametódus, ha megpróbálunk meghívni egy nem funkció értéket. Ekkor func-ban kerül megkeresésre és meghívásra a metametódus (triviálisan csak akkor, ha létezik). Meghívása esetén func a legelső argumentum, a többi argumentum pedig az eredeti meghívás argumentuma (args). A meghívott funkció visszatérési értékei maga a meghívás visszatérési értékei is. Ez az egyetlen metametódus, amely több értékkel is visszatérhet.
 	\item \detokenize{__}\textbf{gc}: Garbage collector metódus. Azelőtt hívódik meg, mielőtt a garbage collector felszabadítja az adott táblát/userdatat. Ez jó lehet például megnyitott fájlok, vagy bármi más megnyitott erőforrások bezárására.
 \end{itemize}
 
 Jó szokás a lehető legtöbb metametódust definiálni az új metatáblánkban. A \detokenize{__}\textbf{gc} metametódus csak akkor működik, ha az összes metametódus sorban implementálva lett. Az összes metametódus részletesen megtekinthető a Lua Manualban.
 
-Mivel a metatáblák átlagos táblák, ezért nem kötelező csak a metametódusokat tartalmazniuk, tartalmazhatnak tetszőleges adatokat is, amelyeket a bennük definiált funkciók felhasználhatnak. Például a \textit{tostring} funkció a metatáblában meghívja a \detokenize{__}\textbf{tostring} nevű funkciót (amely igazából egyedi metametódusnak is tekinthető), ha létezik, majd azt adja vissza, amit a funkció meghívásából visszakapott. \cite{metatable1}
+Mivel a metatáblák átlagos táblák, ezért nem kötelező csak a metametódusokat tartalmazniuk, tartalmazhatnak tetszőleges adatokat is, amelyeket a bennük definiált funkciók felhasználhatnak. Például a \texttt{tostring} funkció a metatáblában meghívja a \detokenize{__}\textbf{tostring} nevű funkciót (amely igazából egyedi metametódusnak is tekinthető), ha létezik, majd azt adja vissza, amit a funkció meghívásából visszakapott. \cite{metatable1}
 
 \pagebreak
 
@@ -74,7 +74,7 @@ function Account.withdraw(v)
 	Account.balance = Account.balance - v
 end
 \end{lua}
-Ebben a példakódban létrehozunk egy Account táblát, amelyben van egy withdraw funkció. Ez a withdraw funkció a globális \textit{Account} táblára vonatkozik, onnan fog értéket levonni. Ha megváltoztatjuk a nevét a táblának, vagy nil-lel tesszük egyenlővé, máris nem fog működni az alábbi kód.
+Ebben a példakódban létrehozunk egy Account táblát, amelyben van egy withdraw funkció. Ez a withdraw funkció a globális \texttt{Account} táblára vonatkozik, onnan fog értéket levonni. Ha megváltoztatjuk a nevét a táblának, vagy nil-lel tesszük egyenlővé, máris nem fog működni az alábbi kód.
 
 A következő példakódban kiküszöböljük ezen problémákat, átnevezhetővé tesszük az objektumot, felülírhatóvá:
 
@@ -100,13 +100,13 @@ a2:withdraw(260.00) --OK
 
 A self paraméter bevezetésével már nem csak arra az objektumra/táblára érvényes a funkció, hanem bármelyik másra. Azonban ez a self paraméter úgymond saját magunk által implementált, kitalált.
 
-Viszont ebben a nyelvben létezik a \textit{self} kulcsszó, változó. A self változó mindig az adott objektumra/táblára mutat, vagyis önmagára. Ez egy nagy segítség az \textbf{OOP} implementálása során.
+Viszont ebben a nyelvben létezik a \texttt{self} kulcsszó, változó. A self változó mindig az adott objektumra/táblára mutat, vagyis önmagára. Ez egy nagy segítség az \textbf{OOP} implementálása során.
 
 A Lua nyelvben a self változót kétféle képpen használhatjuk:
 
-\hspace{10mm}\textit{1}. megoldás: az előző példakódban tárgyalt 1. argument bevezetése. Abban a példakódban a self argumentumnevet igazából bármire kicserélhetjük, mivel a Lua nyelv akkor is oda fogja rakni első argumentként az objektumot, ha úgy használjuk, hogy: \textit{Account:withdraw(v)}.
+\hspace{10mm}\texttt{1}. megoldás: az előző példakódban tárgyalt 1. argument bevezetése. Abban a példakódban a self argumentumnevet igazából bármire kicserélhetjük, mivel a Lua nyelv akkor is oda fogja rakni első argumentként az objektumot, ha úgy használjuk, hogy: \texttt{Account:withdraw(v)}.
 
-\hspace{10mm}\textit{2}. megoldás:
+\hspace{10mm}\texttt{2}. megoldás:
 \begin{lua}
 Account = {balance = 0}
 
@@ -157,19 +157,19 @@ a:withdraw(100.00)
 print(a.balance) --> 0
 \end{lua}
 
-Ebben az esetben létrehozunk egy Account táblát/objektumot, amelynek lesz \textit{new} funkciója, ez lesz a "konstruktorunk".
+Ebben az esetben létrehozunk egy Account táblát/objektumot, amelynek lesz \texttt{new} funkciója, ez lesz a "konstruktorunk".
 
 Ez a funkció úgy működik, hogy 1. argumentként kaphat egy objectet/táblát (ekkor a már meglévő objektum lesz állapotként felhasználva), vagy csinál egy teljesen üreset.
 
 Az "o" táblára pedig saját magát, vagyis a jelenlegi objektumot (Account) állítja be metatáblának. Ezután pedig a self (Account) táblán beállítja az \detokenize{__}\textbf{index} metametódus értékét saját magára (tehát tábla lesz, nem funkció). Ennek segítségével minden definiált funkció működni fog úgy, hogy a self megmarad saját állapotként.
 
-Így létrehozhatjuk az \textit{a} változónév alatt eltárolt új objektumunk realizációját, amely most már bármire átnevezhető, bármikor törölhető. Az \textit{a} objektumnak saját állapota lesz, saját belső változókkal, ugyanakkor az előre definiált \textit{deposit} és \textit{withdraw} funkciók ugyan úgy működni fognak. Ha az \textit{a} objektumon meghívjuk ezeket a funkciókat, akkor a \textit{self} keyword magára az \textit{a} táblára fog mutatni, így lesz saját állapota az objektumnak.
+Így létrehozhatjuk az \texttt{a} változónév alatt eltárolt új objektumunk realizációját, amely most már bármire átnevezhető, bármikor törölhető. Az \texttt{a} objektumnak saját állapota lesz, saját belső változókkal, ugyanakkor az előre definiált \texttt{deposit} és \texttt{withdraw} funkciók ugyan úgy működni fognak. Ha az \texttt{a} objektumon meghívjuk ezeket a funkciókat, akkor a \texttt{self} keyword magára az \texttt{a} táblára fog mutatni, így lesz saját állapota az objektumnak.
 
 \SubSection{Destruktor}
 A korábban említett \detokenize{__}\textbf{gc} metódus segítségével tudunk destruktort írni objektjeinknek, ez lefut, mielőtt a garbage collector felszabadítaná őket. Hasznos lehet olyan erőforrások bezárására, amelyek maguktól nem szabadulnak fel.
 \pagebreak
 \SubSection{Öröklődés}
-Az előző, legutolsó példakódot felhasználva könnyedén tudunk öröklődést implementálni. Ne felejtsük el, hogy a \textit{self} változó mindig önmagunkra mutat. Az alábbi példakódban megtekinthető az öröklődés mechanizmusa:
+Az előző, legutolsó példakódot felhasználva könnyedén tudunk öröklődést implementálni. Ne felejtsük el, hogy a \texttt{self} változó mindig önmagunkra mutat. Az alábbi példakódban megtekinthető az öröklődés mechanizmusa:
 
 \begin{lua}
 SpecialAccount = Account:new() --letrehozunk egy uj Account objektumot, amelyet SpecialAccountkent nevezunk el. Azonban a SpecialAccount minden olyan tulajdonsaggal rendelkezik, mint az Account.
@@ -200,7 +200,7 @@ s:withdraw(200.00) --ekkor a Lua a SpecialAccount withdrawjat fogja meghivni, vi
 \pagebreak
 \SubSection{Láthatósági szabályok osztályokon belül}
 A többi nyelvhez hasonlóan itt is lehet alapszintű láthatóságot beállítani az osztályokon belül. Alapvetőleg ez sincs implementálva a nyelvben, azonban a Lua flexibilis nyelvnek készült, ezáltal mi magunk elkészíthetjük. Egy tábla helyett két táblát fogunk használni egy objektum reprezentálására:
-egyet az állapotára, a másikat pedig interfaceként, amelyen keresztül interaktálni tudunk vele. A belső -\textit{állapot}- táblát pedig csak a definiált funkciók érik el. Az előzőekhez hasonló példakód:
+egyet az állapotára, a másikat pedig interfaceként, amelyen keresztül interaktálni tudunk vele. A belső -\texttt{állapot}- táblát pedig csak a definiált funkciók érik el. Az előzőekhez hasonló példakód:
 
 \begin{lua}
 function newAccount(initialBalance)
@@ -239,13 +239,13 @@ Ebben a példakódban a newAccount a konstruktorunk, amely vár egy értéket, h
 
 A többi funkciót ugyan abban a belső scopeban definiálja, ezért alapvetőleg nem is lennének elérhetőek kívülről, azonban egy új tábla hozódik létre, az interface tábla return valueként, mely elérhetővé teszi ebben a belső scopeban létrehozott funkciókat.
 
-Ebben az esetben a \textit{self} keyword nem a szokványos változó lesz, hanem egy elnevezett változó a belső scopeban. 
+Ebben az esetben a \texttt{self} keyword nem a szokványos változó lesz, hanem egy elnevezett változó a belső scopeban. 
 
 \pagebreak
 
 A definiált funkciók folyton arra a "self" változóra fognak hivatkozni, amelyet mi definiáltunk, ezért nem fogad extra argumentet arról, hogy melyik objektum tartalmazza az állapotot.
 
-Emiatt a ":" használatát mellőznünk kell, csak a "." használatával tudjuk használni a funkciókat. Definiáltunk egy olyan funkciót is, amely szintén "private" láthatóságú, ez az \textit{extra} nevű funkció. \cite {classes}
+Emiatt a ":" használatát mellőznünk kell, csak a "." használatával tudjuk használni a funkciókat. Definiáltunk egy olyan funkciót is, amely szintén "private" láthatóságú, ez az \texttt{extra} nevű funkció. \cite {classes}
 
 \Section{Programtól elvárt működés}
 
@@ -306,7 +306,7 @@ Többféle előnye is van:
 \end{itemize}
 
 \SubSection{Mi az a chroot?} \label{ref:chroot}
-A chroot\textit{(const char *path)} egy olyan C API hívás, amely a jelenlegi gyökérkönyvtárat átváltoztatja arra, amelyet az első argumentben megadnak neki. Ez azt jelenti, hogy a jövőben az összes fájlművelet ehhez a gyökérkönyvtárhoz lesz relatív, abban a processzben, ha \textit{/}-lel kezdődik a megnyitott fájl pathja. Kiterjed az összes child-processzre is a változtatás. \cite{chroot}
+A chroot\texttt{(const char *path)} egy olyan C API hívás, amely a jelenlegi gyökérkönyvtárat átváltoztatja arra, amelyet az első argumentben megadnak neki. Ez azt jelenti, hogy a jövőben az összes fájlművelet ehhez a gyökérkönyvtárhoz lesz relatív, abban a processzben, ha \texttt{/}-lel kezdődik a megnyitott fájl pathja. Kiterjed az összes child-processzre is a változtatás. \cite{chroot}
 
 Csak privilegizált programok tudják általában ezt a C API hívást meghívni. Vigyázni kell programozói szempontból a használatával, mivel ez igazából csak a védelem egy alapját adhatja meg, bizonyos módszerekkel kikerülhető.
 
@@ -378,10 +378,10 @@ Az \textbf{iptables} legelső releaseja 1998-ban jelent meg, a legutolsó stabil
 
 Többféle táblát használ a parancsok feldolgozására, tud csomagokat szűrni (ki és bemenő, továbbá átirányított csomagokat), csomagok tartalmát módosítani, átirányítani. Tud NAT-ot is implementálni. \cite{iptables_man}
 
-Az \textbf{nftables} a Linux kernel 3.13-as verziójától érhető el, pontosabban 2014 január 19.-e óta. Az nftables néhány iptables-hez köthető maradandó örökséget cserél le, tudja többnyire ugyan azt a funkcionalitást, mint az \textit{iptables}. Előnye az iptables-hez képest, hogy kevesebb kód duplikációval rendelkezik, és könnyebb az új protokollokra való kibővítése. \cite{nftables}
+Az \textbf{nftables} a Linux kernel 3.13-as verziójától érhető el, pontosabban 2014 január 19.-e óta. Az nftables néhány iptables-hez köthető maradandó örökséget cserél le, tudja többnyire ugyan azt a funkcionalitást, mint az \texttt{iptables}. Előnye az iptables-hez képest, hogy kevesebb kód duplikációval rendelkezik, és könnyebb az új protokollokra való kibővítése. \cite{nftables}
 Jobban skálázható is, jobb a teljesítménye az iptablesnél, főleg akkor, ha például iptables-ban sok saját magunk által definiált chain-t (láncot) használtunk.
 
-Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egyszerre mindkettőt használhatjuk. Az \textit{iptables -V} parancsot lefuttatva megnézhetjük, hogy milyen iptablessel dolgozunk. Az újabb verziókon az iptables igazából nftables backendet használ, ezt a következőképp láthatjuk:
+Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egyszerre mindkettőt használhatjuk. Az \texttt{iptables -V} parancsot lefuttatva megnézhetjük, hogy milyen iptablessel dolgozunk. Az újabb verziókon az iptables igazából nftables backendet használ, ezt a következőképp láthatjuk:
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1.0]{images/iptables_nftables.png}
@@ -390,7 +390,7 @@ Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egysz
 
 Létezik iptables szabálylánc konvertáló program is, amelyre meglévő szabályainkat nftables syntaxra konvertálhatjuk. 
 
-Az elkészített program az \textit{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \textit{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \textit{iptables}-t használják fel, a következő táblázatban kettőt fogok összehasonlítani.
+Az elkészített program az \texttt{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \texttt{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \texttt{iptables}-t használják fel, a következő táblázatban kettőt fogok összehasonlítani.
 
 \begin{table}[h]
 \centering
@@ -435,7 +435,7 @@ Többfaktoros hitelesítés & beépített lehetőségek, továbbá pluginokkal b
 \hline
 Access Control (ACL) & beépített lehetőségek & saját auth scripttel, vagy tűzfallal kivitelezhető \\
 \hline
-Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával (a \textit{route} program használatával) \\
+Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával (a \texttt{route} program használatával) \\
 \hline
 Support & professzionális support ticketing rendszerrel & OpenVPN community fórum, Community Ticket report \\
 \hline

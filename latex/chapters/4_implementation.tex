@@ -1,59 +1,214 @@
 \Chapter{Megvalósítás}
 
-Ez a fejezet mutatja be a megvalósítás lépéseit.
-Itt lehet az esetlegesen előforduló technikai nehézségeket említeni.
-Be lehet már mutatni a program elkészült részeit.
+\Section{linux modul érdekességei}
 
-Meg lehet mutatni az elkészített programkód érdekesebb részeit.
-(Az érdekesebb részek bemutatására kellene szorítkozni.
-Többségében a szöveges leírásnak kellene benne lennie.
-Abból lehet kiindulni, hogy a forráskód a dolgozathoz elérhető, azt nem kell magába a dolgozatba bemásolni, elegendő csak behivatkozni.)
+A tervezési fázis után hasonlóan épült fel a megvalósítás sorrendje is. A legelsők közt készült el a \texttt{linux} modul megvalósítása, mivel több modul is függött a funkcionalitásától. Néhány érdekesebb részt szeretnék bemutatni, mint például az \texttt{exists}, \texttt{isdir} implementációját:
 
-A dolgozatban szereplő forráskódrészletekhez külön vannak programnyelvenként stílusok.
-Python esetében például így néz ki egy formázott kódrészlet.
-\begin{python}
-import sys
-
-if __name__ == '__main__':
-    pass
-\end{python}
-
-A stílusfájlok a \texttt{styles} jegyzékben találhatók.
-A stílusok között szerepel még C++, Java és Rust stílusfájl.
-Ezek használatához a \texttt{dolgozat.tex} fájl elején \texttt{usepackage} paranccsal hozzá kell adni a stílust, majd a stílusfájl nevével megegyező környezetet lehet használni.
-További példaként C++ forráskód esetében ez így szerepel.
-\begin{cpp}
-#include <iostream>
-
-class Sample : public Object
-{
-    // An empty class definition
-}
-\end{cpp}
-
-Lua teszt:
 \begin{lua}
-function module.mkdir(path)
-    local retCodeForMkdir = module.exec_command_with_proc_ret_code("mkdir "..path);
-
-    if retCodeForMkdir ~= 0 and retCodeForMkdir ~= 1 then --new dir successfully created/already exists
-        return false;
+function module.exists(file)
+    local ok, err, code = os.rename(file, file)
+    if not ok then
+        if code == 13 or code == 17 then
+            return true
+        end
     end
-
-    return true;
+    return ok, err
+end
+ 
+function module.isdir(path)
+    return module.exists(path.."/")
 end
 \end{lua}
 
-Stílusfájlokból elegendő csak annyit meghagyni, amennyire a dolgozatban szükség van.
-Más, C szintaktikájú nyelvekhez (mint például a JavaScript és C\#) a Java vagy C++ stílusfájlok átszerkesztésére van szükség.
-(Elegendő lehet csak a fájlnevet átírni, és a fájlban a környezet nevét.)
+Ez a kód úgy nézi meg a fájlok létezését, hogy megpróbálja a fájlokat átnevezni saját magukra. Ekkor kétféle error lehetséges: \textbf{Permission Denied} (code 13) vagy \textbf{File exists} (code 17). Jegyzékek létezését pedig úgy ellenőrzi, hogy hozzárakja a path végéhez a \textit{/} jelet, mivel így biztos, hogy jegyzékre mutat a path.
 
-Nyers adatok, parancssori kimenetek megjelenítéséhez a \texttt{verbatim} környezetet lehet használni.
-\begin{verbatim}
-$ some commands with arguments
-1 2 3 4 5
-$ _
-\end{verbatim}
+Érdekes lehet még az \texttt{\detokenize{exec_command}} és a \texttt{\detokenize{exec_command_with_proc_ret_code}}\\ funkció implementációja is. Ezek a funkciók a program gerincét képezik, a legtöbb modul használja őket.
 
-A kutatás jellegű témáknál ez a fejezet gyakorlatilag kimaradhat.
-Helyette inkább a fő vizsgálati módszerek, kutatási irányok kaphatnak külön-külön fejezeteket.
+\begin{lua}
+function module.exec_command(cmd)
+    local handle = io.popen(cmd);
+    local result = handle:read("*a");
+    handle:close();
+
+    return result;
+end
+\end{lua}
+
+\pagebreak
+Az \texttt{\detokenize{exec_command}} egyszerű implementációjú, amely az \texttt{io} standard library popen funkcióját használja meg egy processz megnyitására. Ez egy handlet ad. A read megvárja míg lefut a processz, majd az \texttt{\detokenize{*a}} paraméter segítségével mindent kiolvas a pipeból. A végén lezáródik a handle. Windows rendszeren is tökéletesen működik.
+
+A következő funkció az \texttt{\detokenize{exec_command_with_proc_ret_code}}. Itt a forráskódból kivettem az üres sorokat a kompaktabb kód érdekében. Működése nagyban hasonlít az \texttt{\detokenize{exec_commandhoz}}, azzal a kivétellel, hogy ez az implementáció felhasznál bizonyos Bash-script elemeket. Például az \texttt{export} funkciót az environment variablek beállítására, vagy a \texttt{\detokenize{$?}} változót a process return kód lekérésére. Támogatja az stderr átirányítását is stdout-ba (ez a \texttt{\detokenize{2>&1}} paraméter) cross-platform módon, a többi Bash alapú megoldás kivételével. A return code-t az utolsó sorba iratja ki, ezt olvassa be magától, és vágja ki az alap program outputjából.
+\begin{lua}
+function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables, redirectStdErrToStdIn)
+    local exportCmd = "";
+    if envVariables then
+        for k, v in pairs(envVariables) do
+            exportCmd = exportCmd.." export "..tostring(k).."="..tostring(v).."; ";
+        end
+    end
+    local handle = io.popen(exportCmd..cmd..tostring(redirectStdErrToStdIn and " 2>&1" or "").."; echo $?");
+    handle:flush();
+    local overallReturn = "";
+    local lastLine = "";
+    local newLineChar = "\n";
+    local lineNum = 0;
+    for line in handle:lines() do
+        overallReturn = overallReturn .. line .. newLineChar;
+        lastLine = line;
+
+        lineNum = lineNum + 1;
+    end
+    handle:close();
+    local retCode = tonumber(lastLine);
+    if lineNum == 1 then
+        overallReturn = "";
+    else
+        overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine - #newLineChar * 2); --skip return code line
+    end
+    if linesReturned then
+        return overallReturn, retCode;
+    end
+    return retCode;
+end
+\end{lua}
+
+\pagebreak
+\SSubSection{Processz exit code felhasználása}{Processz exit codek}
+Valamennyi funkció a programban kihasználja azt, hogy a processzek egy meghatározott visszatérési értéket (pontosabban \texttt{exit code}-t) adnak vissza lefutásuk után. Ezeknek jelentőségük van, mivel bizonyos műveleteknél más értékeket adhatnak vissza attól függően, hogy milyen funkcionalitást használunk épp. Találhatunk olyan listát az Interneten, amelyek ezeket a kódokat általánosságban írják le, hogy milyen hibához kapcsolódhatnak. 
+Általában a processzek visszatérési értékeinek jelentése valamennyire hasonlít a legtöbb táblázatban hozzákapcsolt leíráshoz. \cite{linux_exitcodes}
+
+A legfontosabb, hogy általában a legtöbb processz \texttt{0}-s exit code-val fog visszatérni, ha sikeresen lezajlott a a processz futása, hiba nélkül. Ezt több programrész is felhasználja, például:
+
+\begin{lua}
+function module.check_if_user_exists(userName)
+    local retCodeForId = module.exec_command_with_proc_ret_code("id "..userName);
+
+    return retCodeForId == 0;
+end
+\end{lua}
+
+Ebben az esetben a \texttt{\detokenize{check_if_user_exists}} funkció az alapján tudja egy felhasználó létezését, hogy \texttt{0}-s exit code-val tért-e vissza az \texttt{id} processz.
+
+Például az \texttt{mkdir} parancs \texttt{0}-s (néhány táblázat szerint: \texttt{Success}) visszatérési értékkel tér vissza akkor, ha sikerült létrehozni egy új jegyzéket, vagy \texttt{1}-es (néhány táblázat szerint: \texttt{Operation not permitted}) visszatérési értékkel tér vissza akkor, ha már létezik az a jegyzék, amit létre szeretnénk hozni. A programkód is ez alapján dönti el, hogy sikeres-e a jegyzék létrehozása:
+\begin{lua}
+function module.mkdir(path)
+    local retCodeForMkdir = module.exec_command_with_proc_ret_code("mkdir "..path);
+    return retCodeForMkdir == 0 or retCodeForMkdir == 1; --new dir successfully created/already exists
+end
+\end{lua}
+
+Ez szintén hasonlóan működhet olyan programoknál is, amelyek nem rendszerprogramok, hanem valaki más készítette őket. Például a \texttt{certbot} is különböző process exit codeval térhet vissza az adott művelet sikerességétől függően:
+\begin{lua}
+function module.try_ssl_certification_creation(method, domain, webserverType)
+	...
+	local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+	...
+	local hasCertificate = retCode == 0;
+	...
+end
+\end{lua}
+
+\pagebreak
+\Section{Implementációs nehézség: háttérben futó processz eredményeire való várás \texttt{certbot} modulban}
+
+A program tervezése, implementálása során belefutottam egy nehézségbe, amely a Lua alapvető kialakításából fakad: a Lua alapvetően single-thread, és nem event-driven. Létezik \texttt{coroutine} beépített library, azonban az \texttt{light thread} alapú implementáció. Egyszerre csak egy coroutine futhat, és maga a coroutine kezdeményezheti azt, hogy épp suspendelve legyen (tehát visszaadja az irányítást az őt futtató kódnak, vagy más coroutinenak). Tehát a coroutine sem volt megoldás erre a nehézségre.
+
+A \texttt{certbot} modul tervezése, implementálása közben jött elő ez a nehézség. A \textit{HTTP-01} challenget könnyen lehetett implementálni úgy, hogy megvártuk az újonnan létrehozott processz futási eredményeit, mivel az támogatta a nem-interaktív módot. Azonban a \textit{DNS-01} challenget nem lehet ilyen könnyen implementálni.
+
+A probléma ott kezdődött, hogy a \textit{certbot} maga alapvetőleg sajnos nem támogatja azt, hogy nem-interaktív módon fut ezen challenge esetében. Megoldást azonban az jelentett, hogy \texttt{\detokenize{--manual}} módban használjuk, és megadjuk neki a preferált challenget (vagyis a dns-t), továbbá \texttt{manual-auth-hook} scriptet használunk. 
+
+
+Ezzel a probléma felét már sikerült orvosolnunk, azonban előjött egy újabb probléma: az io.popen esetén a program megvárja a processz futásának végét. Ez azonban nekünk nem megfelelő, mivel akkor teljesen befagy a program, a DNS challenge futtatásakor pedig a usernak meg kell jelenítenünk bizonyos adatokat, hogy milyen DNS rekordokat hozzanak létre a saját domainjükön és milyen értékekkel. Az os függvénykönyvtárban található \textit{execute} funkció másképp működik, hátránya, hogy alapvetően ez is blocking funkció, továbbá nem is tudjuk pontosan, hogy sikerült-e a program elindítása, csak akkor, ha van returnja és megvizsgáljuk a returnolt státusz kódot.
+Ezután azzal folytattam a probléma megoldását, hogy Bash script elemeket használtam fel a program futtatásához, például a \texttt{\detokenize{&}} szimbólumot a háttérben való futáshoz, \texttt{\detokenize{$?}} szimbólumot a státusz kód megkapásához, továbbá \texttt{\detokenize{$!}} szimbólumot az újonnan elindított program PID-jének megkapásához. Ezt az egészet egy nagy parancsba foglaltam. A parancs több fájlt is felhasznál:
+\begin{itemize}
+	\item Egy temp fájlt abból célból, hogy az újonnan létrehozott processz, továbbá a mostani processz kommunikálni tudjon egymással. Amint lefutott a certbot, ide kerül mentésre az exit code
+	\item Egy másik temp fájlt abból a célból, hogy az újonnan létrehozott processz stdoutját és stderr pipeját abba irányítjuk, így a mostani processz tudja az outputot vizsgálni
+	\item Egy certbot\_pid.txt fájlt, amelyből tudjuk, hogy sikeresen lefutott-e a programunk. Azt a célt is szolgálja, hogy ha esetleg megszakadt a program futása valami miatt, akkor a következő lefutáskor a kill parancs segítségével megszüntessük a már nem használt processt.
+\end{itemize}
+
+A kommunikáció maga a két processz között úgy történik, hogy elindul az auth Lua script, amely megkapja environmental variablekon keresztül a certbottól az adatokat. Ezeket az adatokat a legelsőnek létrehozott temp fileba írja bele, majd ezután 1 másodpercenként folyamatosan kiolvassa a temp file tartalmát. Ez azért fontos, mert addig is blokkolja a certbot processzt, így nem halad tovább.\\Amint a user lereadyzte a műveletet, akkor pedig ebbe a tempfájlba beleírodik a "ready" szó, majd ezután fut le csak a certbot DNS challengeje (megszakad a loop).
+
+Lua kódban összességében röviden így néz ki az implementáció:
+\begin{lua}
+function module.try_ssl_certification_creation(method, domain, webserverType)
+	...
+	local tempFileName = os.tmpname();
+	local tempFileNameForStdOut = os.tmpname();
+
+	local certbotPIDStuff = general.readAllFileContents("certbot_pid.txt");
+
+	if certbotPIDStuff then
+		os.execute("kill -9 "..tostring(certbotPIDStuff));
+	end
+
+	linux.deleteFile("certbot_pid.txt");
+
+	local formattedCmd = "(certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
+	os.execute(formattedCmd);
+	
+	if not linux.exists("certbot_pid.txt") then
+		return module.EXEC_FAILED;
+	end
+	...
+	--fajlolvasas, cleanup
+	...
+end
+\end{lua}
+
+Authenticator script részlet:
+\begin{lua}
+while true do
+	local fileHandle = io.open(fileName, "r");
+	if fileHandle then
+		local readStr = fileHandle:read("*a");
+		fileHandle:close();
+		if readStr:find("ready", 0, true) == 1 then
+			break;
+		end
+	end
+	sleep(1);
+end
+\end{lua}
+\pagebreak
+\Section{Konfigurációs fájlok módosításának implementációja}
+
+A konfigurációs fájlok módosításához többféle modul is implementálva lett, ezeket a Tervezés című fejezetben meg is említettem: \texttt{\detokenize{apache_config_handler}},\\\texttt{\detokenize{nginx_config_handler}} és \texttt{\detokenize{OpenVPN_config_handler}}. Ezek közül a modulok közül a legtöbb OO alapelveket igyekezett követni, az OpenVPN config handler kivételével. Ezeket a modulokat itt jelenleg nem fogom bemutatni, mivel akár eléggé hosszú kódrészletek is lehetnének amiatt, hogy általában az eredeti parserek funkcionalitását szeretnék tükrözni nagy mértékben. Ami szerintem érdekes lehet az olvasók számára az az, hogy a gyakorlatban hogyan lehet ezeket a modulokat kezelni, felhasználni.
+
+A config parsereket és writereket igyekeztem hasonlóképp ugyanarra a kódbázisra felépíteni, ez az apache szerver \textit{envvars} fájl kezelőjének kivételével sikerült is. Mindegyik parser outputja általában két nagyobb táblából épül fel: \texttt{\detokenize{parsedLines}} és\\\texttt{\detokenize{paramToLine}}.
+A \textit{parsedLines} maga az állapot tábla, abba van benne minden egyes beolvasott és értelmezett sor, benne paraméterek, kommentek vannak. A \textit{paramToLine} tábla általában csak cache, azt mutatja meg, hogy bizonyos opciók hol vannak használva a parsedLines táblán belül, így nem kell átfésülni az egész parsedLines táblát, hanem egyszerűen elég ezt felhasználni.
+
+A \textit{parsedLines} felépítése OpenVPN esetén egyszerű array, minden array elem egy tábla, amelyben a következő paraméterek szerepelhetnek:
+
+\begin{itemize}
+	\item \textbf{params}: Ez tartalmazza az adott paramétereket, opciókat egy adott sorban. A táblában található \textit{val} érték maga a paraméter értéke (vagy akár a config option neve), a \textit{state} pedig kifejezi az idézőjeltípust, ha használnak (ami lehet \texttt{reading\_quoted\_param} \detokenize{"} esetén, vagy \texttt{reading\_squoted\_param} \detokenize{'} esetén).	
+	\item \textbf{comment}: Ez tartalmazza az adott sorban található kommentet. Ha a \textit{params} tábla nem létezik, akkor maga az egész sor egy komment sor, ha létezik, akkor pedig a paraméterek után van a komment elhelyezve. Üres sor, ha ez sem létezik
+\end{itemize}
+
+Kódrészlet OpenVPN server config buildelésre a programból:
+
+\begin{lua}
+function module.check_server_config(homeDir, openVPNConfigDir)
+	...
+        local configFileContent, paramsToLines = config_handler.parse_openvpn_config(sampleConfigFileContent);
+        if paramsToLines["user"] then
+            local paramTbl = configFileContent[paramsToLines["user"]];
+            paramTbl["params"][2].val = module["openvpn_user"];
+        end
+	...
+        configFileHandle:write(config_handler.write_openvpn_config(configFileContent));
+        configFileHandle:flush();
+        configFileHandle:close();
+	...
+end
+\end{lua}
+\pagebreak
+Az \texttt{\detokenize{apache_config_handler}}, és az \texttt{\detokenize{nginx_config_handler}} modulok már OO alapelveket követnek, azonban itt is fontos a két tábla felépítése.
+
+A \textit{parsedLines} felépítése apache és nginx esetén szintén egyszerű array, minden array elem egy tábla, amelyben a következő paraméterek szerepelhetnek:
+
+\begin{itemize}
+	\item \textbf{params}: Ez tartalmazza az adott paramétereket, opciókat egy adott sorban. A táblában található \textit{val} érték maga a paraméter értéke (vagy akár a config option neve), a \textit{state} pedig kifejezi az idézőjeltípust, ha használnak (ami lehet \texttt{reading\_quoted\_param} \detokenize{"} esetén, vagy \texttt{reading\_squoted\_param} \detokenize{'} esetén).	
+	\item \textbf{comment}: Ez tartalmazza az adott sorban található kommentet. Ha a \textit{params} tábla nem létezik, akkor maga az egész sor egy komment sor, ha létezik, akkor pedig a paraméterek után van a komment elhelyezve. Üres sor, ha ez sem létezik
+\end{itemize}
+
+

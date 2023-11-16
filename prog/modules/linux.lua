@@ -2,6 +2,7 @@ local os = require("os");
 
 local module = {};
 
+--from https://stackoverflow.com/questions/1340230/check-if-directory-exists-in-lua
 function module.exists(file)
     local ok, err, code = os.rename(file, file)
     if not ok then
@@ -33,12 +34,7 @@ end
 
 function module.mkdir(path)
     local retCodeForMkdir = module.exec_command_with_proc_ret_code("mkdir "..path);
-
-    if retCodeForMkdir ~= 0 and retCodeForMkdir ~= 1 then --new dir successfully created/already exists
-        return false;
-    end
-
-    return true;
+    return retCodeForMkdir == 0 or retCodeForMkdir == 1; --new dir successfully created/already exists
 end
 
 function module.deleteFile(path)
@@ -70,9 +66,7 @@ function module.exec_command(cmd)
 end
 
 function module.check_if_user_exists(userName)
-    local retCodeForId = module.exec_command_with_proc_ret_code("id "..userName);
-
-    return retCodeForId == 0;
+    return module.exec_command_with_proc_ret_code("id "..userName) == 0;
 end
 
 function module.create_user_with_name(userName, comment, shell, homeDir)

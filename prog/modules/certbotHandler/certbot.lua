@@ -23,33 +23,9 @@ end
 module.ALREADY_INSTALLED_ERROR = -1;
 module.SNAPD_INSTALL_ERROR = -2;
 
-local function isSnapdInstalled()
-    return aptPackageManager.is_package_installed("snapd");
-end
-
-local function installSnapd()
-    if isSnapdInstalled() then
-        return module.ALREADY_INSTALLED_ERROR;
-    end
-
-    local ret1 = aptPackageManager.install_package("snapd");
-
-    if ret1 ~= 0 then
-        return module.SNAPD_INSTALL_ERROR;
-    end
-
-    local ret2 = snapPackageManager.install_package("core");
-
-    if ret2 ~= 0 then
-        return module.SNAPD_INSTALL_ERROR;
-    end
-
-    return true;
-end
-
 function module.is_certbot_installed()
-    if not isSnapdInstalled() then
-        return module.ALREADY_INSTALLED_ERROR;
+    if not snapPackageManager.isSnapdInstalled() then
+        return false;
     end
 
     return snapPackageManager.is_package_installed("certbot");
@@ -62,8 +38,8 @@ function module.create_certbot_symlink()
 end
 
 function module.install_certbot()
-    if not isSnapdInstalled() then
-        if not installSnapd() then
+    if not snapPackageManager.isSnapdInstalled() then
+        if not snapPackageManager.installSnapd() then
             return module.SNAPD_INSTALL_ERROR;
         end
     end
