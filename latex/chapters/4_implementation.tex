@@ -172,15 +172,16 @@ end
 \pagebreak
 \Section{Konfigurációs fájlok módosításának implementációja}
 
-A konfigurációs fájlok módosításához többféle modul is implementálva lett, ezeket a Tervezés című fejezetben meg is említettem: \texttt{\detokenize{apache_config_handler}},\\\texttt{\detokenize{nginx_config_handler}} és \texttt{\detokenize{OpenVPN_config_handler}}. Ezek közül a modulok közül a legtöbb OO alapelveket igyekezett követni, az OpenVPN config handler kivételével. Ezeket a modulokat itt jelenleg nem fogom bemutatni, mivel akár eléggé hosszú kódrészletek is lehetnének amiatt, hogy általában az eredeti parserek funkcionalitását szeretnék tükrözni nagy mértékben. Ami szerintem érdekes lehet az olvasók számára az az, hogy a gyakorlatban hogyan lehet ezeket a modulokat kezelni, felhasználni.
+A konfigurációs fájlok módosításához többféle modul is implementálva lett, ezeket a Tervezés című fejezetben meg is említettem: \texttt{\detokenize{apache_config_handler}},\\\texttt{\detokenize{nginx_config_handler}} és \texttt{\detokenize{OpenVPN_config_handler}}. Ezek közül a modulok közül a legtöbb OO alapelveket igyekezett követni, az OpenVPN config handler kivételével.
 
-A config parsereket és writereket igyekeztem hasonlóképp ugyanarra a kódbázisra felépíteni, ez az apache szerver \textit{envvars} fájl kezelőjének kivételével sikerült is. Mindegyik parser outputja általában két nagyobb táblából épül fel: \texttt{\detokenize{parsedLines}} és\\\texttt{\detokenize{paramToLine}}.
+A config parsereket és writereket hasonlóképp ugyanarra a kódbázisra építettem fel, ez az Apache szerver \textit{envvars} fájl kezelőjének kivételével sikerült is. Mindegyik parser outputja általában két nagyobb táblából épül fel: \texttt{\detokenize{parsedLines}} és\\\texttt{\detokenize{paramToLine}}.
 A \textit{parsedLines} maga az állapot tábla, abba van benne minden egyes beolvasott és értelmezett sor, benne paraméterek, kommentek vannak. A \textit{paramToLine} tábla általában csak cache, azt mutatja meg, hogy bizonyos opciók hol vannak használva a parsedLines táblán belül, így nem kell átfésülni az egész parsedLines táblát, hanem egyszerűen elég ezt felhasználni.
 
+\SubSection{OpenVPN config parser-writer implementáció felépítése, használata}
 A \textit{parsedLines} felépítése OpenVPN esetén egyszerű array, minden array elem egy tábla, amelyben a következő paraméterek szerepelhetnek:
 
 \begin{itemize}
-	\item \textbf{params}: Ez tartalmazza az adott paramétereket, opciókat egy adott sorban. A táblában található \textit{val} érték maga a paraméter értéke (vagy akár a config option neve), a \textit{state} pedig kifejezi az idézőjeltípust, ha használnak (ami lehet \texttt{reading\_quoted\_param} \detokenize{"} esetén, vagy \texttt{reading\_squoted\_param} \detokenize{'} esetén).	
+	\item \textbf{params}: Ez tartalmazza az adott paramétereket, opciókat egy adott sorban. A táblában található \textit{val} érték maga a paraméter értéke (vagy akár a config option neve), a \textit{state} pedig kifejezi az idézőjeltípust, ha használnak (ami lehet \texttt{reading\_quoted\_param} \detokenize{"} esetén, vagy \texttt{reading\_squoted\_param} \detokenize{'} esetén)
 	\item \textbf{comment}: Ez tartalmazza az adott sorban található kommentet. Ha a \textit{params} tábla nem létezik, akkor maga az egész sor egy komment sor, ha létezik, akkor pedig a paraméterek után van a komment elhelyezve. Üres sor, ha ez sem létezik
 \end{itemize}
 
@@ -202,13 +203,111 @@ function module.check_server_config(homeDir, openVPNConfigDir)
 end
 \end{lua}
 \pagebreak
-Az \texttt{\detokenize{apache_config_handler}}, és az \texttt{\detokenize{nginx_config_handler}} modulok már OO alapelveket követnek, azonban itt is fontos a két tábla felépítése.
 
-A \textit{parsedLines} felépítése apache és nginx esetén szintén egyszerű array, minden array elem egy tábla, amelyben a következő paraméterek szerepelhetnek:
+Az előző oldalon látható kódrészlet egy teljesen új konfigurációs fájlt generál az OpenVPN szerver számára. Ezt úgy teszi meg, hogy egy előre megadott alap konfigurációt beolvas, majd azon módosítja a paramétereket (például az user option-t), utána pedig rendes konfigurációs szöveggé alakítja a módosított konfigurációt az állapot táblából.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=1.0]{images/openvpn_config_edit_example.png}
+\caption{Az átírt \detokenize{user} argumentum. A példa konfigurációban nobody van használva}
+\end{figure}
+
+\SubSection{Apache, nginx config parser-writer implementáció felépítése és használata}
+
+Az \texttt{\detokenize{apache_config_handler}}, és az \texttt{\detokenize{nginx_config_handler}} modulok már OO alapelveket követnek, azonban itt is fontos a két tábla felépítése. Az OpenVPN szerverhez képest a két szerver konfigurációs fájljai bonyolultabb és kiterjedtebb syntaxú. Bár a parser-writer ugyanúgy két táblával dolgozik, megfigyelhető, hogy sokkal több paramétert tartalmaz egy adott sort leíró tábla.
+
+A \textit{parsedLines} felépítése Apache és nginx esetén szintén egyszerű array, minden array elem egy tábla (és egy sor), amelyben a következő paraméterek szerepelhetnek (akár több is egyszerre):
 
 \begin{itemize}
-	\item \textbf{params}: Ez tartalmazza az adott paramétereket, opciókat egy adott sorban. A táblában található \textit{val} érték maga a paraméter értéke (vagy akár a config option neve), a \textit{state} pedig kifejezi az idézőjeltípust, ha használnak (ami lehet \texttt{reading\_quoted\_param} \detokenize{"} esetén, vagy \texttt{reading\_squoted\_param} \detokenize{'} esetén).	
-	\item \textbf{comment}: Ez tartalmazza az adott sorban található kommentet. Ha a \textit{params} tábla nem létezik, akkor maga az egész sor egy komment sor, ha létezik, akkor pedig a paraméterek után van a komment elhelyezve. Üres sor, ha ez sem létezik
+	\item \textbf{spacer}: Üres sort jelent. Ha ez létezik, akkor a többi lentebb sorolt property biztosan nem létezik az adott elemtáblában
+	\item \textbf{blockStart}: Egy blokk kezdetét jelenti, a blokk azonosítóját tartalmazza. Apache esetében argumentumok is tartozhatnak hozzá (tehát ilyenkor az args paraméter is feldolgozódik)
+	\item \textbf{blockEnd}: Egy blokk végét jelenti, a lezárandó blokk azonosítóját tartalmazza
+	\item \textbf{paramName}: Adott sorban található option nevét tartalmazza (például nginx esetében include, Apache esetében ServerName), egy táblában, amely ugyan úgy épül fel, mint az args paraméter. Természetesen mellé feldolgozódik az args paraméter is.
+	\item \textbf{comment}: Ez tartalmazza az adott sorban található kommentet. Ha az \textit{args} tábla nem létezik, akkor maga az egész sor egy komment sor, ha létezik, akkor pedig a paraméterek után van a komment elhelyezve nginx esetén. Az Apache nem támogat kommenteket a sorok végén, az optionok és argumentumok után
+	\item \textbf{blockDeepness}: Megadja, hogy az adott sor mennyire van eltolva indent-ügyileg
+	\item \textbf{args}: több elem esetében is használatos paraméter (például Apache esetében blockStartnál is, paramName-nél mindkettő implementációnál), amely egy tábla, és az adott művelethez tartalmaz paramétereket:
+		\begin{itemize}
+			\item \textbf{quoteStatus}: lehet \texttt{d}, ekkor duplaidézőjelben van a paraméter; lehet \texttt{s}, ekkor két sima idézőjel között van a paraméter
+			\item \textbf{multipleLine}: Apache esetében használatos, ha egy paraméter több sort is magába ölel (Apache-ban támogatott a több sor a \texttt{\detokenize{\\}} jelölés segítségével)
+			\item \textbf{data}: ez maga egy string, amely a paramétert tartalmazza
+		\end{itemize}
 \end{itemize}
+
+A két modul használata valamelyest eltér az előző OpenVPN configot kezelő modultól. Ezek már OO alapelveket követnek, továbbá valamennyivel több funkciót is implementálnak, szélesebb körben vannak használva a programban. Például van implementálva funkció arra, hogy teljesen új datát tudjunk beszúrni bárhova, erre az OpenVPN szerver kezelő implementációja közben nem volt szükség.
+
+A következőekben két rövid kódrészletet fogok mutatni Apache és nginx esetében is a modulok használatáról. Nginx esetében a következőképp kerül beállításra az SSL egyik beállítása:
+\begin{lua}
+function module.init_ssl_for_website(webUrl, certDetails)
+...
+    --Redirect unencrypted connections
+    local blockName = 'if ($scheme != "https")';
+    local blockStartSchemeIdx = paramsToIdx["block:"..tostring(blockName)];
+    if not blockStartSchemeIdx then
+	local blockDeepness = serverNameData.blockDeepness;
+        configInstance:insertNewData({["comment"] = " Redirect unencrypted connections", blockDeepness = serverNameData.blockDeepness}, posStart);
+        posStart = posStart + 1;
+        configInstance:insertNewData({["blockStart"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
+        posStart = posStart + 1;
+        blockDeepness = blockDeepness + 1;
+        configInstance:insertNewData({["paramName"] = 
+            {
+                data = 'rewrite',
+            }, block = blockName, blockDeepness = blockDeepness, args = {{data = "^"}, {data = "https://$host$request_uri?"}, {data = "permanent"}}
+        }, posStart);
+        posStart = posStart + 1;
+        blockDeepness = blockDeepness - 1;
+        configInstance:insertNewData({["blockEnd"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
+        posStart = posStart + 1;
+    end
+...
+end
+\end{lua}
+A kódrészlet megkeresi a \detokenize{'if ($scheme != "https")'} blokkot az adott weboldal nginx-konfigurációjában. Ha nem találja meg beszúr egy kommentet, majd azután beszúr egy blokk-kezdést. A blokkba beilleszti a \detokenize{'rewrite ^ https://$host$request_uri? permanent'} parancsot, majd lezárja a blokkot a parancs után. Mindezeket indentálva teszi, így a konfiguráció jól átlátható marad. A beállítás maga azt jelenti, hogy minden HTTP-n keresztüli csatlakozást átirányít HTTPS-re.
+
+A gyakorlatban így néz ki a beillesztett blokk, az nginx konfigurációjában:
+\begin{figure}[h]
+\centering
+\includegraphics[scale=1.0]{images/nginx_config_edit_example.png}
+\caption{A beillesztett blokk}
+\end{figure}
+
+Apache esetében is hasonlóan működik a konfiguráció módosítása. Ott azonban teljesen külön blokkot kell csinálni az SSL konfigurációnak, teljesen új beállításokkal, ezért az azt beállító kódrészlet hosszabb az nginx-implementációtól. Rövid kódrészlet az Apache SSL beállításából:
+\begin{lua}
+function module.init_ssl_for_website(webUrl, certDetails)
+...
+	blockDeepness = blockDeepness + 1;
+	configInstance:insertNewData({
+		blockStart = "VirtualHost",
+		args = {
+			{data = "*:443"}
+		},
+		blockDeepness = blockDeepness
+	});
+	...
+	configInstance:insertNewData({
+		paramName = {data = "Include"},
+		args = {
+			{data = pathForLetsEncryptApacheConfig, quoteStatus = "d"},
+		},
+		blockDeepness = blockDeepness
+	});
+	...
+	blockDeepness = blockDeepness - 1;
+	configInstance:insertNewData({
+		blockEnd = "VirtualHost",
+		blockDeepness = blockDeepness
+	});
+...
+end
+\end{lua}
+
+\pagebreak
+
+A példakódban a VirtualHost blokk létrehozását láthatjuk, amelybe egy Include option is beszúrásra kerül. Ezután lezárásra kerül a létrehozott VirtualHost blokk. A valóságban azonban az SSL beállítása sokkal több optiont, paramétert tartalmaz, a példaként szolgáltatott kép csak a kiragadott példakód funkcionalitását kívánja bemutatni.
+\begin{figure}[t]
+\centering
+\includegraphics[scale=1.0]{images/apache_config_edit_example.png}
+\caption{A kiragadott példakód által generált konfiguráció}
+\end{figure}
 
 

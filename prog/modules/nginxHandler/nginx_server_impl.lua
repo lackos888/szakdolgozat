@@ -637,10 +637,10 @@ function module.init_ssl_for_website(webUrl, certDetails)
     local blockStartSchemeIdx = paramsToIdx["block:"..tostring(blockName)];
 
     if not blockStartSchemeIdx then
+        local blockDeepness = serverNameData.blockDeepness;
+
         configInstance:insertNewData({["comment"] = " Redirect unencrypted connections", blockDeepness = serverNameData.blockDeepness}, posStart);
         posStart = posStart + 1;
-
-        local blockDeepness = serverNameData.blockDeepness;
 
         configInstance:insertNewData({["blockStart"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
         posStart = posStart + 1;
