@@ -4,6 +4,21 @@ function module.getOSType()
     return package.config:sub(1,1) == "\\" and "win" or "unix";
 end
 
+function module.clearScreen()
+    if module.getOSType() == "win" then
+        return os.execute("cls");
+    end
+
+    return os.execute("clear");
+end
+
+--from http://lua-users.org/wiki/SleepFunction
+local clock = os.clock
+function module.sleep(n)  -- seconds
+  local t0 = clock()
+  while clock() - t0 <= n do end
+end
+
 module.lineEnding = module.getOSType() == "unix" and "\n" or "\r\n";
 
 function module.strSplit(str, sep)

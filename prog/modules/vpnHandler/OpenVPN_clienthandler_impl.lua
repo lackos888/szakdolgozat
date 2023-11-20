@@ -3,7 +3,9 @@ local general = require("general");
 local utils = require("utils");
 local config_handler = require("vpnHandler/OpenVPN_config_handler");
 
-local module = {};
+local module = {
+    errors = {}
+};
 local serverImpl = false;
 local clientObjects = {};
 local validClients = {};
@@ -20,13 +22,31 @@ persist-key
 persist-tun
 remote-cert-tls server
 auth Whirlpool
-ncp-disable #don't negotiate ciphers, we know what we want
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384 
 tls-version-min 1.2 
 cipher AES-256-GCM
 tls-client
 setenv opt block-outside-dns
 verb 3]];
+
+local errorCounter = 0;
+local function registerNewError(errorName)
+    errorCounter = errorCounter + 1;
+
+    module.errors[errorName] = errorCounter * -1;
+
+    return true;
+end
+
+function module.resolveErrorToStr(error)
+    for t, v in pairs(module.errors) do
+        if tostring(v) == tostring(error) then
+            return t;
+        end 
+    end
+
+    return "";
+end
 
 Client = {};
 
@@ -47,6 +67,7 @@ function Client:new(clientName, loadedFromPKI)
     return o;
 end
 
+registerNewError("BUILD_CLIENT_FULL_FAIL");
 function Client:genKeyAndCRT(password)
     local envVariables = {
         ["EASYRSA_PKI"] = serverImpl.getEasyRSAPKiDir()
@@ -62,13 +83,18 @@ function Client:genKeyAndCRT(password)
     local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, envVariables);
 
     if retCode ~= 0 then
-        return -1;
+        return module.errors.BUILD_CLIENT_FULL_FAIL, retCode;
     end
 
     validClients[self["name"]] = true;
 
     return true;
 end
+
+registerNewError("CANNOT_READ_SERVER_CA_CRT");
+registerNewError("CANNOT_READ_CLIENT_CA_CRT");
+registerNewError("CANNOT_READ_CLIENT_KEY");
+registerNewError("CANNOT_READ_TLS_CRYPT_KEY");
 
 function Client:generateClientConfig()
     if not self:isValidClient() then
@@ -80,8 +106,8 @@ function Client:generateClientConfig()
     if paramsToLines["remote"] then
         local paramTbl = configFileContent[paramsToLines["remote"]];
 
-        paramTbl["params"][2].val = "carina.szurti.com"; --test IP
-        paramTbl["params"][3].val = 1337; --test Port
+        paramTbl["params"][2].val = "IP_CIM_CSERE_HELYE"; --test IP
+        paramTbl["params"][3].val = 1194; --test Port
     end
 
     local clientConfig = config_handler.write_openvpn_config(configFileContent);
@@ -97,25 +123,25 @@ function Client:generateClientConfig()
     local serverCACrt = general.readAllFileContents(serverCAPath);
 
     if not serverCACrt then
-        return -1;
+        return module.errors.CANNOT_READ_SERVER_CA_CRT;
     end
 
     local clientCACrt = general.readAllFileContents(clientCAPath);
 
     if not clientCACrt then
-        return -2;
+        return module.errors.CANNOT_READ_CLIENT_CA_CRT;
     end
 
     local clientKey = general.readAllFileContents(clientKeyPath);
 
     if not clientKey then
-        return -3;
+        return module.errors.CANNOT_READ_CLIENT_KEY;
     end
 
     local tlsCryptKey = general.readAllFileContents(tlsCryptKeyPath);
 
     if not tlsCryptKey then
-        return -4;
+        return module.errors.CANNOT_READ_TLS_CRYPT_KEY;
     end
 
     clientConfig = clientConfig.."<ca>\n"..serverCACrt.."</ca>\n";
@@ -123,9 +149,11 @@ function Client:generateClientConfig()
     clientConfig = clientConfig.."<key>\n"..clientKey.."</key>\n";
     clientConfig = clientConfig.."<tls-crypt>\n"..tlsCryptKey.."</tls-crypt>\n";
 
-    return clientConfig;
+    return true, clientConfig;
 end
 
+registerNewError("REVOKE_FAIL");
+registerNewError("REVOKE_CRL_UPDATE_FAIL");
 function Client:revoke()
     if not self:isValidClient() then
         return false;
@@ -144,11 +172,11 @@ function Client:revoke()
     local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, envVariables);
 
     if retCode ~= 0 and retCode ~= 1 then
-        return -1;
+        return module.errors.REVOKE_FAIL;
     end
 
     if not module.update_revoke_crl_for_openvpn_daemon() then
-        return -2;
+        return module.errors.REVOKE_CRL_UPDATE_FAIL;
     end
 
     validClients[self["name"]] = nil;
@@ -189,21 +217,31 @@ function module.update_revoke_crl_for_openvpn_daemon()
 end
 
 function module.get_valid_clients()
-    return validClients;
+    if validClients then
+        local ret = {};
+
+        for t, v in pairs(validClients) do
+            table.insert(ret, t);
+        end
+
+        return ret;
+    end
+
+    return false;
 end
 
 local function get_valid_clients_from_PKI_database()
     local retStr, retCode = linux.exec_command_with_proc_ret_code("cat "..general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/index.txt").." | awk '{if($1 == \"V\"){ print $5; } }' | awk -F '/CN=' '{print $2; }'", true);
 
-    local validClients = {};
+    local validClientsFromPKI = {};
 
     for clientName in string.gmatch(retStr, "[^\r\n]+") do
         if clientName ~= serverImpl["openvpn_server_name_in_ca"] then
-            table.insert(validClients, clientName);
+            table.insert(validClientsFromPKI, clientName);
         end
     end
 
-    return validClients;
+    return validClientsFromPKI;
 end
 
 return function(openVPNServerImpl)

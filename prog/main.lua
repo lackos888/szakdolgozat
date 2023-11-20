@@ -9,6 +9,329 @@ local certbotHandler = require("certbotHandler/certbot");
 local iptables = require("iptablesHandler/iptables");
 local general = require("general");
 local inspect = require("inspect");
+local function doOpenVPNInstall(OpenVPNHandler)
+    print("==> Elkezdődött az OpenVPN szerver telepítése, kérlek várj...");
+
+    local installRet, aptRet = OpenVPNHandler.install_openvpn();
+
+    if installRet then
+        print("==> Sikeresen feltelepítésre került az OpenVPN szerver. Nyomjon ENTER-t a folytatáshoz.");
+    else
+        print("==> Hiba történt az OpenVPN szerver feltelepítése közben. Nyomjon ENTER-t a folytatáshoz.");
+        print(tostring(aptRet));
+    end
+    io.read();
+end
+
+local function doOpenVPNStartStop(isRunning, OpenVPNHandler)
+    local func = isRunning and OpenVPNHandler.stop_server or OpenVPNHandler.start_server;
+
+    if isRunning then
+        if func() then
+            print("==> Leállításra került az OpenVPN szerver. Nyomjon ENTER-t a folytatáshoz.");
+        else
+            print("==> Hiba történt az OpenVPN szerver leállítása közben. Nyomjon ENTER-t a folytatáshoz.");
+        end
+    else
+        if func() then
+            print("==> Elindításra került az OpenVPN szerver. Nyomjon ENTER-t a folytatáshoz.");
+        else
+            print("==> Hiba történt az OpenVPN szerver elindítása közben. Nyomjon ENTER-t a folytatáshoz.");
+        end
+    end
+    io.read();
+end
+
+local function doOpenVPNInitOrRefresh(serverImpl)
+    print("==> Szerver inicializálása folyamatban...");
+
+    local retOfInitDirs = serverImpl.init_dirs();
+    local retOfInitialize, possibleError, possibleError2 = false, false, false; --elore definialas a goto miatt
+
+    if not retOfInitDirs then
+        print("==> Nem sikerült az OpenVPN könyvtárának inicializálása! Nyomjon ENTER-t a folytatáshoz.");
+
+        goto serverInitGoto;
+    end
+
+    retOfInitialize, possibleError, possibleError2 = serverImpl.initialize_server();
+
+    if retOfInitialize ~= true then
+        print("==> Hiba történt az OpenVPN szerver initializálása, konfigurálása közben. Nyomjon ENTER-t a folytatáshoz.");
+        print("Hiba: "..tostring(serverImpl.resolveErrorToStr(retOfInitialize)));
+        print("Hiba #2: "..tostring(serverImpl.resolveErrorToStr(possibleError)));
+        print("Hiba #3: "..tostring(serverImpl.resolveErrorToStr(possibleError2)));
+    else
+        print("==> Sikeresen beinicializálásra és bekonfigurálásra került az OpenVPN szerver. Nyomjon ENTER-t a folytatáshoz.");
+    end
+    ::serverInitGoto::
+    io.read();
+end
+
+local function doOpenVPNClientListing(serverImpl)
+    general.clearScreen();
+    serverImpl.init_dirs();
+    serverImpl.initialize_server();
+
+    local clientHandler = serverImpl.client_handler;
+
+    if not clientHandler then
+        print("Nem sikerült lekérdezni a klienseket, mivel még nincs beinicializálva az OpenVPN szerver. Próbálkozzon a konfiguráció frissítésével!");
+        print("Nyomjon ENTER-t a folytatáshoz.");
+
+        goto openvpn_clients_continue;
+    end
+
+    ::openvpn_clients_continue::
+    while true do
+        general.clearScreen();
+
+        local validClients = clientHandler.get_valid_clients();
+
+        print("<==> OpenVPN BEKONFIGURÁLT KLIENSEK <==>");
+
+        if #validClients == 0 then
+            print("Nincs egyetlen bekonfigurált kliens sem, amely hozzáféréssel rendelkezik még. Nyomjon ENTER-t a folytatáshoz.");
+        else
+            for t, v in pairs(validClients) do
+                print("=> "..tostring(t)..".: "..tostring(v));
+            end
+        end
+
+        if #validClients > 0 then
+            print("Amelyik klienst kezelni szeretné, írja be a számát:");
+        end
+        
+        readStr = io.read();
+
+        if readStr == " " or #readStr == 0 then
+            break;
+        end
+
+        if validClients and #validClients ~= 0 then
+            local clientName = validClients[tonumber(readStr)];
+
+            if not clientName then
+                print("=> Hibás sorszám: "..tostring(readStr));
+            else
+                local clientInstance = Client:new(clientName);
+                if not clientInstance:isValidClient() then
+                    print("=> Nem teljes értékű, hibás kliens: "..tostring(clientName));
+                else
+                    local clientSelected = clientInstance;
+
+                    while true do
+                        general.clearScreen();
+                        print("=> Ön a(z) "..tostring(clientSelected.name).." nevű klienst választotta. A lehetőségei:");
+                        local innerCounter = 1;
+                        local printOptionAndIncreaseCounter = function(str)
+                            print(str);
+                            innerCounter = innerCounter + 1;
+                        end
+                        printOptionAndIncreaseCounter(tostring(innerCounter)..". Kliens konfigurációjának kiiratása");
+                        printOptionAndIncreaseCounter(tostring(innerCounter)..". Kliens hozzáférésének visszavonása");
+                        printOptionAndIncreaseCounter(tostring(innerCounter)..". Visszalépés");
+                        
+                        local str = io.read();
+                        local firstChar = str:sub(1, 1);
+
+                        if firstChar == tostring(innerCounter - 1) then
+                            break;
+                        end
+
+                        if firstChar == "1" then
+                            local retOfClientConfigBuild, cfg = clientInstance:generateClientConfig();
+
+                            if retOfClientConfigBuild == true then
+                                print("=> A(z) "..tostring(clientSelected.name).." kliens konfigurációja:");
+                                print(cfg);
+                                print("Nyomjon ENTER-t a folytatáshoz.");
+                            else
+                                print("=> A(z) "..tostring(clientSelected.name).." kliens konfigurációjának lekérdezése közben hiba történt!");
+                                print("Hiba: "..tostring(clientHandler.resolveErrorToStr(retOfClientConfigBuild)));
+                                print("Nyomjon ENTER-t a folytatáshoz.");
+                            end
+                            io.read();
+                        elseif firstChar == "2" then
+                            local retOfRevoke = clientInstance:revoke();
+
+                            if retOfRevoke == true then
+                                print("=> A(z) "..tostring(clientSelected.name).." kliens hozzáférése visszavonásra került! Nyomjon ENTER-t a folytatáshoz.");
+                                io.read();
+                                break;
+                            else
+                                print("=> A(z) "..tostring(clientSelected.name).." kliens hozzáférésének visszavonása közben hiba történt! Nyomjon ENTER-t a folytatáshoz.");
+                                print("Hiba: "..tostring(clientHandler.resolveErrorToStr(retOfRevoke)));
+                                io.read();
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function doOpenVPNClientCreation(serverImpl)
+    general.clearScreen();
+    serverImpl.init_dirs();
+    serverImpl.initialize_server();
+
+    local clientHandler = serverImpl.client_handler;
+    local clientInstance = false;
+    local ret, possibleError = false;
+
+    local clientName = false;
+    local pass = false;
+
+    if not clientHandler then
+        print("Nem sikerült lekérdezni a klienseket, mivel még nincs beinicializálva az OpenVPN szerver. Próbálkozzon a konfiguráció frissítésével!");
+        print("Nyomjon ENTER-t a folytatáshoz.");
+
+        goto openvpn_newclient_continue;
+    end
+
+    print("<==> OpenVPN új kliens bekonfigurálása <==>");
+
+    while true do
+        print("Adja meg az új kliens nevét:");
+
+        clientName = io.read();
+
+        if #clientName == 0 or clientName == " " then
+            print("Üres szöveget nem adhat meg. Nyomjon ENTER-t a továbblépéshez.");
+
+            goto openvpn_newclient_continue;
+        end
+
+        if clientName:match("%W") then
+            print("=> Kizárólag alfanumerikus lehet az új kliens neve...");
+        else
+            break;
+        end
+    end
+
+    while true do
+        print("Adja meg a kliens kulcsának jelszavát:");
+
+        pass = io.read();
+
+        if #pass == 0 or pass == " " then
+            print("=> Nem lehet üres a jelszó!");
+        else
+            break;
+        end
+    end
+
+    general.clearScreen();
+
+    print("<==> OpenVPN új kliens bekonfigurálása: "..tostring(clientName).."<==>");
+
+    clientInstance = Client:new(clientName);
+    ret, possibleError = clientInstance:genKeyAndCRT(pass);
+
+    if ret == true then
+        print("Sikeresen létrehozásra került a(z) "..tostring(clientName).." nevű kliens!");
+
+        local possibleError, retOfClientConfig = clientInstance:generateClientConfig();
+
+        if possibleError == true then
+            print("=> A kliens konfigurációja: ");
+            print(tostring(retOfClientConfig));
+            print("Ne felejtse el kicserélni a konfigurációban az IP-címet a megfelelő IP címre!");
+        else
+            print("=> Hiba történt a kliens konfigurációjának generálása közben: "..tostring(clientHandler.resolveErrorToStr(possibleError)));
+        end
+        print("Nyomjon ENTER-t a folytatáshoz.");
+    else
+        print("Nem sikerült létrehozni a(z) "..tostring(clientName).." nevű klienst. Hiba: "..tostring(clientHandler.resolveErrorToStr(ret)));
+    end
+
+    ::openvpn_newclient_continue::
+    io.read();
+end
+
+while true do
+    general.clearScreen();
+
+    local counter = 1;
+    local printOptionAndIncreaseCounter = function(str)
+        print(str);
+        counter = counter + 1;
+    end
+
+    print('Válassz egy lehetőséget: ');
+
+    printOptionAndIncreaseCounter('=> '..tostring(counter)..'. OpenVPN szerver');
+    printOptionAndIncreaseCounter('=> '..tostring(counter)..'. Webszerverek');
+    printOptionAndIncreaseCounter('=> '..tostring(counter)..'. Tűzfal (iptables)');
+    printOptionAndIncreaseCounter(''..tostring(counter)..'. Kilépés');
+
+    local readStr = io.read();
+    local firstChar = readStr:sub(1, 1);
+
+    if firstChar == tostring(counter - 1) then
+        return;
+    end
+
+    if firstChar == "1" then
+        while true do
+            general.clearScreen();
+
+            print("<=> OpenVPN szerver <=>");
+
+            local isInstalled = OpenVPNHandler.is_openvpn_installed();
+            local isRunning = OpenVPNHandler.is_running();
+            local serverImpl = OpenVPNHandler.server_impl;
+            local errors = serverImpl.errors;
+
+            local counter = 1;
+            local printOptionAndIncreaseCounter = function(str)
+                print(str);
+                counter = counter + 1;
+            end
+
+            if not isInstalled then
+                printOptionAndIncreaseCounter("=> "..tostring(counter)..". Feltelepítés");
+            else  
+                printOptionAndIncreaseCounter("=> "..tostring(counter)..". "..tostring(isRunning and "Leállítás" or "Elindítás"));
+
+                if not serverImpl.is_easy_rsa_installed() then
+                    printOptionAndIncreaseCounter("=> "..tostring(counter)..". Szerver automatikus bekonfigurálása");
+                else
+                    printOptionAndIncreaseCounter("=> "..tostring(counter)..". Szerver konfigurációjának frissítése");
+                    printOptionAndIncreaseCounter("=> "..tostring(counter)..". Bekonfigurált kliensek listázása");
+                    printOptionAndIncreaseCounter("=> "..tostring(counter)..". Új kliens bekonfigurálása");
+                end
+            end
+
+            printOptionAndIncreaseCounter(""..tostring(counter)..". Visszalépés");
+
+            readStr = io.read();
+            firstChar = readStr:sub(1, 1);
+
+            if firstChar == tostring(counter - 1) then
+                break;
+            end
+
+            if not isInstalled then
+                if firstChar == "1" then
+                    doOpenVPNInstall(OpenVPNHandler);
+                end
+            else
+                if firstChar == "1" then --start/stop openvpn server
+                    doOpenVPNStartStop(isRunning, OpenVPNHandler);
+                elseif firstChar == "2" then --init openvpn server/refresh server config
+                    doOpenVPNInitOrRefresh(serverImpl);
+                elseif firstChar == "3" then --list openvpn clients
+                    doOpenVPNClientListing(serverImpl);
+                elseif firstChar == "4" then --create new openvpn client
+                    doOpenVPNClientCreation(serverImpl);
+                end
+            end
+        end
+    end
+end
 
 --initialize handlers
 --OpenVPNHandler.init_dirs();
@@ -19,8 +342,8 @@ local inspect = require("inspect");
 -- print("Apache website creation: "..tostring(apacheHandler.server_impl.create_new_website("lszlo.ltd")));
 -- print("Certbot test: "..tostring(certbotHandler.try_ssl_certification_creation("dns", "lszlo.ltd", "apache")));
 
-print("ssh port: "..tostring(inspect(iptables.get_current_ssh_ports())));
-print("module init: "..tostring(iptables.init_module()));
+--[[ print("ssh port: "..tostring(inspect(iptables.get_current_ssh_ports())));
+print("module init: "..tostring(iptables.init_module())); ]]
 
 --[[
 local configFileContents = general.readAllFileContents("/home/nginx-www/websiteconfigs/lszlo.ltd.conf");

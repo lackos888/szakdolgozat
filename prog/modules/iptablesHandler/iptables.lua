@@ -904,7 +904,7 @@ function module.init_module()
 
     module.currentIPTablesRules = parseRulesRet;
 
-    print("open ports: "..tostring(inspect(module.get_open_ports())));
+--[[     print("open ports: "..tostring(inspect(module.get_open_ports())));
 
     for t, v in pairs(module.get_current_ssh_ports()) do
         module.open_port(nil, "tcp", v);
@@ -927,7 +927,7 @@ function module.init_module()
     print("is outbound filtered: "..tostring(module.check_if_outbound_packets_are_being_filtered_already()));
     print("open ports: "..tostring(inspect(module.get_open_ports())));
 
-    print("iptables: "..tostring(module.iptables_to_string()));
+    print("iptables: "..tostring(module.iptables_to_string())); ]]
 
     return true;
 end

@@ -65,6 +65,35 @@ function module.exec_command(cmd)
     return result;
 end
 
+function module.get_service_status(serviceName)
+    local output, retCode = module.exec_command_with_proc_ret_code("systemctl show -p SubState --value "..tostring(serviceName), true);
+    return output;
+end
+
+function module.is_service_running(serviceName)
+    return module.get_service_status(serviceName) == "running";
+end
+
+function module.is_process_running(name)
+    return module.exec_command_with_proc_ret_code("pidof "..tostring(name)) == 0;
+end
+
+function module.stop_service(serviceName)
+    return module.exec_command_with_proc_ret_code("systemctl stop --quiet "..tostring(serviceName)) == 0;
+end
+
+function module.start_service(serviceName)
+    return module.exec_command_with_proc_ret_code("systemctl start --quiet "..tostring(serviceName)) == 0;
+end
+
+function module.restart_service(serviceName)
+    return module.exec_command_with_proc_ret_code("systemctl restart --quiet "..tostring(serviceName)) == 0;
+end
+
+function module.systemctl_daemon_reload()
+    return module.exec_command_with_proc_ret_code("systemctl daemon-reload") == 0;
+end
+
 function module.check_if_user_exists(userName)
     return module.exec_command_with_proc_ret_code("id "..userName) == 0;
 end
@@ -136,7 +165,7 @@ function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables
         overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine - #newLineChar * 2); --skip return code line
     end
     
-    print("[exec_command_with_proc_ret_code] cmd: "..tostring(cmd).." overallReturn: "..tostring(overallReturn).."|||retCode: "..tostring(retCode));
+    -- print("[exec_command_with_proc_ret_code] cmd: "..tostring(cmd).." overallReturn: "..tostring(overallReturn).."|||retCode: "..tostring(retCode));
 
     if linesReturned then
         return overallReturn, retCode;
