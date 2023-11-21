@@ -207,7 +207,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             return module.errors.CONFIG_INIT_ERROR;
         end
 
-        return true;
+        return true, nil, retLines;
     end
 
     if method == "dns" then
@@ -395,7 +395,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             return module.errors.CONFIG_INIT_ERROR, configInit;
         end
 
-        return true;
+        return true, nil, retLines;
     end
 
     return false;

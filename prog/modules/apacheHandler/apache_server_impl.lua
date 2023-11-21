@@ -23,6 +23,16 @@ local function registerNewError(errorName)
     return true;
 end
 
+function module.resolveErrorToStr(error)
+    for t, v in pairs(module.errors) do
+        if tostring(v) == tostring(error) then
+            return t;
+        end 
+    end
+
+    return "";
+end
+
 local sampleConfigForWebsite = [[
 <VirtualHost *:80>
 # The ServerName directive sets the request scheme, hostname and port that
@@ -122,29 +132,35 @@ function module.get_apache_master_config_path_from_daemon()
     return confPath;
 end
 
-local isInited = false;
+local areDirsInited = false;
+registerNewError("FAILED_TO_INIT_USER");
+registerNewError("FAILED_TO_UPDATE_USER");
+registerNewError("FAILED_TO_CREATE_WEBSITECONFIGS_DIR");
+registerNewError("FAILED_TO_CHOWN_WEBSITECONFIGS_DIR");
+registerNewError("FAILED_TO_CREATE_WWWDATAS_DIR");
+registerNewError("FAILED_TO_CHOWN_WWWDATAS_DIR")
 
 function module.init_dirs()
-    if isInited then
+    if areDirsInited then
         return true;
     end
 
-    isInited = true;
+    areDirsInited = true;
 
     if not module.check_apache_user_existence() then
         local ret, retForUserCreation = module.create_apache_user();
     
         if ret ~= true then
-            print("[apache init] Failed to initialize apache user! Ret: "..tostring(retForUserCreation));
+            print("[apache init_dirs error] Failed to initialize apache user! Ret: "..tostring(retForUserCreation));
 
-            return false;
+            return module.errors.FAILED_TO_INIT_USER;
         end
     end
 
     if not module.update_existing_apache_user() then
-        print("[apache init] Failed to update existing "..tostring(module.apache_user).." user!");
+        print("[apache init_dirs error] Failed to update existing "..tostring(module.apache_user).." user!");
 
-        return false;
+        return module.errors.FAILED_TO_UPDATE_USER;
     end
 
     local apacheHomeDir = module.get_apache_home_dir();
@@ -154,16 +170,16 @@ function module.init_dirs()
 
     if not linux.isdir(pathForConfigs) then
         if not linux.mkdir(pathForConfigs) then
-            print("[apache init] Failed to create website config folder at path "..tostring(pathForConfigs));
+            print("[apache init_dirs error] Failed to create website config folder at path "..tostring(pathForConfigs));
 
-            return false;
+            return module.errors.FAILED_TO_CREATE_WEBSITECONFIGS_DIR;
         end
     end
 
     if not linux.chown(pathForConfigs, module.apache_user, true) then
-        print("[apache init] couldn't chown folder at path "..tostring(pathForConfigs).." for user "..tostring(module.apache_user));
+        print("[apache init_dirs error] couldn't chown folder at path "..tostring(pathForConfigs).." for user "..tostring(module.apache_user));
 
-        return false;
+        return module.errors.FAILED_TO_CHOWN_WEBSITECONFIGS_DIR;
     end
 
     module["website_configs_dir"] = pathForConfigs;
@@ -172,50 +188,66 @@ function module.init_dirs()
 
     if not linux.isdir(pathForWWWDatas) then
         if not linux.mkdir(pathForWWWDatas) then
-            print("[apache init] Failed to create website wwwdata folder at path "..tostring(pathForWWWDatas));
+            print("[apache init_dirs error] Failed to create website wwwdata folder at path "..tostring(pathForWWWDatas));
 
-            return false;
+            return module.errors.FAILED_TO_CREATE_WWWDATAS_DIR;
         end
     end
 
     if not linux.chown(pathForWWWDatas, module.apache_user, true) then
-        print("[apache init] couldn't chown folder at path "..tostring(pathForWWWDatas).." for user "..tostring(module.apache_user));
+        print("[apache init_dirs error] couldn't chown folder at path "..tostring(pathForWWWDatas).." for user "..tostring(module.apache_user));
 
-        return false;
+        return module.errors.FAILED_TO_CHOWN_WEBSITECONFIGS_DI;
     end
 
     module["www_datas_dir"] = pathForWWWDatas;
+    areDirsInited = true;
 
-    return module.initialize_server();
+    return true;
 end
 
+registerNewError("DIRS_ARENT_INITED");
+registerNewError("FAILED_TO_RETRIEVE_MASTER_CONFIG_PATH");
+registerNewError("FAILED_TO_READ_MASTER_CONFIG");
+registerNewError("FAILED_TO_PARSE_MASTER_CONFIG");
+registerNewError("NO_USER_DIRECTIVE_FOUND");
+registerNewError("NO_HTTP_BLOCK_FOUND");
+registerNewError("COULDNT_OPEN_FILE_HANDLE_TO_CONF");
+registerNewError("COULDNT_OPEN_FILE_HANDLE_TO_ENVVARS");
+
 function module.initialize_server()
+    if not areDirsInited then
+        print("[apache initialize_server error] init_dir didn't finish successfully!");
+
+        return module.errors.DIRS_ARENT_INITED;
+    end
+
     local apacheConfFile = module.get_apache_master_config_path_from_daemon();
 
     if not apacheConfFile then
-        print("[apache init] couldn't retrieve apache config file path!");
+        print("[apache initialize_server error] couldn't retrieve apache config file path!");
 
-        return false;
+        return module.errors.FAILED_TO_RETRIEVE_MASTER_CONFIG_PATH;
     end
 
     local apacheFileContents = general.readAllFileContents(apacheConfFile);
 
     if not apacheFileContents then
-        print("[apache init] apache master config at "..tostring(apacheConfFile).." doesn't exist!");
+        print("[apache initialize_server error] apache master config at "..tostring(apacheConfFile).." doesn't exist!");
 
         --TODO: maybe regenerate it?
 
-        return false;
+        return module.errors.FAILED_TO_READ_MASTER_CONFI;
     end
 
     local apacheConfigInstance = apacheConfigHandler:new(apacheFileContents);
 
     if not apacheConfigInstance then
-        print("[apache init] couldn't parse apache master config at "..tostring(apacheConfFile));
+        print("[apache initialize_server error] couldn't parse apache master config at "..tostring(apacheConfFile));
 
         --TODO: maybe regenerate it?
 
-        return false;
+        return module.errors.FAILED_TO_PARSE_MASTER_CONFIG;
     end
 
     local parsedApacheConfDataRaw = apacheConfigInstance:getParsedLines();
@@ -328,9 +360,9 @@ function module.initialize_server()
         local configFileHandle = io.open(apacheConfFile, "w");
         
         if not configFileHandle then
-            print("[apache init] Couldn't overwrite apache config file at path "..tostring(apacheConfFile));
+            print("[apache initialize_server error] Couldn't overwrite apache config file at path "..tostring(apacheConfFile));
 
-            return false;
+            return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_CONF;
         end
 
         configFileHandle:write(apacheConfigInstance:toString());
@@ -344,9 +376,9 @@ function module.initialize_server()
     local envVarsContents = general.readAllFileContents(envVarsPath);
 
     if not envVarsContents then
-        print("[apache init] Couldn't read envvars content at path "..tostring(envVarsPath));
+        print("[apache initialize_server error] Couldn't read envvars content at path "..tostring(envVarsPath));
 
-        return false;
+        return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_ENVVARS;
     end
 
     local apacheEnvVarsInstance = apacheEnvvarsHandler:new(envVarsContents);
@@ -359,9 +391,9 @@ function module.initialize_server()
         local envvarsFileHandle = io.open(envVarsPath, "wb");
 
         if not envvarsFileHandle then
-            print("[apache init] Couldn't open envvars at path "..tostring(envVarsPath).." for writing!");
+            print("[apache initialize_server error] Couldn't open envvars at path "..tostring(envVarsPath).." for writing!");
 
-            return false;
+            return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_ENVVARS;
         end
 
         envvarsFileHandle:write(apacheEnvVarsInstance:toString());
@@ -389,6 +421,14 @@ function module.initialize_server()
     return true;
 end
 
+registerNewError("WEBSITE_ALREADY_EXISTS");
+registerNewError("SAMPLE_WEBSITE_CONFIG_PARSE_ERROR");
+registerNewError("COULDNT_CREATE_WEBSITE_DIR");
+registerNewError("COULDNT_CHOWN_WEBSITE_DIR");
+registerNewError("COULDNT_CREATE_NEW_WEBSITE_CONF");
+registerNewError("COULDNT_CREATE_INDEXHTML");
+registerNewError("COULDNT_CHOWN_INDEXHTML");
+
 module.WEBSITE_ALREADY_EXISTS = -1;
 module.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR = -2;
 
@@ -397,14 +437,14 @@ function module.create_new_website(websiteUrl)
 
     for t, v in pairs(websites) do
         if v.websiteUrl == websiteUrl then
-            return module.WEBSITE_ALREADY_EXISTS;
+            return module.errors.WEBSITE_ALREADY_EXISTS;
         end
     end
 
     local fileConfigInstance = apacheConfigHandler:new(sampleConfigForWebsite);
 
     if not fileConfigInstance then
-        return module.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR;
+        return module.errors.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR;
     end
 
     local paramsToIdx = fileConfigInstance:getParamsToIdx();
@@ -429,14 +469,14 @@ function module.create_new_website(websiteUrl)
         if not linux.mkdir(wwwDataDir) then
             print("[apache website creation] Failed to create website ("..tostring(websiteUrl)..") wwwdata folder at path "..tostring(wwwDataDir));
 
-            return false;
+            return module.errors.COULDNT_CREATE_WEBSITE_DIR;
         end
     end
 
     if not linux.chown(wwwDataDir, module.apache_user, true) then
         print("[apache website creation] couldn't chown folder at path "..tostring(wwwDataDir).." for user "..tostring(module.apache_user));
 
-        return false;
+        return module.errors.COULDNT_CHOWN_WEBSITE_DIR;
     end
 
     local configFileHandle = io.open(websiteConfigFinalPathForApache, "w");
@@ -444,7 +484,7 @@ function module.create_new_website(websiteUrl)
     if not configFileHandle then
         print("[apache website creation] couldn't create new website config at path "..tostring(websiteConfigFinalPathForApache));
 
-        return false;
+        return module.errors.COULDNT_CREATE_NEW_WEBSITE_CONF;
     end
 
     configFileHandle:write(fileConfigInstance:toString());
@@ -457,7 +497,7 @@ function module.create_new_website(websiteUrl)
     if not indexFileHandle then
         print("[apache website creation] couldn't create new website index.html at path "..tostring(indexPath));
 
-        return false;
+        return module.errors.COULDNT_CREATE_INDEXHTML;
     end
 
     indexFileHandle:write("Hey, i'm "..tostring(websiteUrl).."!");
@@ -467,13 +507,15 @@ function module.create_new_website(websiteUrl)
     if not linux.chown(indexPath, module.apache_user, true) then
         print("[apache website creation] couldn't chown index.html at path "..tostring(indexPath).." for user "..tostring(module.apache_user));
 
-        return false;
+        return module.errors.COULDNT_CHOWN_INDEXHTML;
     end
 
     return true;
 end
 
-module.WEBSITE_DOESNT_EXIST = -1;
+registerNewError("WEBSITE_DOESNT_EXIST");
+registerNewError("COULDNT_DELETE_WEBSITE_DIR");
+registerNewError("COULDNT_DELETE_WEBSITE_CONFIG");
 
 function module.delete_website(websiteUrl)
     local websites = module.get_current_available_websites();
@@ -488,19 +530,19 @@ function module.delete_website(websiteUrl)
     end
 
     if not foundWebsiteData then
-        return module.WEBSITE_DOESNT_EXIST;
+        return module.errors.WEBSITE_DOESNT_EXIST;
     end
 
     if not linux.deleteDirectory(foundWebsiteData.rootPath) then
         print("[apache website deletion] failed to delete folder at path "..tostring(foundWebsiteData.rootPath).." for website "..tostring(websiteUrl));
 
-        return false;
+        return module.errors.COULDNT_DELETE_WEBSITE_DIR;
     end
 
     if not linux.deleteFile(foundWebsiteData.configPath) then
         print("[apache website deletion] failed to delete configuration file at path "..tostring(foundWebsiteData.configPath).." for website "..tostring(websiteUrl));
 
-        return false;
+        return module.errors.COULDNT_DELETE_WEBSITE_CONFI;
     end
 
     return true;
@@ -569,19 +611,20 @@ function module.get_current_available_websites(dirPath)
     return websites;
 end
 
-module.CONFIG_FILE_COULDNT_BE_READ = -4;
-module.CONFIG_FILE_COULDNT_BE_PARSED = -5;
-module.CONFIG_FILE_COULDNT_BE_WRITTEN = -5;
-module.COULDNT_ENABLE_HEADERS_MODULE = -6;
-module.COULDNT_ENABLE_SSL_MODULE = -6;
+registerNewError("COULDNT_ENABLE_HEADERS_MODULE");
+registerNewError("COULDNT_ENABLE_SSL_MODULE");
+registerNewError("CONFIG_FILE_COULDNT_BE_READ");
+registerNewError("CONFIG_FILE_COULDNT_BE_PARSED");
+registerNewError("CONFIG_FILE_COULDNT_BE_WRITTEN");
+registerNewError("COULDNT_COPY_SAMPLE_APACHE_CONFIG");
 
 function module.init_ssl_for_website(webUrl, certDetails)
     if linux.exec_command_with_proc_ret_code("a2enmod headers") ~= 0 then
-        return module.COULDNT_ENABLE_HEADERS_MODULE;
+        return module.errors.COULDNT_ENABLE_HEADERS_MODULE;
     end
 
     if linux.exec_command_with_proc_ret_code("a2enmod ssl") ~= 0 then
-        return module.COULDNT_ENABLE_SSL_MODULE;
+        return module.errors.COULDNT_ENABLE_SSL_MODULE;
     end
 
     local websites = module.get_current_available_websites();
@@ -596,19 +639,19 @@ function module.init_ssl_for_website(webUrl, certDetails)
     end
 
     if not data then
-        return module.WEBSITE_DOESNT_EXIST;
+        return module.errors.WEBSITE_DOESNT_EXIST;
     end
 
     local configFileContents = general.readAllFileContents(data.configPath);
 
     if not configFileContents then
-        return module.CONFIG_FILE_COULDNT_BE_READ;
+        return module.errors.CONFIG_FILE_COULDNT_BE_READ;
     end
 
     local configInstance = apacheConfigHandler:new(configFileContents);
 
     if not configInstance then
-        return module.CONFIG_FILE_COULDNT_BE_PARSED;
+        return module.errors.CONFIG_FILE_COULDNT_BE_PARSED;
     end
 
     local rawData = configInstance:getParsedLines();
@@ -618,6 +661,56 @@ function module.init_ssl_for_website(webUrl, certDetails)
 
     local includeIdx = paramsToIdx["Include"];
     local pathForLetsEncryptApacheConfig = "/etc/letsencrypt/options-ssl-apache.conf";
+
+    if not linux.exists(pathForLetsEncryptApacheConfig) then
+        local foundStuff = false;
+
+        local retLines, retCode = linux.exec_command_with_proc_ret_code("find / -name 'options-ssl-apache.conf'", true, nil, true);
+
+        if retLines then
+            local linesIterator = retLines:gmatch("[^\r\n]+");
+
+            for line in linesIterator do
+                if line == pathForLetsEncryptApacheConfig then
+                    foundStuff = true;
+
+                    break;
+                end
+
+                if linux.copy(line, pathForLetsEncryptApacheConfig) then
+                    foundStuff = true;
+
+                    break;
+                else
+                    return module.errors.COULDNT_COPY_SAMPLE_APACHE_CONFIG;
+                end
+            end
+        end
+
+        if not foundStuff then
+            retLines, retCode = linux.exec_command_with_proc_ret_code("find / -name 'current-options-ssl-apache.conf'", true, nil, true);
+
+            if retLines then
+                local linesIterator = retLines:gmatch("[^\r\n]+");
+
+                for line in linesIterator do
+                    if line == pathForLetsEncryptApacheConfig then
+                        foundStuff = true;
+
+                        break;
+                    end
+
+                    if linux.copy(line, pathForLetsEncryptApacheConfig) then
+                        foundStuff = true;
+
+                        break;
+                    else
+                        return module.errors.COULDNT_COPY_SAMPLE_APACHE_CONFIG;
+                    end
+                end
+            end
+        end
+    end
 
     if includeIdx then
         for t, v in pairs(includeIdx) do
@@ -851,7 +944,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
     local fileHandle = io.open(data.configPath, "wb");
 
     if not fileHandle then
-        return module.CONFIG_FILE_COULDNT_BE_WRITTEN;
+        return module.errors.CONFIG_FILE_COULDNT_BE_WRITTEN;
     end
 
     fileHandle:write(configInstance:toString());

@@ -479,6 +479,9 @@ local function doWebserverMenu(webserverType)
 
                                     if retOfSSLCreation == true then
                                         print("=> Sikeresen létrehozásra került az SSL certificate "..tostring(challengeTypeDisplayStr).." challenge segítségével a(z) "..tostring(websiteData.websiteUrl).." weboldal számára!");
+                                        if possibleRetLinesFromCertbot then
+                                            print(tostring(possibleRetLinesFromCertbot));
+                                        end
                                         print("Nyomjon ENTER-t a folytatáshoz.");
                                         io.read();
                                         break;
