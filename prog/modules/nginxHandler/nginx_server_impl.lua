@@ -66,36 +66,62 @@ local module = {
     ["nginx_user"] = "nginx-www",
     ["nginx_user_comment"] = "User for running nginx daemon & websites & PHP-FPM. For higher security, use different user for PHP-FPM per website",
     ["nginx_user_shell"] = "/bin/false",
-    ["base_dir"] = nil
+    ["base_dir"] = nil,
+    ["errors"] = {}
 };
+
+local bootstrapModule = false;
+
+local errorCounter = 0;
+local function registerNewError(errorName)
+    errorCounter = errorCounter + 1;
+
+    module.errors[errorName] = errorCounter * -1;
+
+    return true;
+end
+
+function module.resolveErrorToStr(error)
+    for t, v in pairs(module.errors) do
+        if tostring(v) == tostring(error) then
+            return t;
+        end 
+    end
+
+    return "";
+end
 
 function module.formatPathInsideBasedir(path)
     return general.concatPaths(module["base_dir"], "/", path);
 end
 
-local isInited = false;
+local areDirsInited = false;
+registerNewError("FAILED_TO_INIT_USER");
+registerNewError("FAILED_TO_UPDATE_USER");
+registerNewError("FAILED_TO_CREATE_WEBSITECONFIGS_DIR");
+registerNewError("FAILED_TO_CHOWN_WEBSITECONFIGS_DIR");
+registerNewError("FAILED_TO_CREATE_WWWDATAS_DIR");
+registerNewError("FAILED_TO_CHOWN_WWWDATAS_DIR");
 
 function module.init_dirs()
-    if isInited then
+    if areDirsInited then
         return true;
     end
-
-    isInited = true;
 
     if not module.check_nginx_user_existence() then
         local ret, retForUserCreation = module.create_nginx_user();
     
         if ret ~= true then
-            print("[nginx init] Failed to initialize nginx user! Ret: "..tostring(retForUserCreation));
+            print("[nginx init_dirs error] Failed to initialize nginx user! Ret: "..tostring(retForUserCreation));
 
-            return false;
+            return module.errors.FAILED_TO_INIT_USER;
         end
     end
 
     if not module.update_existing_nginx_user() then
-        print("[nginx init] Failed to update existing "..tostring(module.nginx_user).." user!");
+        print("[nginx init_dirs error] Failed to update existing "..tostring(module.nginx_user).." user!");
 
-        return false;
+        return module.errors.FAILED_TO_UPDATE_USER;
     end
 
     local nginxHomeDir = module.get_nginx_home_dir();
@@ -105,16 +131,16 @@ function module.init_dirs()
 
     if not linux.isdir(pathForConfigs) then
         if not linux.mkdir(pathForConfigs) then
-            print("[nginx init] Failed to create website config folder at path "..tostring(pathForConfigs));
+            print("[nginx init_dirs error] Failed to create website config folder at path "..tostring(pathForConfigs));
 
-            return false;
+            return module.errors.FAILED_TO_CREATE_WEBSITECONFIGS_DIR;
         end
     end
 
     if not linux.chown(pathForConfigs, module.nginx_user, true) then
-        print("[nginx init] couldn't chown folder at path "..tostring(pathForConfigs).." for user "..tostring(module.nginx_user));
+        print("[nginx init_dirs error] couldn't chown folder at path "..tostring(pathForConfigs).." for user "..tostring(module.nginx_user));
 
-        return false;
+        return module.errors.FAILED_TO_CHOWN_WEBSITECONFIGS_DIR;
     end
 
     module["website_configs_dir"] = pathForConfigs;
@@ -123,21 +149,23 @@ function module.init_dirs()
 
     if not linux.isdir(pathForWWWDatas) then
         if not linux.mkdir(pathForWWWDatas) then
-            print("[nginx init] Failed to create website wwwdata folder at path "..tostring(pathForWWWDatas));
+            print("[nginx init_dirs error] Failed to create website wwwdata folder at path "..tostring(pathForWWWDatas));
 
-            return false;
+            return module.errors.FAILED_TO_CREATE_WWWDATAS_DIR;
         end
     end
 
     if not linux.chown(pathForWWWDatas, module.nginx_user, true) then
-        print("[nginx init] couldn't chown folder at path "..tostring(pathForWWWDatas).." for user "..tostring(module.nginx_user));
+        print("[nginx init_dirs error] couldn't chown folder at path "..tostring(pathForWWWDatas).." for user "..tostring(module.nginx_user));
 
-        return false;
+        return module.errors.FAILED_TO_CHOWN_WEBSITECONFIGS_DIR;
     end
 
     module["www_datas_dir"] = pathForWWWDatas;
 
-    return module.initialize_server();
+    areDirsInited = true;
+
+    return true;
 end
 
 function module.check_nginx_user_existence()
@@ -186,33 +214,47 @@ function module.get_nginx_master_config_path_from_daemon()
     return confPath;
 end
 
+registerNewError("DIRS_ARENT_INITED");
+registerNewError("FAILED_TO_RETRIEVE_MASTER_CONFIG_PATH");
+registerNewError("FAILED_TO_READ_MASTER_CONFIG");
+registerNewError("FAILED_TO_PARSE_MASTER_CONFIG");
+registerNewError("NO_USER_DIRECTIVE_FOUND");
+registerNewError("NO_HTTP_BLOCK_FOUND");
+registerNewError("COULDNT_OPEN_FILE_HANDLE_TO_CONF");
+
 function module.initialize_server()
+    if not areDirsInited then
+        print("[nginx initialize_server error] init_dir didn't finish successfully!");
+
+        return module.errors.DIRS_ARENT_INITED;
+    end
+
     local nginxConfFile = module.get_nginx_master_config_path_from_daemon();
 
     if not nginxConfFile then
-        print("[nginx init] couldn't retrieve nginx config file path!");
+        print("[nginx initialize_server error] couldn't retrieve nginx config file path!");
 
-        return false;
+        return module.errors.FAILED_TO_RETRIEVE_MASTER_CONFIG_PATH;
     end
 
     local nginxFileContents = general.readAllFileContents(nginxConfFile);
 
     if not nginxFileContents then
-        print("[nginx init] nginx master config at "..tostring(nginxConfFile).." doesn't exist!");
+        print("[nginx initialize_server error] nginx master config at "..tostring(nginxConfFile).." doesn't exist!");
 
         --TODO: maybe regenerate it?
 
-        return false;
+        return module.errors.FAILED_TO_READ_MASTER_CONFIG;
     end
 
     local nginxConfigInstance = nginxConfigHandler:new(nginxFileContents);
 
     if not nginxConfigInstance then
-        print("[nginx init] couldn't parse nginx master config at "..tostring(nginxConfFile));
+        print("[nginx initialize_server error] couldn't parse nginx master config at "..tostring(nginxConfFile));
 
         --TODO: maybe regenerate it?
 
-        return false;
+        return module.errors.FAILED_TO_PARSE_MASTER_CONFIG;
     end
 
     local parsedNginxConfDataRaw = nginxConfigInstance:getParsedLines();
@@ -226,9 +268,9 @@ function module.initialize_server()
         local userIdx = parsedNginxConfDataLines["user"];
 
         if #userIdx > 1 then
-            print("[nginx init] Error while parsing nginx config, user directive should only be once in the config!");
+            print("[nginx initialize_server error] Error while parsing nginx config, user directive should only be once in the config!");
 
-            return false;
+            return module.errors.NO_USER_DIRECTIVE_FOUND;
         end
 
         userIdx = userIdx[1];
@@ -271,9 +313,9 @@ function module.initialize_server()
         local httpBlockEnd = parsedNginxConfDataLines["blockend:http"];
 
         if not httpBlockEnd or #httpBlockEnd == 0 then
-            print("[nginx init error] there is no http block inside config file at path: "..tostring(nginxConfFile));
+            print("[nginx initialize_server error] there is no http block inside config file at path: "..tostring(nginxConfFile));
 
-            return false;
+            return module.errors.NO_HTTP_BLOCK_FOUND;
         end
 
         local newPos = httpBlockEnd[1];
@@ -292,9 +334,9 @@ function module.initialize_server()
         local configFileHandle = io.open(nginxConfFile, "w");
         
         if not configFileHandle then
-            print("[nginx init] Couldn't overwrite nginx config file at path "..tostring(nginxConfFile));
+            print("[nginx initialize_server error] Couldn't overwrite nginx config file at path "..tostring(nginxConfFile));
 
-            return false;
+            return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_CONF;
         end
 
         configFileHandle:write(nginxConfigInstance:toString());
@@ -317,22 +359,31 @@ function module.initialize_server()
     return true;
 end
 
-module.WEBSITE_ALREADY_EXISTS = -1;
-module.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR = -2;
+registerNewError("WEBSITE_ALREADY_EXISTS");
+registerNewError("SAMPLE_WEBSITE_CONFIG_PARSE_ERROR");
+registerNewError("COULDNT_CREATE_WEBSITE_DIR");
+registerNewError("COULDNT_CHOWN_WEBSITE_DIR");
+registerNewError("COULDNT_CREATE_NEW_WEBSITE_CONF");
+registerNewError("COULDNT_CREATE_INDEXHTML");
+registerNewError("COULDNT_CHOWN_INDEXHTML");
 
 function module.create_new_website(websiteUrl)
+    if not areDirsInited then
+        return module.errors.DIRS_ARENT_INITED;
+    end
+
     local websites = module.get_current_available_websites();
 
     for t, v in pairs(websites) do
         if v.websiteUrl == websiteUrl then
-            return module.WEBSITE_ALREADY_EXISTS;
+            return module.errors.WEBSITE_ALREADY_EXISTS;
         end
     end
 
     local fileConfigInstance = nginxConfigHandler:new(sampleConfigForWebsite);
 
     if not fileConfigInstance then
-        return module.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR;
+        return module.errors.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR;
     end
 
     local paramsToIdx = fileConfigInstance:getParamsToIdx();
@@ -357,14 +408,14 @@ function module.create_new_website(websiteUrl)
         if not linux.mkdir(wwwDataDir) then
             print("[nginx website creation] Failed to create website ("..tostring(websiteUrl)..") wwwdata folder at path "..tostring(wwwDataDir));
 
-            return false;
+            return module.errors.COULDNT_CREATE_WEBSITE_DIR;
         end
     end
 
     if not linux.chown(wwwDataDir, module.nginx_user, true) then
         print("[nginx website creation] couldn't chown folder at path "..tostring(wwwDataDir).." for user "..tostring(module.nginx_user));
 
-        return false;
+        return module.errors.COULDNT_CHOWN_WEBSITE_DIR;
     end
 
     local configFileHandle = io.open(websiteConfigFinalPathForNGINX, "w");
@@ -372,7 +423,7 @@ function module.create_new_website(websiteUrl)
     if not configFileHandle then
         print("[nginx website creation] couldn't create new website config at path "..tostring(websiteConfigFinalPathForNGINX));
 
-        return false;
+        return module.errors.COULDNT_CREATE_NEW_WEBSITE_CONF;
     end
 
     configFileHandle:write(fileConfigInstance:toString());
@@ -385,7 +436,7 @@ function module.create_new_website(websiteUrl)
     if not indexFileHandle then
         print("[nginx website creation] couldn't create new website index.html at path "..tostring(indexPath));
 
-        return false;
+        return module.errors.COULDNT_CREATE_INDEXHTML;
     end
 
     indexFileHandle:write("Hey, i'm "..tostring(websiteUrl).."!");
@@ -395,13 +446,15 @@ function module.create_new_website(websiteUrl)
     if not linux.chown(indexPath, module.nginx_user, true) then
         print("[nginx website creation] couldn't chown index.html at path "..tostring(indexPath).." for user "..tostring(module.nginx_user));
 
-        return false;
+        return module.errors.COULDNT_CHOWN_INDEXHTML;
     end
 
     return true;
 end
 
-module.WEBSITE_DOESNT_EXIST = -1;
+registerNewError("WEBSITE_DOESNT_EXIST");
+registerNewError("COULDNT_DELETE_WEBSITE_DIR");
+registerNewError("COULDNT_DELETE_WEBSITE_CONFIG");
 
 function module.delete_website(websiteUrl)
     local websites = module.get_current_available_websites();
@@ -416,19 +469,19 @@ function module.delete_website(websiteUrl)
     end
 
     if not foundWebsiteData then
-        return module.WEBSITE_DOESNT_EXIST;
+        return module.errors.WEBSITE_DOESNT_EXIST;
     end
 
     if not linux.deleteDirectory(foundWebsiteData.rootPath) then
         print("[nginx website deletion] failed to delete folder at path "..tostring(foundWebsiteData.rootPath).." for website "..tostring(websiteUrl));
 
-        return false;
+        return module.errors.COULDNT_DELETE_WEBSITE_DIR;
     end
 
     if not linux.deleteFile(foundWebsiteData.configPath) then
         print("[nginx website deletion] failed to delete configuration file at path "..tostring(foundWebsiteData.configPath).." for website "..tostring(websiteUrl));
 
-        return false;
+        return module.errors.COULDNT_DELETE_WEBSITE_CONFIG;
     end
 
     return true;
@@ -486,9 +539,10 @@ function module.get_current_available_websites()
     return websites;
 end
 
-module.CONFIG_FILE_COULDNT_BE_READ = -4;
-module.CONFIG_FILE_COULDNT_BE_PARSED = -5;
-module.CONFIG_FILE_COULDNT_BE_WRITTEN = -5;
+registerNewError("CONFIG_FILE_COULDNT_BE_READ");
+registerNewError("CONFIG_FILE_COULDNT_BE_PARSED");
+registerNewError("CONFIG_FILE_COULDNT_BE_WRITTEN");
+registerNewError("COULDNT_COPY_SAMPLE_NGINX_CONFIG");
 
 function module.init_ssl_for_website(webUrl, certDetails)
     local websites = module.get_current_available_websites();
@@ -503,19 +557,19 @@ function module.init_ssl_for_website(webUrl, certDetails)
     end
 
     if not data then
-        return module.WEBSITE_DOESNT_EXIST;
+        return module.errors.WEBSITE_DOESNT_EXIST;
     end
 
     local configFileContents = general.readAllFileContents(data.configPath);
 
     if not configFileContents then
-        return module.CONFIG_FILE_COULDNT_BE_READ;
+        return module.errors.CONFIG_FILE_COULDNT_BE_READ;
     end
 
     local configInstance = nginxConfigHandler:new(configFileContents);
 
     if not configInstance then
-        return module.CONFIG_FILE_COULDNT_BE_PARSED;
+        return module.errors.CONFIG_FILE_COULDNT_BE_PARSED;
     end
 
     local rawData = configInstance:getParsedLines();
@@ -533,6 +587,26 @@ function module.init_ssl_for_website(webUrl, certDetails)
     local includeIdx = paramsToIdx["include"];
     local letsEncryptIncludeFound = false;
     local letsEncryptIncludePath = "/etc/letsencrypt/options-ssl-nginx.conf";
+
+    if not linux.exists(letsEncryptIncludePath) then
+        local retLines, retCode = linux.exec_command_with_proc_ret_code("find / -name 'options-ssl-nginx.conf'", true, nil, true);
+
+        if retLines then
+            local linesIterator = retLines:gmatch("[^\r\n]+");
+
+            for line in linesIterator do
+                if line == letsEncryptIncludePath then
+                    break;
+                end
+
+                if linux.copy(line, letsEncryptIncludePath) then
+                    break;
+                else
+                    return module.errors.COULDNT_COPY_SAMPLE_NGINX_CONFIG;
+                end
+            end
+        end
+    end
 
     if includeIdx then
         for _, v in pairs(includeIdx) do
@@ -691,7 +765,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
     local fileHandle = io.open(data.configPath, "wb");
 
     if not fileHandle then
-        return module.CONFIG_FILE_COULDNT_BE_WRITTEN;
+        return module.errors.CONFIG_FILE_COULDNT_BE_WRITTEN;
     end
 
     fileHandle:write(configInstance:toString());
@@ -701,7 +775,20 @@ function module.init_ssl_for_website(webUrl, certDetails)
     -- print("<=========>SSL ENABLED CONFIG<==============>");
     -- print(tostring(configInstance:toString()));
 
+    if module.is_running() then
+        module.stop_server();
+        module.start_server();
+    end
+
     return true;
 end
 
-return module;
+return function(_bootstrapModule)
+    bootstrapModule = _bootstrapModule;
+
+    module.is_running = bootstrapModule.is_running;
+    module.stop_server = bootstrapModule.stop_server;
+    module.start_server = bootstrapModule.start_server;
+
+    return module;
+end

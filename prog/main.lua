@@ -7,6 +7,7 @@ local apacheHandler = require("apacheHandler/apache");
 local nginxConfigHandlerObject = require("nginxHandler/nginx_config_handler");
 local certbotHandler = require("certbotHandler/certbot");
 local iptables = require("iptablesHandler/iptables");
+local certbot = require("certbotHandler/certbot");
 local general = require("general");
 local inspect = require("inspect");
 local function doOpenVPNInstall(OpenVPNHandler)
@@ -42,8 +43,12 @@ local function doOpenVPNStartStop(isRunning, OpenVPNHandler)
     io.read();
 end
 
-local function doOpenVPNInitOrRefresh(serverImpl)
+local function doOpenVPNInitOrRefresh(isRunning, serverImpl)
     print("==> Szerver inicializálása folyamatban...");
+
+    if isRunning then
+        serverImpl.stop_server();
+    end
 
     local retOfInitDirs = serverImpl.init_dirs();
     local retOfInitialize, possibleError, possibleError2 = false, false, false; --elore definialas a goto miatt
@@ -55,6 +60,10 @@ local function doOpenVPNInitOrRefresh(serverImpl)
     end
 
     retOfInitialize, possibleError, possibleError2 = serverImpl.initialize_server();
+
+    if isRunning then
+        serverImpl.start_server();
+    end
 
     if retOfInitialize ~= true then
         print("==> Hiba történt az OpenVPN szerver initializálása, konfigurálása közben. Nyomjon ENTER-t a folytatáshoz.");
@@ -93,6 +102,8 @@ local function doOpenVPNClientListing(serverImpl)
         if #validClients == 0 then
             print("Nincs egyetlen bekonfigurált kliens sem, amely hozzáféréssel rendelkezik még. Nyomjon ENTER-t a folytatáshoz.");
         else
+            print("Visszalépéshez nyomjon ENTER-t.");
+
             for t, v in pairs(validClients) do
                 print("=> "..tostring(t)..".: "..tostring(v));
             end
@@ -251,6 +262,308 @@ local function doOpenVPNClientCreation(serverImpl)
     io.read();
 end
 
+local function doWebserverMenu(webserverType)
+    while true do
+        general.clearScreen();
+
+        local webserverBootstrapModule = webserverType == "apache" and apacheHandler or nginxHandler;
+
+        local isInstalled = webserverBootstrapModule.is_installed();
+        local isRunning = webserverBootstrapModule.is_running();
+        local serverImpl = webserverBootstrapModule.server_impl;
+        local errors = serverImpl.errors;
+
+        local counter = 1;
+        local printOptionAndIncreaseCounter = function(str)
+            print(str);
+            counter = counter + 1;
+        end
+
+        local readStr = "";
+        local firstChar = "";
+
+        local currentWebserverType = tostring(webserverType == "apache" and "Apache" or "nginx");
+
+        print("<=> "..currentWebserverType.." szerver <=>");
+
+        if not isInstalled then
+            printOptionAndIncreaseCounter("=> "..tostring(counter)..". Feltelepítés");
+        else
+            printOptionAndIncreaseCounter("=> "..tostring(counter)..". "..tostring(isRunning and "Leállítás" or "Elindítás"));
+            printOptionAndIncreaseCounter("=> "..tostring(counter)..". Jelenlegi weboldalak kezelése");
+            printOptionAndIncreaseCounter("=> "..tostring(counter)..". Új weboldal létrehozása");
+        end
+
+        printOptionAndIncreaseCounter(""..tostring(counter)..". Visszalépés");
+
+        readStr = io.read();
+        firstChar = readStr:sub(1, 1);
+
+        if firstChar == tostring(counter - 1) then
+            break;
+        end
+
+        if not isInstalled then
+            if firstChar == "1" then --install
+                general.clearScreen();
+                print("=> "..tostring(webserverType).." telepítésének megkezdése...");
+
+                local installRet, additionalError = webserverBootstrapModule.install();
+
+                if installRet then
+                    print("A(z) "..tostring(webserverType).." webszerver sikeresen telepítésre került. Nyomjon ENTER-t a folytatáshoz.");
+                else
+                    print("Nem sikerült felrakni a(z) "..tostring(webserverType).." webszervert!");
+                    print(tostring(additionalError));
+                    print("Nyomjon ENTER-t a folytatáshoz.");
+                end
+
+                io.read();
+            end
+        else
+            if firstChar == "1" then --start/stop
+                general.clearScreen();
+
+                if isRunning then
+                    print(tostring(webserverType).." webszerver leállítása...");
+
+                    if webserverBootstrapModule.stop_server() then
+                        print("=> "..tostring(webserverType).." sikeresen leállításra került!");
+                    else
+                        print("=> Hiba történt a(z) "..tostring(webserverType).." leállítása közben!");
+                    end
+                else
+                    print(tostring(webserverType).." webszerver elindítása...");
+
+                    if webserverBootstrapModule.start_server() then
+                        print("=> "..tostring(webserverType).." sikeresen elindításra került!");
+                    else
+                        print("=> Hiba történt a(z) "..tostring(webserverType).." elindítása közben!");
+                    end
+                end
+
+                print("Nyomjon ENTER-t a folytatáshoz.");
+                io.read();
+            elseif firstChar == "2" then --manage current websites
+                if not serverImpl.init_dirs() or not serverImpl.initialize_server() then
+                    print("Nem sikerült inicializálni a(z) "..tostring(webserverType).." webszervert!");
+                    print("Nyomjon ENTER-t a folytatáshoz.");
+                    io.read();
+                    goto continueWebsiteMainMenu;
+                end
+
+                local counter = 1;
+                local printOptionAndIncreaseCounter = function(str)
+                    print(str);
+                    counter = counter + 1;
+                end
+
+                while true do
+                    general.clearScreen();
+
+                    local websites = serverImpl.get_current_available_websites();
+
+                    if #websites == 0 then
+                        print("Nincs még egyetlen weboldal sem létrehozva. Hozzon létre egyet először.");
+                        print("Nyomjon ENTER-t a folytatáshoz.");
+                        io.read();
+                        goto continueWebsiteMainMenu;
+                    end
+
+                    print("<==> "..tostring(webserverType).." jelenlegi weboldalak <==>");
+                    print("A visszalépéshez nyomjon ENTER-t.");
+
+                    for t, v in pairs(websites) do
+                        print("=> "..tostring(t)..". "..tostring(v.websiteUrl));
+                    end
+
+                    readStr = io.read();
+                    firstChar = readStr:sub(1, 1);
+
+                    if readStr == " " or #readStr == 0 then
+                        break;
+                    end
+
+                    local idx = tonumber(readStr);
+                    local websiteData = websites[idx];
+
+                    if not websiteData then
+                        print("Hibás weboldal sorszám: "..tostring(readStr));
+
+                        goto continueWebsite;
+                    end
+
+                    while true do
+                        general.clearScreen();
+
+                        counter = 1;
+
+                        print("<==> A kiválasztott weboldal: "..tostring(websiteData.websiteUrl).." rootPath: "..tostring(websiteData.rootPath).." configPath: "..tostring(websiteData.configPath).." <==>");
+                        printOptionAndIncreaseCounter("=> "..tostring(counter)..". Weboldal törlése");
+                        printOptionAndIncreaseCounter("=> "..tostring(counter)..". Weboldal SSL initializációja Let's Encrypt segítségével");
+                        printOptionAndIncreaseCounter("=> "..tostring(counter)..". Visszalépés");
+
+                        readStr = io.read();
+                        firstChar = readStr:sub(1, 1);
+
+                        if readStr == " " or #readStr == 0 or firstChar == tostring(counter - 1) then
+                            break;
+                        end
+
+                        if firstChar == "1" then
+                            general.clearScreen();
+
+                            print("=> "..tostring(websiteData.websiteUrl).." weboldal törlése...");
+
+                            local websiteDeletionRet = serverImpl.delete_website(websiteData.websiteUrl);
+
+                            if websiteDeletionRet == true then
+                                if isRunning then
+                                    serverImpl.stop_server();
+                                    serverImpl.start_server();
+                                end
+
+                                print("Sikeresen törlésre került a(z) "..tostring(websiteData.websiteUrl).." weboldal!");
+                            else
+                                print("Hiba történt a(z) "..tostring(websiteData.websiteUrl).." weboldal törlése közben!");
+                                print("Hiba: "..tostring(serverImpl.resolveErrorToStr(websiteDeletionRet)));
+                            end
+
+                            print("Nyomjon ENTER-t a folytatáshoz.");
+                            io.read();
+                            break;
+                        elseif firstChar == "2" then
+                            while true do
+                                general.clearScreen();
+
+                                print("=> "..tostring(websiteData.websiteUrl).." weboldal SSL initializációjának lehetőségei: ");
+
+                                counter = 1;
+
+                                printOptionAndIncreaseCounter("=> "..tostring(counter)..". HTTP-01 challenge");
+                                printOptionAndIncreaseCounter("=> "..tostring(counter)..". DNS-01 challenge");
+                                printOptionAndIncreaseCounter("=> "..tostring(counter)..". Visszalépés");
+
+                                readStr = io.read();
+                                firstChar = readStr:sub(1, 1);
+
+                                if readStr == " " or #readStr == 0 or firstChar == tostring(counter - 1) then
+                                    goto continueWebsiteInnerLoop;
+                                end
+
+                                local challengeType = false;
+                                local challengeTypeDisplayStr = false;
+
+                                if firstChar == "1" then
+                                    challengeType = "http-01";
+                                    challengeTypeDisplayStr = "HTTP-01";
+                                elseif firstChar == "2" then
+                                    challengeType = "dns";
+                                    challengeTypeDisplayStr = "DNS-01";
+                                end
+
+                                if challengeType then
+                                    general.clearScreen();
+
+                                    local certbotInitRet = certbot.init();
+
+                                    if not certbotInitRet then
+                                        print("Hiba történt a certbot inicializálása közben!");
+                                        print("Hiba: "..tostring(certbotInitRet));
+                                        goto continueWebsiteInnerLoop;
+                                    end
+                                    
+                                    print("=> SSL certificate létrehozása "..tostring(challengeTypeDisplayStr).." challenge segítségével a(z) "..tostring(websiteData.websiteUrl).." weboldal számára...");
+
+                                    local retOfSSLCreation, possibleRetCode, possibleRetLinesFromCertbot = certbot.try_ssl_certification_creation(challengeType, tostring(websiteData.websiteUrl), webserverType);
+
+                                    if retOfSSLCreation == true then
+                                        print("=> Sikeresen létrehozásra került az SSL certificate "..tostring(challengeTypeDisplayStr).." challenge segítségével a(z) "..tostring(websiteData.websiteUrl).." weboldal számára!");
+                                        print("Nyomjon ENTER-t a folytatáshoz.");
+                                        io.read();
+                                        break;
+                                    else
+                                        print("=> Hiba történt az SSL certificate ("..tostring(challengeTypeDisplayStr)..") létrehozása közben a(z) "..tostring(websiteData.websiteUrl).." weboldalnál!");
+                                        print("Hiba: "..tostring(certbot.resolveErrorToStr(retOfSSLCreation)));
+                                        
+                                        if possibleRetCode and possibleRetCode < 0 then
+                                            local errorStr = serverImpl.resolveErrorToStr(possibleRetCode);
+                                            if errorStr then
+                                                print("Hiba #2: "..tostring(errorStr));
+                                            end
+                                        end
+
+                                        if possibleRetLinesFromCertbot then
+                                            print(tostring(possibleRetLinesFromCertbot));
+                                        end
+
+                                        print("Nyomjon ENTER-t a folytatáshoz.");
+                                        io.read();
+                                    end
+                                end
+                                ::continueWebsiteInnerLoop::
+                            end
+                        end
+                    end
+
+                    ::continueWebsite::
+                end
+
+                ::continueWebsiteMainMenu::
+            elseif firstChar == "3" then --create new websites
+                general.clearScreen();
+
+                while true do
+                    print("Írja be a létrehozandó weboldal címét:");
+                    print("Ha vissza szeretne lépni, nyomjon csak simán ENTER-t.");
+                
+                    readStr = io.read();
+                    firstChar = readStr:sub(1, 1);
+
+                    if readStr == " " or #readStr == 0 then
+                        break;
+                    end
+
+                    if readStr:match("[a-z]*://[^ >,;]*") then --from https://stackoverflow.com/questions/68694608/how-to-check-url-whether-url-is-valid-in-lua
+                        print("=> Kizárólag alfanumerikus lehet az új weboldal címe...");
+                    else
+                        if not serverImpl.init_dirs() or not serverImpl.initialize_server() then
+                            print("Nem sikerült inicializálni a(z) "..tostring(webserverType).." webszervert!");
+                            print("Nyomjon ENTER-t a folytatáshoz.");
+                            io.read();
+                            break;
+                        end
+
+                        if isRunning then
+                            webserverBootstrapModule.stop_server();
+                        end
+
+                        local websiteCreationRet = serverImpl.create_new_website(readStr);
+
+                        if websiteCreationRet ~= true then
+                            print("=> Hiba történt a weboldal létrehozása közben!");
+                            print("Hiba: "..tostring(serverImpl.resolveErrorToStr(websiteCreationRet)));
+                        else
+                            print("=> Sikeresen létrehozásra került a(z) "..tostring(readStr).." weboldal!");
+                        end
+
+                        if isRunning then
+                            webserverBootstrapModule.start_server();
+                        end
+
+                        print("Nyomjon ENTER-t a folytatáshoz.");
+                        io.read();
+
+                        break;
+                    end
+                end
+            end
+        end
+    end
+end
+
+--main interface starts here
+
 while true do
     general.clearScreen();
 
@@ -260,7 +573,7 @@ while true do
         counter = counter + 1;
     end
 
-    print('Válassz egy lehetőséget: ');
+    print('Válasszon az alábbi lehetőségek közül: ');
 
     printOptionAndIncreaseCounter('=> '..tostring(counter)..'. OpenVPN szerver');
     printOptionAndIncreaseCounter('=> '..tostring(counter)..'. Webszerverek');
@@ -278,8 +591,6 @@ while true do
         while true do
             general.clearScreen();
 
-            print("<=> OpenVPN szerver <=>");
-
             local isInstalled = OpenVPNHandler.is_openvpn_installed();
             local isRunning = OpenVPNHandler.is_running();
             local serverImpl = OpenVPNHandler.server_impl;
@@ -290,7 +601,8 @@ while true do
                 print(str);
                 counter = counter + 1;
             end
-
+            
+            print("<=> OpenVPN szerver <=>");
             if not isInstalled then
                 printOptionAndIncreaseCounter("=> "..tostring(counter)..". Feltelepítés");
             else  
@@ -322,12 +634,41 @@ while true do
                 if firstChar == "1" then --start/stop openvpn server
                     doOpenVPNStartStop(isRunning, OpenVPNHandler);
                 elseif firstChar == "2" then --init openvpn server/refresh server config
-                    doOpenVPNInitOrRefresh(serverImpl);
+                    doOpenVPNInitOrRefresh(isRunning, serverImpl);
                 elseif firstChar == "3" then --list openvpn clients
                     doOpenVPNClientListing(serverImpl);
                 elseif firstChar == "4" then --create new openvpn client
                     doOpenVPNClientCreation(serverImpl);
                 end
+            end
+        end
+    elseif firstChar == "2" then
+        while true do
+            general.clearScreen();
+
+            print("Válasszon a további lehetőségek közül: ");
+
+            local counter = 1;
+            local printOptionAndIncreaseCounter = function(str)
+                print(str);
+                counter = counter + 1;
+            end
+
+            printOptionAndIncreaseCounter("=> "..tostring(counter)..". Apache");
+            printOptionAndIncreaseCounter("=> "..tostring(counter)..". nginx");
+            printOptionAndIncreaseCounter(""..tostring(counter)..". Visszalépés");
+            
+            readStr = io.read();
+            firstChar = readStr:sub(1, 1);
+
+            if firstChar == tostring(counter - 1) then
+                break;
+            end
+
+            if firstChar == "1" then
+                doWebserverMenu("apache");
+            elseif firstChar == "2" then
+                doWebserverMenu("nginx");
             end
         end
     end

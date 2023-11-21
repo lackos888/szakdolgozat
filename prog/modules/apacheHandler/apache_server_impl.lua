@@ -4,13 +4,24 @@ local linux = require("linux");
 local general = require("general");
 local apacheConfigHandlerModule = require("apacheHandler/apache_config_handler");
 local inspect = require("inspect");
+local bootstrapModule = false;
 
 local module = {
     ["apache_user"] = "apache-www",
     ["apache_user_comment"] = "User for running apache daemon.",
     ["apache_user_shell"] = "/bin/false",
-    ["base_dir"] = nil
+    ["base_dir"] = nil,
+    ["errors"] = {}
 };
+
+local errorCounter = 0;
+local function registerNewError(errorName)
+    errorCounter = errorCounter + 1;
+
+    module.errors[errorName] = errorCounter * -1;
+
+    return true;
+end
 
 local sampleConfigForWebsite = [[
 <VirtualHost *:80>
@@ -850,4 +861,12 @@ function module.init_ssl_for_website(webUrl, certDetails)
     return true;
 end
 
-return module;
+return function(_bootstrapModule)
+    bootstrapModule = _bootstrapModule;
+
+    module.is_running = bootstrapModule.is_running;
+    module.stop_server = bootstrapModule.stop_server;
+    module.start_server = bootstrapModule.start_server;
+
+    return module;
+end

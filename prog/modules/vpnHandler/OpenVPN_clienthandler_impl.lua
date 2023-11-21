@@ -189,6 +189,9 @@ function Client:isValidClient()
     return validClients[self["name"]] == true;
 end
 
+registerNewError("GEN_CRL_FAILED");
+registerNewError("CRL_COPY_FAILED");
+
 function module.update_revoke_crl_for_openvpn_daemon()
     local envVariables = {
         ["EASYRSA_PKI"] = serverImpl.getEasyRSAPKiDir()
@@ -203,14 +206,14 @@ function module.update_revoke_crl_for_openvpn_daemon()
     local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, envVariables);
 
     if retCode ~= 0 then
-        return -1;
+        return module.errors.GEN_CRL_FAILED;
     end
 
     local crlPathInPKI = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/crl.pem");
     local crlPathInOpenVPNDir = general.concatPaths(serverImpl.get_openvpn_home_dir(), "/crl.pem");
 
     if not linux.copy(crlPathInPKI, crlPathInOpenVPNDir) then
-        return -2;
+        return module.errors.CRL_COPY_FAILED;
     end
 
     return true;

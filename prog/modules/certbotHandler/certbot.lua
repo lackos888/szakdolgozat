@@ -9,9 +9,31 @@ local apache = require("apacheHandler/apache");
 local certFileName = "fullchain.pem";
 local keyFileName = "privkey.pem";
 local dhParamFileName = "dhparam.pem";
-local dryRunStr = "";
+local dryRunStr = ""; --dry-run if debugging;
+local dhParamBytes = "1024"; --in real life it could be 4096 aswell, decreased to speed up generation
 
-local module = {};
+local module = {
+    ["errors"] = {}
+};
+
+local errorCounter = 0;
+local function registerNewError(errorName)
+    errorCounter = errorCounter + 1;
+
+    module.errors[errorName] = errorCounter * -1;
+
+    return true;
+end
+
+function module.resolveErrorToStr(error)
+    for t, v in pairs(module.errors) do
+        if tostring(v) == tostring(error) then
+            return t;
+        end 
+    end
+
+    return "";
+end
 
 --from http://lua-users.org/wiki/SleepFunction
 local clock = os.clock
@@ -20,8 +42,8 @@ local function sleep(n)  -- seconds
   while clock() - t0 <= n do end
 end
 
-module.ALREADY_INSTALLED_ERROR = -1;
-module.SNAPD_INSTALL_ERROR = -2;
+registerNewError("ALREADY_INSTALLED_ERROR");
+registerNewError("SNAPD_INSTALL_ERROR");
 
 function module.is_certbot_installed()
     if not snapPackageManager.isSnapdInstalled() then
@@ -40,14 +62,14 @@ end
 function module.install_certbot()
     if not snapPackageManager.isSnapdInstalled() then
         if not snapPackageManager.installSnapd() then
-            return module.SNAPD_INSTALL_ERROR;
+            return module.errors.SNAPD_INSTALL_ERROR;
         end
     end
 
     if module.is_certbot_installed() then
         module.create_certbot_symlink();
 
-        return module.ALREADY_INSTALLED_ERROR;
+        return module.errors.ALREADY_INSTALLED_ERROR;
     end
 
     if snapPackageManager.install_package("certbot", true) then
@@ -58,15 +80,6 @@ function module.install_certbot()
     
     return false;
 end
-
-module.INVALID_WEBSERVER_TYPE = -1;
-module.NON_EXISTENT_WEBSITE = -2;
-module.CERTBOT_IS_NOT_INSTALLED = -3;
-module.CERTBOT_ERROR = -4;
-module.OPENSSL_DHPARAM_GENERATING_ERROR = -5;
-module.CONFIG_INIT_ERROR = -6;
-module.EXEC_FAILED = -7;
-module.CERTBOT_TIMEOUT_ERROR = -8;
 
 function module.get_cert_datas(domain)
     local retLines, retCode = linux.exec_command_with_proc_ret_code(domain and ("certbot certificates -d "..tostring(domain)) or ("certbot certificates"), true);
@@ -103,9 +116,18 @@ function module.get_cert_datas(domain)
     return certDatas;
 end
 
+registerNewError("INVALID_WEBSERVER_TYPE");
+registerNewError("NON_EXISTENT_WEBSITE");
+registerNewError("CERTBOT_IS_NOT_INSTALLED");
+registerNewError("CERTBOT_ERROR");
+registerNewError("OPENSSL_DHPARAM_GENERATING_ERROR");
+registerNewError("CONFIG_INIT_ERROR");
+registerNewError("EXEC_FAILED");
+registerNewError("CERTBOT_TIMEOUT_ERROR");
+
 function module.try_ssl_certification_creation(method, domain, webserverType)
     if webserverType ~= "nginx" and webserverType ~= "apache" then
-        return module.INVALID_WEBSERVER_TYPE;
+        return module.errors.INVALID_WEBSERVER_TYPE;
     end
 
     if method == "http-01" then
@@ -122,7 +144,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         if not module.install_certbot() then
-            return module.CERTBOT_IS_NOT_INSTALLED;
+            return module.errors.CERTBOT_IS_NOT_INSTALLED;
         end
 
         local websiteData = false;
@@ -135,10 +157,10 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         if not websiteData then
-            return module.NON_EXISTENT_WEBSITE;
+            return module.errors.NON_EXISTENT_WEBSITE;
         end
 
-        local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+        local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly -n "..tostring(dryRunStr).." --agree-tos --register-unsafely-without-email --no-eff-email --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
         -- local retCode = 0; --FOR TESTING PURPOSES
 
         local hasCertificate = retCode == 0;
@@ -151,17 +173,17 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         if retCode ~= 0 then
-            return module.CERTBOT_ERROR, retCode, retLines;
+            return module.errors.CERTBOT_ERROR, retCode, retLines;
         end
 
         --Diffie-Hellman Ephemeral algorithm
         local filePathForDHParam = domainPath..dhParamFileName;
 
         if not linux.exists(filePathForDHParam) then
-            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." 4096");
+            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." "..tostring(dhParamBytes), nil, nil, true);
 
             if retCode ~= 0 then
-                return module.OPENSSL_DHPARAM_GENERATING_ERROR;
+                return module.errors.OPENSSL_DHPARAM_GENERATING_ERROR, retCode, retLines;
             end
         end
 
@@ -181,8 +203,8 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             });
         end
 
-        if not configInit then
-            return module.CONFIG_INIT_ERROR;
+        if configInit ~= true then
+            return module.errors.CONFIG_INIT_ERROR;
         end
 
         return true;
@@ -202,7 +224,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         if not module.install_certbot() then
-            return module.CERTBOT_IS_NOT_INSTALLED;
+            return module.errors.CERTBOT_IS_NOT_INSTALLED;
         end
 
         local websiteData = false;
@@ -215,7 +237,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         if not websiteData then
-            return module.NON_EXISTENT_WEBSITE;
+            return module.errors.NON_EXISTENT_WEBSITE;
         end
 
         local tempFileName = os.tmpname();
@@ -229,12 +251,14 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
 
         linux.deleteFile("certbot_pid.txt");
 
-        local formattedCmd = "(certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
+        print("[Certbot DNS] Várunk a certbot háttérbeli elindulására...");
+
+        local formattedCmd = "(certbot certonly -n "..tostring(dryRunStr).." --agree-tos --register-unsafely-without-email --no-eff-email --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
 
         os.execute(formattedCmd);
 
         if not linux.exists("certbot_pid.txt") then
-            return module.EXEC_FAILED;
+            return module.errors.EXEC_FAILED;
         end
 
         local timeoutCounter = 0;
@@ -252,8 +276,6 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
 
             linux.deleteFile("certbot_pid.txt");
         end;
-
-        print("[Certbot DNS] Waiting for certbot start!");
         
         while true do
             timeoutCounter = timeoutCounter + 1;
@@ -282,16 +304,16 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
                         local domain = lines[2];
                         local dnsTXTValue = lines[3];
 
-                        print("[Certbot DNS] You need to create a DNS TXT record at domain "..tostring(domain).." to proceed.");
-                        print("[Certbot DNS] => DNS record name: "..tostring(dnsTXTName));
-                        print("[Certbot DNS] => DNS record value: "..tostring(dnsTXTValue));
-                        print("[Certbot DNS] Type ready when you are ready and press ENTER: ");
+                        print("[Certbot DNS] Létre kell hozzon egy DNS TXT rekordot a(z) "..tostring(domain).." weboldalnál az ellenőrzéshez.");
+                        print("[Certbot DNS] => DNS rekord név: "..tostring(dnsTXTName));
+                        print("[Certbot DNS] => DNS rekord érték: "..tostring(dnsTXTValue));
+                        print("[Certbot DNS] Írja be, hogy ready, ha a DNS rekordot sikeresen létrehozta, majd nyomjon ENTER-t: ");
 
                         while true do
                             local readData = io.stdin:read();
 
                             if readData == "ready" then
-                                print("[Certbot DNS] Sending ready command to certbot running in background!");
+                                print("[Certbot DNS] Jel küldése a háttérben futó certbot processznek...");
 
                                 break;
                             end
@@ -317,7 +339,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             if timeoutCounter >= 60 then
                 cleanupCertBot(true);
 
-                return module.CERTBOT_TIMEOUT_ERROR;
+                return module.errors.CERTBOT_TIMEOUT_ERROR;
             end
 
             sleep(1);
@@ -339,17 +361,17 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         end
 
         if retCode ~= 0 then
-            return module.CERTBOT_ERROR, retCode, retLines;
+            return module.errors.CERTBOT_ERROR, retCode, retLines;
         end
 
         --Diffie-Hellman Ephemeral algorithm
         local filePathForDHParam = domainPath..dhParamFileName;
 
         if not linux.exists(filePathForDHParam) then
-            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." 4096");
+            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." "..tostring(dhParamBytes), nil, nil, true);
 
             if retCode ~= 0 then
-                return module.OPENSSL_DHPARAM_GENERATING_ERROR;
+                return module.errors.OPENSSL_DHPARAM_GENERATING_ERROR, retCode, retLines;
             end
         end
 
@@ -369,8 +391,8 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             });
         end
 
-        if not configInit then
-            return module.CONFIG_INIT_ERROR;
+        if configInit ~= true then
+            return module.errors.CONFIG_INIT_ERROR, configInit;
         end
 
         return true;
@@ -380,7 +402,8 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
 end
 
 function module.init()
-    print("Certbot install ret: "..tostring(module.install_certbot()));
+    return module.install_certbot();
+    --print("Certbot install ret: "..tostring(module.install_certbot()));
     --print("certdatas: "..tostring(inspect(module.get_cert_datas())));
     --print("ssl certificate creation: "..tostring(module.try_ssl_certification_creation("http-01", "lszlo.ltd", "nginx")));
 end
