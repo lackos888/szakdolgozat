@@ -4,15 +4,9 @@ local linux = require("linux");
 local module = {};
 
 function module.is_package_installed(packageName)
-    local resultForWhereis = linux.exec_command("whereis "..packageName):gsub("%s+", "");
+    local retLines, retCode = linux.exec_command_with_proc_ret_code("dpkg-query -W -f='${db:Status-Status}\n' "..tostring(packageName), true, nil, true);
 
-    if resultForWhereis ~= packageName..":" then
-        return true;
-    end
-
-    local retCode = linux.exec_command_with_proc_ret_code("dpkg -s "..packageName, nil, nil, true);
-
-    return retCode == 0;
+    return retCode == 0 and retLines:find("installed", 1, true) == 1;
 end
 
 function module.install_package(packageName)

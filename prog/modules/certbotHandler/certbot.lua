@@ -160,7 +160,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             return module.errors.NON_EXISTENT_WEBSITE;
         end
 
-        local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly -n "..tostring(dryRunStr).." --agree-tos --register-unsafely-without-email --no-eff-email --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+        local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly --noninteractive "..tostring(dryRunStr).." --agree-tos --reinstall --register-unsafely-without-email --no-eff-email --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
         -- local retCode = 0; --FOR TESTING PURPOSES
 
         local hasCertificate = retCode == 0;
@@ -253,7 +253,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
 
         print("[Certbot DNS] Várunk a certbot háttérbeli elindulására...");
 
-        local formattedCmd = "(certbot certonly -n "..tostring(dryRunStr).." --agree-tos --register-unsafely-without-email --no-eff-email --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
+        local formattedCmd = "(certbot certonly --noninteractive "..tostring(dryRunStr).." --agree-tos --reinstall --register-unsafely-without-email --no-eff-email --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
 
         os.execute(formattedCmd);
 
