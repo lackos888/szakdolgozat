@@ -4,7 +4,27 @@ local general = require("general");
 local linux = require("linux");
 local inspect = require("inspect");
 
-local module = {};
+local module = {
+    ["errors"] = {}
+};
+local errorCounter = 0;
+local function registerNewError(errorName)
+    errorCounter = errorCounter + 1;
+
+    module.errors[errorName] = errorCounter * -1;
+
+    return true;
+end
+
+function module.resolveErrorToStr(error)
+    for t, v in pairs(module.errors) do
+        if tostring(v) == tostring(error) then
+            return t;
+        end 
+    end
+
+    return "";
+end
 
 function module.is_iptables_installed()
     return packageManager.is_package_installed("iptables");
@@ -12,10 +32,47 @@ end
 
 function module.install_iptables()
     if module.is_iptables_installed() then
-        return -1
+        return true
     end
 
     return packageManager.install_package("iptables");
+end
+
+--from http://lua-users.org/wiki/StringTrim
+local function trim2(s)
+    return s:match "^%s*(.-)%s*$"
+end
+
+function module.get_current_network_interfaces()
+    local retLines, retCode = linux.exec_command_with_proc_ret_code("ip link show", true, nil, true);
+
+    if retCode ~= 0 then
+        return false;
+    end
+
+    local netInterfaces = {};
+
+    local linesIterator = retLines:gmatch("[^\r\n]+");
+    local lastNetworkInterface = false;
+
+    for line in linesIterator do
+        if line:sub(2, 2) == ":" then
+            local splittedStr = general.strSplit(line, ":");
+
+            if #splittedStr == 3 then
+                lastNetworkInterface = trim2(splittedStr[2]);
+            else
+                lastNetworkInterface = false;
+            end
+        elseif line:find("link/ether", 1, true) and lastNetworkInterface then
+            table.insert(netInterfaces, lastNetworkInterface);
+            lastNetworkInterface = false;
+        else
+            lastNetworkInterface = false;
+        end
+    end
+
+    return netInterfaces;
 end
 
 function module.get_current_ssh_ports()
@@ -72,11 +129,12 @@ local iptablesAliases = {
     ["c"] = "set-counters"
 };
 
-function module.parse_current_rules()
+registerNewError("FAILED_TO_EXEC_IPTABLES_SAVE_COMMAND");
+local function parse_current_rules()
     local retLines, retCode = linux.exec_command_with_proc_ret_code("iptables-save", true);
 
     if retCode ~= 0 then
-        return false;
+        return module.errors.FAILED_TO_EXEC_IPTABLES_SAVE_COMMAND;
     end
 
     local parsedStuff = {};
@@ -210,6 +268,92 @@ function module.get_open_ports(interface)
     return ports;
 end
 
+function module.delete_open_port_rule(interface, idx)
+    interface = interface or "all";
+    local parsedStuff = module.currentIPTablesRules;
+
+    if not parsedStuff["filter"] then
+        parsedStuff["filter"] = {};
+    end
+
+    if parsedStuff["filter"]["INPUT"] and parsedStuff["filter"]["INPUT"][interface] then
+        local tbl = parsedStuff["filter"]["INPUT"][interface];
+
+        local counter = 0;
+        for t, v in pairs(tbl) do
+            if v.j and v.j.data == "ACCEPT" then
+                counter = counter + 1;
+
+                if counter == idx then
+                    table.remove(tbl, t);
+
+                    return true;
+                end
+            end
+        end
+    end
+
+    return false;
+end
+
+function module.get_closed_ports(interface)
+    interface = interface or "all";
+    local ports = {};
+    local parsedStuff = module.currentIPTablesRules;
+
+    if not parsedStuff["filter"] then
+        parsedStuff["filter"] = {};
+    end
+
+    if not parsedStuff["filter"]["INPUT"] then
+        ports = "none";
+    elseif parsedStuff["filter"]["INPUT"] and parsedStuff["filter"]["INPUT"][interface] then
+        local tbl = parsedStuff["filter"]["INPUT"][interface];
+
+        for t, v in pairs(tbl) do
+            if v.j and v.j.data == "DROP" then
+                local sourceIP = (v.s and v.s.data) or nil;
+
+                if v.dport then
+                    table.insert(ports, {protocol = (v.p and v.p.data) or (v.m and v.m.data) or "all", dport = v.dport.data, sourceIP = sourceIP});
+                else
+                    table.insert(ports, {protocol = (v.p and v.p.data) or (v.m and v.m.data) or "all", dport = "all", sourceIP = sourceIP});
+                end
+            end
+        end
+    end
+
+    return ports;
+end
+
+function module.delete_close_port_rule(interface, idx)
+    interface = interface or "all";
+    local parsedStuff = module.currentIPTablesRules;
+
+    if not parsedStuff["filter"] then
+        parsedStuff["filter"] = {};
+    end
+
+    if parsedStuff["filter"]["INPUT"] and parsedStuff["filter"]["INPUT"][interface] then
+        local tbl = parsedStuff["filter"]["INPUT"][interface];
+
+        local counter = 0;
+        for t, v in pairs(tbl) do
+            if v.j and v.j.data == "DROP" then
+                counter = counter + 1;
+
+                if counter == idx then
+                    table.remove(tbl, t);
+
+                    return true;
+                end
+            end
+        end
+    end
+
+    return false;
+end
+
 function module.close_port(interface, protocol, dport, fromIP)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
@@ -290,13 +434,15 @@ function module.open_port(interface, protocol, dport, fromIP)
     if parsedStuff["filter"]["INPUT"] and parsedStuff["filter"]["INPUT"][interface] then
         local tbl = parsedStuff["filter"]["INPUT"][interface];
         local success = false;
+
         local newTbl = {
             p = protocol and {
                 data = protocol
             } or nil, dport = dport and {
                 data = tostring(dport),
                 doubleTypeArg = true
-            } or nil, source = fromIP and {
+            } or nil,
+            source = fromIP and {
                 data = fromIP,
                 doubleTypeArg = true
             } or nil,
@@ -309,8 +455,6 @@ function module.open_port(interface, protocol, dport, fromIP)
         end
 
         for t, v in pairs(tbl) do
-            print("v: "..tostring(inspect(v)).." newTbl: "..tostring(inspect(newTbl)));
-
             if general.deep_compare(v, newTbl) then
                 return true;
             end
@@ -342,6 +486,64 @@ function module.open_port(interface, protocol, dport, fromIP)
     end
 
     return true;
+end
+
+function module.list_allowed_outgoing_connections(interface)
+    interface = interface or "all";
+    local conn = {};
+    local parsedStuff = module.currentIPTablesRules;
+
+    if not parsedStuff["filter"] then
+        parsedStuff["filter"] = {};
+    end
+
+    if not parsedStuff["filter"]["OUTPUT"] then
+        conn = "all";
+    elseif parsedStuff["filter"]["OUTPUT"] and parsedStuff["filter"]["OUTPUT"][interface] then
+        local tbl = parsedStuff["filter"]["OUTPUT"][interface];
+
+        for t, v in pairs(tbl) do
+            if v.j and v.j.data == "ACCEPT" then
+                local destinationIP = (v.d and v.d.data) or nil;
+
+                if v.dport then
+                    table.insert(conn, {protocol = (v.p and v.p.data) or (v.m and v.m.data) or "all", dport = v.dport.data, destinationIP = destinationIP});
+                else
+                    table.insert(conn, {protocol = (v.p and v.p.data) or (v.m and v.m.data) or "all", dport = "all", destinationIP = destinationIP});
+                end
+            end
+        end
+    end
+
+    return conn;
+end
+
+function module.delete_outgoing_rule(interface, idx)
+    interface = interface or "all";
+    local parsedStuff = module.currentIPTablesRules;
+
+    if not parsedStuff["filter"] then
+        parsedStuff["filter"] = {};
+    end
+
+    if parsedStuff["filter"]["OUTPUT"] and parsedStuff["filter"]["OUTPUT"][interface] then
+        local tbl = parsedStuff["filter"]["OUTPUT"][interface];
+
+        local counter = 0;
+        for t, v in pairs(tbl) do
+            if v.j and v.j.data == "ACCEPT" then
+                counter = counter + 1;
+
+                if counter == idx then
+                    table.remove(tbl, t);
+
+                    return true;
+                end
+            end
+        end
+    end
+
+    return false;
 end
 
 function module.allow_outgoing_new_connection(interface, protocol, dip, dport)
@@ -742,7 +944,6 @@ function module.init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubn
     if not rules["nat"]["POSTROUTING"]["all"] then
         rules["nat"]["POSTROUTING"]["all"] = {};
     end
-
     
     local forwardTblInterface = rules["filter"]["FORWARD"][mainInterface];
     local forwardTblAll = rules["filter"]["FORWARD"]["all"];
@@ -826,11 +1027,66 @@ function module.init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubn
     return true;
 end
 
+function module.loadOurRulesToIptables()
+    local tmpFile = os.tmpname();
+
+    local fileHandle = io.open(tmpFile, "w");
+    if not fileHandle then
+        return false;
+    end
+    fileHandle:write(module.iptables_to_string());
+    fileHandle:flush();
+    fileHandle:close();
+
+    local lines, retCode = linux.exec_command_with_proc_ret_code("iptables-restore "..tostring(tmpFile), true, nil, true);
+    linux.deleteFile(tmpFile);
+    
+    --print("[iptables loadOurRulesToIptables] retCode: "..tostring(retCode).." tmpFile: "..tostring(tmpFile).." str: "..tostring(module.iptables_to_string()));
+
+    return retCode == 0;
+end
+
 function module.iptables_to_string()
     local rules = module.currentIPTablesRules;
     local str = "";
 
+    local defaultPoliciesForTables = {
+        ["filter"] = {
+            ":INPUT ACCEPT [0:0]",
+            ":FORWARD ACCEPT [0:0]",
+            ":OUTPUT ACCEPT [0:0]"
+        },
+        ["nat"] = {
+            ":PREROUTING ACCEPT [0:0]",
+            ":INPUT ACCEPT [0:0]",
+            ":OUTPUT ACCEPT [0:0]",
+            ":POSTROUTING ACCEPT [0:0]"
+        },
+        ["mangle"] = {
+            ":PREROUTING ACCEPT [0:0]",
+            ":INPUT ACCEPT [0:0]",
+            ":FORWARD ACCEPT [0:0]",
+            ":POSTROUTING ACCEPT [0:0]"
+        },
+        ["raw"] = {
+            ":PREROUTING ACCEPT [0:0]",
+            ":OUTPUT ACCEPT [0:0]",
+        },
+        ["security"] = {
+            ":INPUT ACCEPT [0:0]",
+            ":OUTPUT ACCEPT [0:0]",
+            ":FORWARD ACCEPT [0:0]",
+        }
+    };
+
     for tableName, chainDatas in pairs(rules) do
+        str = str.."# Generated by Lua"..general.lineEnding;
+        str = str.."*"..tostring(tableName)..general.lineEnding;
+        if defaultPoliciesForTables[tableName] then
+            for t, v in pairs(defaultPoliciesForTables[tableName]) do
+                str  = str..tostring(v)..general.lineEnding;
+            end
+        end
         for chain, interfaces in pairs(chainDatas) do
             local interfaceOrder = {};
             for interface, _ in pairs(interfaces) do
@@ -854,21 +1110,32 @@ function module.iptables_to_string()
                 for idx, v in pairs(interfaceDatas) do
                     local dataFormatted = "";
                     local idx2 = 1;
-                    local jData = "";
 
                     if tableName ~= "filter" then
                         dataFormatted = "-t "..tostring(tableName).." ";
                     end
 
                     local spaceStuff = false;
+                    local iterationOrder = {};
 
-                    for dataName, dataTbl in pairs(v) do
-                        if dataName == "j" then
-                            jData = dataTbl;
+                    for dataName, _ in pairs(v) do
+                        table.insert(iterationOrder, dataName);
+                    end
 
-                            goto continueIptables;
+                    table.sort(iterationOrder, function(a, b)
+                        if (a == "m" and b == "state") or (a == "state" and b ~= "m") then
+                            return true;
                         end
 
+                        if (a == "p" and b == "dport") or (a == "dport" and b ~= "p") then 
+                            return true; 
+                        end
+
+                        return false;    
+                    end);
+
+                    for _, dataName in pairs(iterationOrder) do
+                        local dataTbl = v[dataName];
                         spaceStuff = true;
 
                         if idx2 ~= 1 then
@@ -878,28 +1145,26 @@ function module.iptables_to_string()
                         dataFormatted = dataFormatted.."-"..tostring(dataTbl.doubleTypeArg and "-" or "")..tostring(dataName).." "..tostring(dataTbl.data);
 
                         idx2 = idx2 + 1;
-
-                        ::continueIptables::
                     end
-
-                    dataFormatted = dataFormatted..""..tostring(spaceStuff and " " or "").."-j "..tostring(jData.data);
 
                     str = str.."-A "..chain..""..tostring(interface ~= "all" and (" -i "..tostring(interface)) or "").." "..tostring(dataFormatted)..general.lineEnding;
                 end
             end
         end
+        str = str.."COMMIT"..general.lineEnding;
+        str = str.."# Completed"..general.lineEnding;
     end
 
     return str;
 end
 
 function module.init_module()
-    local parseRulesRet = module.parse_current_rules();
+    local parseRulesRet = parse_current_rules();
 
     if not parseRulesRet then
-        print("[iptables] failed to parse current rules from iptables-save");
+        print("[iptables init_module error] failed to parse current rules from iptables-save");
 
-        return false;
+        return parseRulesRet;
     end
 
     module.currentIPTablesRules = parseRulesRet;
