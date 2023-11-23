@@ -1207,7 +1207,7 @@ local function doIptablesMenu()
                             io.read();
                         end
                     end
-                elseif originallyChosenOption == 8 then --openvpn nat setup
+                elseif originallyChosenOption == 8 and OpenVPNHandler.is_openvpn_installed() then --openvpn nat setup
                     while true do
                         general.clearScreen();
 
