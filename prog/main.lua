@@ -144,13 +144,13 @@ local function doOpenVPNClientListing(serverImpl)
                         printOptionAndIncreaseCounter(tostring(innerCounter)..". Visszalépés");
                         
                         local str = io.read();
-                        local firstChar = str:sub(1, 1);
+                        local numOfChoice = tonumber(str);
 
-                        if firstChar == tostring(innerCounter - 1) then
+                        if numOfChoice == innerCounter - 1 then
                             break;
                         end
 
-                        if firstChar == "1" then
+                        if numOfChoice == 1 then
                             local retOfClientConfigBuild, cfg = clientInstance:generateClientConfig();
 
                             if retOfClientConfigBuild == true then
@@ -163,7 +163,7 @@ local function doOpenVPNClientListing(serverImpl)
                                 print("Nyomjon ENTER-t a folytatáshoz.");
                             end
                             io.read();
-                        elseif firstChar == "2" then
+                        elseif numOfChoice == 2 then
                             local retOfRevoke = clientInstance:revoke();
 
                             if retOfRevoke == true then
@@ -280,7 +280,6 @@ local function doWebserverMenu(webserverType)
         end
 
         local readStr = "";
-        local firstChar = "";
 
         local currentWebserverType = tostring(webserverType == "apache" and "Apache" or "nginx");
 
@@ -297,14 +296,15 @@ local function doWebserverMenu(webserverType)
         printOptionAndIncreaseCounter(""..tostring(counter)..". Visszalépés");
 
         readStr = io.read();
-        firstChar = readStr:sub(1, 1);
 
-        if firstChar == tostring(counter - 1) then
+        local numOfChoice = tonumber(readStr);
+
+        if numOfChoice == counter - 1 then
             break;
         end
 
         if not isInstalled then
-            if firstChar == "1" then --install
+            if numOfChoice == 1 then --install
                 general.clearScreen();
                 print("=> "..tostring(webserverType).." telepítésének megkezdése...");
 
@@ -321,7 +321,7 @@ local function doWebserverMenu(webserverType)
                 io.read();
             end
         else
-            if firstChar == "1" then --start/stop
+            if numOfChoice == 1 then --start/stop
                 general.clearScreen();
 
                 if isRunning then
@@ -344,7 +344,7 @@ local function doWebserverMenu(webserverType)
 
                 print("Nyomjon ENTER-t a folytatáshoz.");
                 io.read();
-            elseif firstChar == "2" then --manage current websites
+            elseif numOfChoice == 2 then --manage current websites
                 if not serverImpl.init_dirs() or not serverImpl.initialize_server() then
                     print("Nem sikerült inicializálni a(z) "..tostring(webserverType).." webszervert!");
                     print("Nyomjon ENTER-t a folytatáshoz.");
@@ -378,7 +378,6 @@ local function doWebserverMenu(webserverType)
                     end
 
                     readStr = io.read();
-                    firstChar = readStr:sub(1, 1);
 
                     if readStr == " " or #readStr == 0 then
                         break;
@@ -404,13 +403,13 @@ local function doWebserverMenu(webserverType)
                         printOptionAndIncreaseCounter("=> "..tostring(counter)..". Visszalépés");
 
                         readStr = io.read();
-                        firstChar = readStr:sub(1, 1);
+                        numOfChoice = tonumber(readStr);
 
-                        if readStr == " " or #readStr == 0 or firstChar == tostring(counter - 1) then
+                        if readStr == " " or #readStr == 0 or numOfChoice == counter - 1 then
                             break;
                         end
 
-                        if firstChar == "1" then
+                        if numOfChoice == 1 then
                             general.clearScreen();
 
                             print("=> "..tostring(websiteData.websiteUrl).." weboldal törlése...");
@@ -432,7 +431,7 @@ local function doWebserverMenu(webserverType)
                             print("Nyomjon ENTER-t a folytatáshoz.");
                             io.read();
                             break;
-                        elseif firstChar == "2" then
+                        elseif numOfChoice == 2 then
                             while true do
                                 general.clearScreen();
 
@@ -442,22 +441,22 @@ local function doWebserverMenu(webserverType)
 
                                 printOptionAndIncreaseCounter("=> "..tostring(counter)..". HTTP-01 challenge");
                                 printOptionAndIncreaseCounter("=> "..tostring(counter)..". DNS-01 challenge");
-                                printOptionAndIncreaseCounter("=> "..tostring(counter)..". Visszalépés");
+                                printOptionAndIncreaseCounter(tostring(counter)..". Visszalépés");
 
                                 readStr = io.read();
-                                firstChar = readStr:sub(1, 1);
+                                numOfChoice = tonumber(readStr);
 
-                                if readStr == " " or #readStr == 0 or firstChar == tostring(counter - 1) then
-                                    goto continueWebsiteInnerLoop;
+                                if readStr == " " or #readStr == 0 or numOfChoice == counter - 1 then
+                                    break;
                                 end
 
                                 local challengeType = false;
                                 local challengeTypeDisplayStr = false;
 
-                                if firstChar == "1" then
+                                if numOfChoice == 1 then
                                     challengeType = "http-01";
                                     challengeTypeDisplayStr = "HTTP-01";
-                                elseif firstChar == "2" then
+                                elseif numOfChoice == 2 then
                                     challengeType = "dns";
                                     challengeTypeDisplayStr = "DNS-01";
                                 end
@@ -513,7 +512,7 @@ local function doWebserverMenu(webserverType)
                 end
 
                 ::continueWebsiteMainMenu::
-            elseif firstChar == "3" then --create new websites
+            elseif numOfChoice == 3 then --create new websites
                 general.clearScreen();
 
                 while true do
@@ -521,8 +520,7 @@ local function doWebserverMenu(webserverType)
                     print("Ha vissza szeretne lépni, nyomjon csak simán ENTER-t.");
                 
                     readStr = io.read();
-                    firstChar = readStr:sub(1, 1);
-
+                    
                     if readStr == " " or #readStr == 0 then
                         break;
                     end
@@ -588,19 +586,22 @@ local function doIptablesMenu()
             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Kifelé irányuló új megengedett kapcsolat létrehozása");
             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Engedélyezett kimenő kapcsolatok");
             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Interface alapú togglek");
-            printOptionAndIncreaseCounter("=> "..tostring(counter)..". OpenVPN NAT setup");
+
+            if OpenVPNHandler.is_openvpn_installed() then
+                printOptionAndIncreaseCounter("=> "..tostring(counter)..". OpenVPN NAT setup");
+            end
         end
         printOptionAndIncreaseCounter(tostring(counter)..". Visszalépés");
 
         local readStr = io.read();
-        local firstChar = readStr:sub(1, 1);
+        local numOfChoice = tonumber(readStr);
 
-        if firstChar == tostring(counter - 1) then
+        if numOfChoice == counter - 1 then
             break;
         end
 
         if not isInstalled then
-            if firstChar == "1" then
+            if numOfChoice == 1 then
                 general.clearScreen();
 
                 print("=> iptables telepítése...");
@@ -643,7 +644,10 @@ local function doIptablesMenu()
                     print(str);
                     counter = counter + 1;
                 end
-                printOptionAndIncreaseCounter("=> "..tostring(counter)..". Összes (mindegyikre vonatkozik egyszerre)");
+
+                if originallyChosenOption ~= 8 or not OpenVPNHandler.is_openvpn_installed() then --OpenVPN nat
+                    printOptionAndIncreaseCounter("=> "..tostring(counter)..". Összes (mindegyikre vonatkozik egyszerre)");
+                end
 
                 local interfaces = iptables.get_current_network_interfaces();
                 for t, v in pairs(interfaces) do
@@ -657,7 +661,11 @@ local function doIptablesMenu()
                     break;
                 end
                 
-                interfaceSelected = num == 1 and "all" or interfaces[num - 1];
+                if originallyChosenOption ~= 8 or not OpenVPNHandler.is_openvpn_installed() then
+                    interfaceSelected = num == 1 and "all" or interfaces[num - 1];
+                else --OpenVPN nat
+                    interfaceSelected = interfaces[num];
+                end
 
                 if not interfaceSelected then
                     print("Hibás szám: "..tostring(num));
@@ -714,8 +722,11 @@ local function doIptablesMenu()
                                 local deletionRet = iptables.delete_open_port_rule(interfaceSelected, num);
 
                                 if deletionRet == true then
-                                    iptables.loadOurRulesToIptables();
-                                    print("=> Sikeresen törölve lett a(z) "..tostring(num).." számú szabály.");
+                                    if iptables.loadOurRulesToIptables() then
+                                        print("=> Sikeresen törölve lett a(z) "..tostring(num).." számú szabály.");
+                                    else
+                                        print("=> Hiba történt az iptables szabályok véglegesítése közben.");
+                                    end
                                 else
                                     print("=> Hiba történt a(z) "..tostring(num).." számú szabály törlése közben.");
                                 end
@@ -1196,6 +1207,104 @@ local function doIptablesMenu()
                         end
                     end
                 elseif originallyChosenOption == 8 then --openvpn nat setup
+                    while true do
+                        general.clearScreen();
+
+                        local currentNATDatas = iptables.get_current_active_nat_for_openvpn();
+
+                        if not currentNATDatas or #currentNATDatas == 0 then
+                            print("=> Nincs még NAT létrehozva egy interfacen sem...");
+                            print("=> Szeretné létrehozni a(z) "..tostring(interfaceSelected).." main interfacera bezárólag? (Y/N)");
+
+                            readStr = io.read();
+
+                            if readStr == "Y" then
+                                local serverImpl = OpenVPNHandler.server_impl;
+
+                                if serverImpl.init_dirs() ~= true or serverImpl.initialize_server() ~= true then
+                                    print("=> Hiba történt az OpenVPN szerver inicializálása közben.");
+                                    print("Nyomjon ENTER-t a folytatáshoz.");
+                                    io.read();
+                                    break;
+                                end
+
+                                local subnet = serverImpl.get_openvpn_subnet();
+
+                                if not subnet then
+                                    print("=> Hiba történt az OpenVPN subnet lekérdezése közben.");
+                                    print("Nyomjon ENTER-t a folytatáshoz.");
+                                    io.read();
+                                    break;
+                                end
+
+                                local creationRet = iptables.init_nat_for_openvpn(interfaceSelected, "tun0", subnet);
+
+                                if creationRet == true then
+                                    if iptables.loadOurRulesToIptables() then
+                                        print("=> Sikeresen létrehozásra kerültek az OpenVPN natot támogató szabályok! OpenVPN belső ip: "..tostring(subnet));
+                                    else
+                                        print("=> Hiba történt az OpenVPN nat szabályok véglegesítése közben. OpenVPN belső ip: "..tostring(subnet));
+                                    end
+                                else
+                                    print("=> Hiba történt az OpenVPN nat szabályai létrehozása közben!");
+                                end
+                                print("Nyomjon ENTER-t a folytatáshoz.");
+
+                                io.read();
+                                break;
+                            else
+                                break;
+                            end
+                        else
+                            print("=> Már van létrehozva NAT! Meglévő NAT-ok:");
+                            for t, v in pairs(currentNATDatas) do
+                                print(tostring(t)..". Main interface: "..tostring(v.mainInterface).." Tunnel interface: "..tostring(v.outInterface).." subnet: "..tostring(v.subnet));
+                            end
+
+                            print("");
+                            print("=> Szabály törléséhez írja be, hogy töröl/torol, majd a sorszámát a szabálynak.");
+                            print("Továbblépéshez nyomjon ENTER-t.");
+                            readStr = io.read();
+
+                            if readStr and #readStr > 0 and readStr ~= " " and type(readStr) == "string" and readStr:find("töröl", 1, true) == 1 or readStr:find("torol", 1, true) == 1 then
+                                local numberStr = "";
+                                if readStr:find("töröl", 1, true) == 1 then --unicode stuff
+                                    numberStr = readStr:sub(8);
+                                else
+                                    numberStr = readStr:sub(6);
+                                end
+                                local num = tonumber(numberStr);
+
+                                local data = currentNATDatas[num];
+
+                                if not data then
+                                    print("");
+                                    print("Hibás szám: "..tostring(numberStr));
+                                    print("Továbblépéshez nyomjon ENTER-t.");
+
+                                    io.read();
+                                    goto continueInsideNAT;
+                                end
+
+                                if iptables.delete_nat_rules(data.mainInterface, data.outInterface, data.forwardTblIdx, data.forwardTblAllIdx, data.postroutingTblAllIdx) == true then
+                                    if iptables.loadOurRulesToIptables() then
+                                        print("=> Sikeresen törölve lett a(z) "..tostring(num).." számú szabály.");
+                                    else
+                                        print("=> Hiba történt az iptables szabályok véglegesítése közben.");
+                                    end
+                                else
+                                    print("=> Hiba történt a(z) "..tostring(num).." számú szabály törlése közben.");
+                                end
+
+                                print("Nyomjon ENTER-t a folytatáshoz.");
+                                io.read();
+                            else
+                                break;
+                            end
+
+                            ::continueInsideNAT::
+                        end
+                    end
                 end
             end
 
@@ -1223,13 +1332,13 @@ while true do
     printOptionAndIncreaseCounter(''..tostring(counter)..'. Kilépés');
 
     local readStr = io.read();
-    local firstChar = readStr:sub(1, 1);
+    local numOfChoice = tonumber(readStr);
 
-    if firstChar == tostring(counter - 1) then
+    if numOfChoice == counter - 1 then
         return;
     end
 
-    if firstChar == "1" then
+    if numOfChoice == 1 then
         while true do
             general.clearScreen();
 
@@ -1262,29 +1371,29 @@ while true do
             printOptionAndIncreaseCounter(""..tostring(counter)..". Visszalépés");
 
             readStr = io.read();
-            firstChar = readStr:sub(1, 1);
+            numOfChoice = tonumber(readStr);
 
-            if firstChar == tostring(counter - 1) then
+            if numOfChoice == counter - 1 then
                 break;
             end
 
             if not isInstalled then
-                if firstChar == "1" then
+                if numOfChoice == 1 then
                     doOpenVPNInstall(OpenVPNHandler);
                 end
             else
-                if firstChar == "1" then --start/stop openvpn server
+                if numOfChoice == 1 then --start/stop openvpn server
                     doOpenVPNStartStop(isRunning, OpenVPNHandler);
-                elseif firstChar == "2" then --init openvpn server/refresh server config
+                elseif numOfChoice == 2 then --init openvpn server/refresh server config
                     doOpenVPNInitOrRefresh(isRunning, serverImpl);
-                elseif firstChar == "3" then --list openvpn clients
+                elseif numOfChoice == 3 then --list openvpn clients
                     doOpenVPNClientListing(serverImpl);
-                elseif firstChar == "4" then --create new openvpn client
+                elseif numOfChoice == 4 then --create new openvpn client
                     doOpenVPNClientCreation(serverImpl);
                 end
             end
         end
-    elseif firstChar == "2" then
+    elseif numOfChoice == 2 then
         while true do
             general.clearScreen();
 
@@ -1301,19 +1410,19 @@ while true do
             printOptionAndIncreaseCounter(""..tostring(counter)..". Visszalépés");
             
             readStr = io.read();
-            firstChar = readStr:sub(1, 1);
+            numOfChoice = tonumber(readStr);
 
-            if firstChar == tostring(counter - 1) then
+            if numOfChoice == counter - 1 then
                 break;
             end
 
-            if firstChar == "1" then
+            if numOfChoice == 1 then
                 doWebserverMenu("apache");
-            elseif firstChar == "2" then
+            elseif numOfChoice == 2 then
                 doWebserverMenu("nginx");
             end
         end
-    elseif firstChar == "3" then
+    elseif numOfChoice == 3 then
         doIptablesMenu();
     end
 end

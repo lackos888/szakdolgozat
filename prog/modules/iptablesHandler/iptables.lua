@@ -139,11 +139,22 @@ local function parse_current_rules()
 
     local parsedStuff = {};
     local linesIterator = retLines:gmatch("[^\r\n]+");
+    local currentTable = false;
 
     for line in linesIterator do
         local firstChar = line:sub(1, 1);
 
-        if firstChar == "" or firstChar == "*" or firstChar == ":" or firstChar == "#" or firstChar ~= "-" then
+        if line == "COMMIT" then
+            currentTable = false;
+        end
+
+        if firstChar == "*" then --describing iptables table
+            currentTable = line:sub(2);
+        elseif firstChar == "" or firstChar == ":" or firstChar == "#" or firstChar ~= "-" then
+            goto continue;
+        end
+
+        if not currentTable then
             goto continue;
         end
 
@@ -174,7 +185,6 @@ local function parse_current_rules()
 
         local interface = "all";
         local chain = false;
-        local currentTable = "filter";
 
         for index, val in pairs(currentLineParsedStuff) do
             for uppercaseIndex, lowerCaseVerboseIndex in pairs(iptablesAliases) do
@@ -205,16 +215,18 @@ local function parse_current_rules()
 
             if mData == "tcp" or mData == "udp" then
                 currentLineParsedStuff["p"] = {data = mData};
-            end
 
-            currentLineParsedStuff["m"] = nil;
+                currentLineParsedStuff["m"] = nil;
+            end
         end
 
+        --[[
         if currentLineParsedStuff["t"] then
             currentTable = currentLineParsedStuff["t"].data;
 
             currentLineParsedStuff["t"] = nil;
         end
+        ]]
 
         if chain and interface and currentTable then
             if not parsedStuff[currentTable] then
@@ -908,6 +920,156 @@ function module.tog_only_allow_accepted_packets_outbound(toggle, interface, prot
     return true;
 end
 
+function module.delete_nat_rules(mainInterface, tunnelInterface, forwardTblIdx, forwardTblAllIdx, postroutingTblAllIdx)
+    local rules = module.currentIPTablesRules;
+
+    if not rules["filter"] then
+        return false;
+    end
+
+    if not rules["filter"]["FORWARD"] then
+        return false;
+    end
+
+    if not rules["nat"] then
+        return false;
+    end
+
+    if not rules["nat"]["POSTROUTING"] then
+        return false;
+    end
+
+    local forwardTbl = rules["filter"]["FORWARD"];
+    local natPostroutingTbl = rules["nat"]["POSTROUTING"];
+    local counter = 0;
+
+    if forwardTbl and forwardTbl[mainInterface] then
+        local v = forwardTbl[mainInterface][forwardTblIdx];
+
+        if v then
+            if v.o and v.o.data == tunnelInterface and v.m and v.m.data == "state" and v.state and v.state.data and v.state.data:find("NEW", 1, true) and v.state.data:find("ESTABLISHED", 1, true) and v.state.data:find("RELATED", 1, true) and v.j and v.j.data == "ACCEPT" then
+                table.remove(forwardTbl[mainInterface], forwardTblIdx);
+                counter = counter + 1;
+            end
+        end
+    end
+
+    if forwardTbl and forwardTbl["all"] then
+        local v = forwardTbl["all"][forwardTblAllIdx];
+
+        if v then
+            if v.s and v.s.data and v.o and v.o.data == mainInterface and v.j and v.j.data == "ACCEPT" then
+                table.remove(forwardTbl["all"], forwardTblAllIdx);
+                counter = counter + 1;
+            end
+        end
+    end
+
+    if natPostroutingTbl and natPostroutingTbl["all"] then
+        local v = natPostroutingTbl["all"][postroutingTblAllIdx];
+
+        if v then
+            if v.s and v.s.data and v.o and v.o.data == mainInterface and v.j and v.j.data == "MASQUERADE" then
+                table.remove(natPostroutingTbl["all"], postroutingTblAllIdx);
+                counter = counter + 1;
+            end
+        end
+    end
+
+    return counter == 3;
+end
+
+function module.get_current_active_nat_for_openvpn()
+    local rules = module.currentIPTablesRules;
+
+    if not rules["filter"] then
+        return false;
+    end
+
+    if not rules["filter"]["FORWARD"] then
+        return false;
+    end
+
+    if not rules["nat"] then
+        return false;
+    end
+
+    if not rules["nat"]["POSTROUTING"] then
+        return false;
+    end
+
+    local forwardTbl = rules["filter"]["FORWARD"];
+    local natPostroutingTbl = rules["nat"]["POSTROUTING"];
+    local natInterfaceProbably = {};
+
+    for interfaceName, datasInside in pairs(forwardTbl) do
+        if interfaceName ~= "all" then
+            for t, v in pairs(datasInside) do
+                if v.o and v.o.data and v.m and v.m.data == "state" and v.state and v.state.data and v.state.data:find("NEW", 1, true) and v.state.data:find("ESTABLISHED", 1, true) and v.state.data:find("RELATED", 1, true) and v.j and v.j.data == "ACCEPT" then
+                    table.insert(natInterfaceProbably, {outInterface = v.o.data, mainInterface = interfaceName, counter = 1, forwardTblIdx = t});
+                end
+            end
+        end
+    end
+
+    if forwardTbl["all"] then
+        local forwardAllTbl = forwardTbl["all"];
+
+        for t, v in pairs(forwardAllTbl) do
+            if v.s and v.s.data and v.o and v.o.data and v.j and v.j.data == "ACCEPT" then
+                local overallBreak = false;
+
+                for natIdx, interfaceData in pairs(natInterfaceProbably) do
+                    if v.o.data == interfaceData.mainInterface then
+                        natInterfaceProbably[natIdx].counter = natInterfaceProbably[natIdx].counter + 1;
+                        natInterfaceProbably[natIdx].subnet = v.s.data;
+                        natInterfaceProbably[natIdx].forwardTblAllIdx = t;
+                        overallBreak = true;
+                        break;
+                    end
+                end
+
+                if overallBreak then
+                    break;
+                end
+            end
+        end
+    end
+
+    if natPostroutingTbl["all"] then
+        local natPostroutingAllTbl = natPostroutingTbl["all"];
+
+        for t, v in pairs(natPostroutingAllTbl) do
+            if v.s and v.s.data and v.o and v.o.data and v.j and v.j.data == "MASQUERADE" then
+                local overallBreak = false;
+                for natIdx, interfaceData in pairs(natInterfaceProbably) do
+                    if v.s.data == interfaceData.subnet and v.o.data == interfaceData.mainInterface then
+                        natInterfaceProbably[natIdx].counter = natInterfaceProbably[natIdx].counter + 1;
+                        natInterfaceProbably[natIdx].postroutingTblAllIdx = t;
+                        overallBreak = true;
+                        break;
+                    end
+                end
+
+                if overallBreak then
+                    break;
+                end
+            end
+        end
+    end
+
+    local i = 1;
+    while i <= #natInterfaceProbably and #natInterfaceProbably > 0 do
+        if natInterfaceProbably[i]["counter"] < 3 then
+            table.remove(natInterfaceProbably, i);
+        else
+            i = i + 1;
+        end
+    end
+    
+    return natInterfaceProbably;
+end
+
 function module.init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubnet)
     local rules = module.currentIPTablesRules;
 
@@ -915,10 +1077,6 @@ function module.init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubn
 
     if not rules["filter"] then
         rules["filter"] = {};
-    end
-
-    if not rules["filter"]["INPUT"] then
-        rules["filter"]["INPUT"] = {};
     end
 
     if not rules["filter"]["FORWARD"] then
@@ -1041,7 +1199,12 @@ function module.loadOurRulesToIptables()
     local lines, retCode = linux.exec_command_with_proc_ret_code("iptables-restore "..tostring(tmpFile), true, nil, true);
     linux.deleteFile(tmpFile);
     
-    --print("[iptables loadOurRulesToIptables] retCode: "..tostring(retCode).." tmpFile: "..tostring(tmpFile).." str: "..tostring(module.iptables_to_string()));
+    if retCode ~= 0 then
+        print("[iptables loadOurRulesToIptables error] retCode: "..tostring(retCode).." tmpFile: "..tostring(tmpFile));
+        print(tostring(lines));
+        print("[iptables loadOurRulesToIptables error] generated iptables restore: ");
+        print(tostring(module.iptables_to_string()));
+    end
 
     return retCode == 0;
 end
@@ -1081,7 +1244,7 @@ function module.iptables_to_string()
 
     for tableName, chainDatas in pairs(rules) do
         str = str.."# Generated by Lua"..general.lineEnding;
-        str = str.."*"..tostring(tableName)..general.lineEnding;
+        str = str.."*"..tostring(tableName)..general.lineEnding; --iptables table
         if defaultPoliciesForTables[tableName] then
             for t, v in pairs(defaultPoliciesForTables[tableName]) do
                 str  = str..tostring(v)..general.lineEnding;
@@ -1094,7 +1257,9 @@ function module.iptables_to_string()
                     table.insert(interfaceOrder, interface);
                 end
             end
-            table.insert(interfaceOrder, "all");
+            if interfaces["all"] then
+                table.insert(interfaceOrder, "all");
+            end
 
             for _, interface in pairs(interfaceOrder) do
                 local interfaceDatas = interfaces[interface];
@@ -1111,9 +1276,12 @@ function module.iptables_to_string()
                     local dataFormatted = "";
                     local idx2 = 1;
 
+                    --[[
+                    NOT NEEDED, DO NOT UNCOMMENT. IPTABLES TABLE IS FORMATTED INTO THE FILE
                     if tableName ~= "filter" then
                         dataFormatted = "-t "..tostring(tableName).." ";
                     end
+                    ]]
 
                     local spaceStuff = false;
                     local iterationOrder = {};
@@ -1129,6 +1297,14 @@ function module.iptables_to_string()
 
                         if (a == "p" and b == "dport") or (a == "dport" and b ~= "p") then 
                             return true; 
+                        end
+
+                        if (a ~= "j") and (b == "j") then
+                            return true;
+                        end
+
+                        if (a == "j") then
+                            return false;
                         end
 
                         return false;    

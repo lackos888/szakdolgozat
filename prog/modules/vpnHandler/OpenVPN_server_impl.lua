@@ -2,6 +2,7 @@ local os = require("os");
 local packageManager = require("apt_packages");
 local linux = require("linux");
 local general = require("general");
+local inspect = require("inspect");
 local config_handler = require("vpnHandler/OpenVPN_config_handler");
 local bootstrapModule = false;
 
@@ -579,10 +580,45 @@ registerNewError("TMPDIR_CHOWN_FAIL");
 registerNewError("TLSAUTH_CHOWN_FAIL");
 registerNewError("TMPDIR_CHMOD_FAIL");
 
+local function getConfigFilePath(openVPNConfigDir)
+    return general.concatPaths(openVPNConfigDir, "/server_"..tostring(module["openvpn_user"])..".conf");
+end
+
+function module.get_openvpn_subnet()
+    if not module.client_handler then
+        return false;
+    end
+
+    local configFilePath = getConfigFilePath(module.getOpenVPNBaseConfigDir());
+
+    local fileContent = general.readAllFileContents(configFilePath);
+
+    if not fileContent then
+        return false;
+    end
+
+    local configFileContent, paramsToLines = config_handler.parse_openvpn_config(fileContent);
+
+    if not configFileContent then
+        return false;
+    end
+
+    if paramsToLines["server"] then
+        local serverData = configFileContent[paramsToLines["server"]];
+        local params = serverData.params;
+
+        if params[1] and params[2] and params[3] then
+            return params[2].val;
+        end
+    end
+
+    return false;
+end
+
 function module.check_server_config(homeDir, openVPNConfigDir)
     local pwd = linux.exec_command("pwd"):gsub("%s+", "");
 
-    local configFilePath = general.concatPaths(openVPNConfigDir, "/server_"..tostring(module["openvpn_user"])..".conf");
+    local configFilePath = getConfigFilePath(openVPNConfigDir);
 
     local tlsAuthKeyPath = general.concatPaths(homeDir, "/ta.key");
 
@@ -857,7 +893,9 @@ function module.initialize_server()
         return module.errors.DAEMON_RELOAD_AND_RESTART_ERROR, 1;
     end
 
-    module["client_handler"] = require("vpnHandler/OpenVPN_clienthandler_impl")(module);
+    if not module.client_handler then
+        module["client_handler"] = require("vpnHandler/OpenVPN_clienthandler_impl")(module);
+    end
 
     return true;
 end
