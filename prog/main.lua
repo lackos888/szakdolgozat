@@ -10,6 +10,7 @@ local iptables = require("iptablesHandler/iptables");
 local certbot = require("certbotHandler/certbot");
 local general = require("general");
 local inspect = require("inspect");
+local linux = require("linux");
 local function doOpenVPNInstall(OpenVPNHandler)
     print("==> Elkezdődött az OpenVPN szerver telepítése, kérlek várj...");
 
@@ -1314,6 +1315,14 @@ local function doIptablesMenu()
 end
 
 --main interface starts here
+
+local idLines, idRet = linux.exec_command_with_proc_ret_code("id", true, nil, true);
+
+if not idLines:find("uid=0(root)", 0, true) then
+    print("Hiba: ez az alkalmazás csak root jogosultságokkal futtatható.");
+
+    return;
+end
 
 while true do
     general.clearScreen();
