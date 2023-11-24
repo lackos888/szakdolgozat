@@ -162,7 +162,7 @@ Az \texttt{OpenVPN NAT setup} menüpontban tudunk NAT-szabályokat létrehozni a
 
 \SubSection{Minden forgalom átirányítása OpenVPN szerveren keresztül}
 
-A NAT bekonfigurálása után, ha minden forgalmat át akarunk irányítani az\\ OpenVPN szerverünkön keresztül a kliens felől, ne felejtsük el a \texttt{\detokenize{net.ipv4.ip_forward}} flaget beállítani a Linux szerveren. Alapértelmezésként a program csak kommentként adja hozzá azt az option-t az OpenVPN szerver konfigurációjához, amely átirányít minden forgalmat a VPN csatornára, ezt kell uncommentelnünk:
+A NAT bekonfigurálása után, ha minden forgalmat át akarunk irányítani az\\ OpenVPN szerverünkön keresztül a kliens felől, ne felejtsük el a \texttt{\detokenize{net.ipv4.ip_forward}} flaget beállítani a Linux szerveren. Alapértelmezésként a program csak kommentként adja hozzá azt az option-t az OpenVPN kliens konfigurációjához, amely átirányít minden forgalmat a VPN csatornára, ezt kell uncommentelnünk:
 
 \begin{verbatim}
 # nano /etc/openvpn/server_openvpn_serv.conf # ez az alapértelmezett

@@ -37,12 +37,6 @@ function module.install_iptables()
 
     return packageManager.install_package("iptables");
 end
-
---from http://lua-users.org/wiki/StringTrim
-local function trim2(s)
-    return s:match "^%s*(.-)%s*$"
-end
-
 function module.get_current_network_interfaces()
     local retLines, retCode = linux.exec_command_with_proc_ret_code("ip link show", true, nil, true);
 
@@ -60,7 +54,7 @@ function module.get_current_network_interfaces()
             local splittedStr = general.strSplit(line, ":");
 
             if #splittedStr == 3 then
-                lastNetworkInterface = trim2(splittedStr[2]);
+                lastNetworkInterface = general.trim2(splittedStr[2]);
             else
                 lastNetworkInterface = false;
             end

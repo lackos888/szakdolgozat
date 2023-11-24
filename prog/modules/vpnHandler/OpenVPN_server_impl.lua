@@ -426,7 +426,7 @@ local sampleConfigFileContent = [[
     # (The OpenVPN server machine may need to NAT
     # or bridge the TUN/TAP interface to the internet
     # in order for this to work properly).
-    push "redirect-gateway def1 bypass-dhcp"
+    #push "redirect-gateway def1 bypass-dhcp"
     
     # Certain Windows-specific network settings
     # can be pushed to clients, such as DNS

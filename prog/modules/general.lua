@@ -113,4 +113,9 @@ function module.readAllFileContents(filePath)
     return ret;
 end
 
+--from http://lua-users.org/wiki/StringTrim
+function module.trim2(s)
+    return s:match "^%s*(.-)%s*$"
+end
+
 return module

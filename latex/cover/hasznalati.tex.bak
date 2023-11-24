@@ -6,7 +6,7 @@
 
 Az adathordozó felépítése egyszerű. Tartalmazza a következő jegyzékeket és fájlokat:
 \begin{itemize}
-	\item \textbf{latex} jegyzék: Ebben található maga a dolgozat \LaTeX fájljai, benne a fejezetekkel és a mellékletekkel (képekkel)
+	\item \textbf{latex} jegyzék: Ebben található maga a dolgozat \LaTeX\quad fájljai, benne a fejezetekkel és a mellékletekkel (képekkel)
 	\item \textbf{prog} jegyzék: Ez tartalmazza magát a programot. A prog jegyzék felépítése:
 		\begin{itemize}
 			\item \textbf{\detokenize{openvpn}} jegyzék: Ebben található a saját Certificate Authoritynk (Easy-RSA), ami mind a kliensek, és a szerver certificate \detokenize{&} private key kezeléséért felelős. Runtime hozódik létre, a program használata során

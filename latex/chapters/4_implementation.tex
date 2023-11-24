@@ -89,7 +89,7 @@ end
 
 Ebben az esetben a \texttt{\detokenize{check_if_user_exists}} funkció az alapján tudja egy felhasználó létezését, hogy \texttt{0}-s exit code-val tért-e vissza az \texttt{id} processz.
 
-Például az \texttt{mkdir} parancs \texttt{0}-s (néhány táblázat szerint: \texttt{Success}) visszatérési értékkel tér vissza akkor, ha sikerült létrehozni egy új jegyzéket, vagy \texttt{1}-es (néhány táblázat szerint: \texttt{Operation not permitted}) visszatérési értékkel tér vissza akkor, ha már létezik az a jegyzék, amit létre szeretnénk hozni. A programkód is ez alapján dönti el, hogy sikeres-e a jegyzék létrehozása:
+Vagy másik példaként az \texttt{mkdir} parancs \texttt{0}-s (néhány táblázat szerint: \texttt{Success}) visszatérési értékkel tér vissza akkor, ha sikerült létrehozni egy új jegyzéket, vagy \texttt{1}-es (néhány táblázat szerint: \texttt{Operation not permitted}) visszatérési értékkel tér vissza akkor, ha már létezik az a jegyzék, amit létre szeretnénk hozni. A programkód is ez alapján dönti el, hogy sikeres-e a jegyzék létrehozása:
 \begin{lua}
 function module.mkdir(path)
     local retCodeForMkdir = module.exec_command_with_proc_ret_code("mkdir "..path);
@@ -118,7 +118,7 @@ A \texttt{certbot} modul tervezése, implementálása közben jött elő ez a ne
 A probléma ott kezdődött, hogy a \textit{certbot} maga alapvetőleg sajnos nem támogatja azt, hogy nem-interaktív módon fut ezen challenge esetében. Megoldást azonban az jelentett, hogy \texttt{\detokenize{--manual}} módban használjuk, és megadjuk neki a preferált challenget (vagyis a dns-t), továbbá \texttt{manual-auth-hook} scriptet használunk. 
 
 
-Ezzel a probléma felét már sikerült orvosolnunk, azonban előjött egy újabb probléma: az io.popen esetén a program megvárja a processz futásának végét. Ez azonban nekünk nem megfelelő, mivel akkor teljesen befagy a program, a DNS challenge futtatásakor pedig a usernak meg kell jelenítenünk bizonyos adatokat, hogy milyen DNS rekordokat hozzanak létre a saját domainjükön és milyen értékekkel. Az os függvénykönyvtárban található \textit{execute} funkció másképp működik, hátránya, hogy alapvetően ez is blocking funkció, továbbá nem is tudjuk pontosan, hogy sikerült-e a program elindítása, csak akkor, ha van returnja és megvizsgáljuk a returnolt státusz kódot.
+Ezzel a probléma felét már sikerült orvosolnunk, azonban előjött egy újabb probléma: az io.popen esetén a program megvárja a processz futásának végét. Ez azonban nekünk nem megfelelő, mivel akkor teljesen befagy a program, a DNS challenge futtatásakor pedig a usernak meg kell jelenítenünk bizonyos adatokat, hogy milyen DNS rekordokat hozzanak létre a saját domainjükön és milyen értékekkel. Az os függvénykönyvtárban található \texttt{execute} funkció másképp működik, hátránya, hogy alapvetően ez is blocking funkció, továbbá nem is tudjuk pontosan, hogy sikerült-e a program elindítása, csak akkor, ha van returnja és megvizsgáljuk a returnolt státusz kódot.
 Ezután azzal folytattam a probléma megoldását, hogy Bash script elemeket használtam fel a program futtatásához, például a \texttt{\detokenize{&}} szimbólumot a háttérben való futáshoz, \texttt{\detokenize{$?}} szimbólumot a státusz kód megkapásához, továbbá \texttt{\detokenize{$!}} szimbólumot az újonnan elindított program PID-jének megkapásához. Ezt az egészet egy nagy parancsba foglaltam. A parancs több fájlt is felhasznál:
 \begin{itemize}
 	\item Egy temp fájlt abból célból, hogy az újonnan létrehozott processz, továbbá a mostani processz kommunikálni tudjon egymással. Amint lefutott a certbot, ide kerül mentésre az exit code
@@ -126,9 +126,9 @@ Ezután azzal folytattam a probléma megoldását, hogy Bash script elemeket has
 	\item Egy certbot\_pid.txt fájlt, amelyből tudjuk, hogy sikeresen lefutott-e a programunk. Azt a célt is szolgálja, hogy ha esetleg megszakadt a program futása valami miatt, akkor a következő lefutáskor a kill parancs segítségével megszüntessük a már nem használt processt.
 \end{itemize}
 
-A kommunikáció maga a két processz között úgy történik, hogy elindul az auth Lua script, amely megkapja environmental variablekon keresztül a certbottól az adatokat. Ezeket az adatokat a legelsőnek létrehozott temp fileba írja bele, majd ezután 1 másodpercenként folyamatosan kiolvassa a temp file tartalmát. Ez azért fontos, mert addig is blokkolja a certbot processzt, így nem halad tovább.\\Amint a user lereadyzte a műveletet, akkor pedig ebbe a tempfájlba beleírodik a "ready" szó, majd ezután fut le csak a certbot DNS challengeje (megszakad a loop).
+A kommunikáció maga a két processz között úgy történik, hogy elindul az auth Lua script a certbotban, amely megkapja environmental variablekon keresztül a certbottól az adatokat. Ezeket az adatokat a legelsőnek létrehozott temp fileba írja bele, majd ezután 1 másodpercenként folyamatosan kiolvassa a temp file tartalmát. Ez azért fontos, mert addig is blokkolja a certbot processzt, így nem halad tovább.\\Amint a user lereadyzte a műveletet, akkor pedig ebbe a tempfájlba beleírodik a "ready" szó, majd ezután fut le csak a certbot DNS challengeje (megszakad a loop).
 
-Lua kódban összességében röviden így néz ki az implementáció:
+Lua kódban néhány részletet kiemelve így néz ki az implementáció:
 \begin{lua}
 function module.try_ssl_certification_creation(method, domain, webserverType)
 	...
@@ -175,7 +175,7 @@ end
 A konfigurációs fájlok módosításához többféle modul is implementálva lett, ezeket a Tervezés című fejezetben meg is említettem: \texttt{\detokenize{apache_config_handler}},\\\texttt{\detokenize{nginx_config_handler}} és \texttt{\detokenize{OpenVPN_config_handler}}. Ezek közül a modulok közül a legtöbb OO alapelveket igyekezett követni, az OpenVPN config handler kivételével.
 
 A config parsereket és writereket hasonlóképp ugyanarra a kódbázisra építettem fel, ez az Apache szerver \textit{envvars} fájl kezelőjének kivételével sikerült is. Mindegyik parser outputja általában két nagyobb táblából épül fel: \texttt{\detokenize{parsedLines}} és\\\texttt{\detokenize{paramToLine}}.
-A \textit{parsedLines} maga az állapot tábla, abba van benne minden egyes beolvasott és értelmezett sor, benne paraméterek, kommentek vannak. A \textit{paramToLine} tábla általában csak cache, azt mutatja meg, hogy bizonyos opciók hol vannak használva a parsedLines táblán belül, így nem kell átfésülni az egész parsedLines táblát, hanem egyszerűen elég ezt felhasználni.
+A \textit{parsedLines} maga az állapot tábla, abba van benne minden egyes beolvasott és értelmezett sor, benne paraméterek, kommentek vannak. A \textit{paramToLine} tábla általában csak cache, azt mutatja meg, hogy bizonyos opciók hol vannak használva a parsedLines táblán belül, így nem kell átfésülni az egész parsedLines táblát, hanem egyszerűen elég azt felhasználni.
 
 \SubSection{OpenVPN config parser-writer implementáció felépítése, használata}
 A \textit{parsedLines} felépítése OpenVPN esetén egyszerű array, minden array elem egy tábla, amelyben a következő paraméterek szerepelhetnek:
@@ -310,4 +310,28 @@ A példakódban a VirtualHost blokk létrehozását láthatjuk, amelybe egy Incl
 \caption{A kiragadott példakód által generált konfiguráció}
 \end{figure}
 
+\SubSection{Modulok használata Lua-ban}
 
+Az összes modul, továbbá a main.lua-ban található felhasználói interface is különböző modulokat használ fel. Ezeket a modulokat a \texttt{require} funkcióval lehet betölteni. A \texttt{require} funkció működése hasonló a \texttt{dofile} funkcióhoz, azonban két főbb különbség is van köztük. 
+
+Az egyik az, hogy a require funkció egy megadott path-on belül keresi a betöltendő fájlt, a másik pedig, a require funkció nem engedi ugyanazon fájl duplikált betöltését. Tehát ha már egyszer betöltöttünk egy modult, akkor nem tölti be mégegyszer teljesen, hanem elcachezi egy táblában a már betöltött fájlt. Ha azonban több virtuális path-ot (például: \texttt{\detokenize{?;?.lua}} foo.lua helyett), nevet használunk ugyanazon fájlra, akkor többször is betöltődnek, mivel más lesz a fájl neve, viszont a tartalom ugyan az marad. \cite{require}
+
+A program kódjában a main.lua-ban van megadva, hogy milyen megadott path mentén keresi meg az adott betöltendő fájlt:
+
+\begin{lua}
+package.path = package.path..";modules/?.lua";
+\end{lua}
+
+Ez a sor szimplán hozzáfűzi a package-k betöltésének pathjához a modules mappát.
+
+Emiatt lehetséges az, hogy nem kell a .lua extensiont kiírnunk a require meghívásaink végén, továbbá, hogy tudunk modulokat betölteni például így:
+\begin{lua}
+local OpenVPNHandler = require("vpnHandler/OpenVPN");
+local linux = require("linux");
+\end{lua}
+
+A \texttt{require} funkció a háttérben a megadott fájl kódját futtatja le. Így működik például a \texttt{Client} class implementációja az összes modulban is, amelybe be van töltve a config handler, mivel a Client tábla globális változó. 
+
+Minden fájl egy adott code-scope, azonban a globális változók hozzáférhetőek azokban a modulokban is, amelyek betöltötték az adott modult. Emiatt lehetséges például a lokálisan definiált funkciók, változók szeparációja. Az adott modulok a saját maguk kódjában használják őket, viszont az őt betöltő modulok már nem tudnak hozzáférni ezekhez a funkciókhoz, változókhoz.
+
+Modulok esetében a saját implementációmban egy lokális tábla hozódik létre (tehát alapvetőleg "private" láthatóságú), azonban mégis tudjuk használni azt. Ez azért van, mert a \texttt{require} funkció az adott kód lefutási értékét adja vissza. Így lehet akár funkcióval is visszatérni, ami konstruktorként szolgálhat (és az adja vissza a module belső táblát), vagy lehet akár a module táblával is visszatérni. Ha a module tábla nem lokális változó lenne, a modulok implementációi egymással konfliktusba kerülnének.

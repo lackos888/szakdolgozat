@@ -3,15 +3,15 @@
 \Section{Felhasznált programnyelv}
 A program elkészítéséhez a felhasznált programnyelv a Lua, tesztelésre és az implementációra az 5.3.5 verzió lett használva.
 
-A \textbf{Lua} egy könnyű, magas szintű programozási nyelv, amelyet főképp a könnyű beágyazhatóság jegyében fejlesztettek ki, a legelső verzióját 1993-ban. Cross-platform, mivel implementációja Ansi C-ben íródott. Saját virtuális géppel és bytecode formátummal rendelkezik.
-A programok futtatás előtt bytecode-ra fordítódnak át, majd úgy kerül átadásra az interpreternek. Mi magunk is lefordíthatjuk a Lua forráskódunkat a luac bináris segítségével.
-Ezt akkor szokták megtenni, ha fel akarják gyorsítani a program futását, vagy ha nem szeretnék, hogy idegenek ismerjék a forráskódot.
+A \textbf{Lua} egy könnyű, magas szintű programozási nyelv, amelyet főképp a könnyű beágyazhatóság jegyében fejlesztettek ki. A legelső verzióját 1993-ban adták ki. Cross-platform, mivel implementációja Ansi C-ben íródott. Saját virtuális géppel és bytecode formátummal rendelkezik.
+A scriptek futtatás előtt bytecode-ra fordítódnak át, majd úgy kerülnek átadásra az interpreternek. Mi magunk is lefordíthatjuk a Lua forráskódunkat a luac bináris segítségével.
+Ezt akkor szokták megtenni, ha fel akarják gyorsítani a script futását, vagy ha nem szeretnék, hogy idegenek ismerjék a forráskódot.
 
 Támogat többféle programozási paradigmát is, azonban ezek nincsenek előre implementálva, viszont a nyelv lehetőséget ad arra, hogy implementáljuk őket. Például öröklődést, osztályokat metatáblák használatával tudunk implementálni. \cite{ooplua}
 
 Széleskörű C API található felhasználásához, azonban nem csak erre a nyelvre korlátozódik az API használatának lehetősége, többféle wrapper is készült a C API-hoz, a legtöbb azonban a C++ nyelvhez készült (például sol).
 
-A nyelv önmagában eléggé jó teljesítménnyel rendelkezik, jónéhány benchmark kimutatása szerint a Lua élvonalon jár teljesítmény szempontjából az interpretált scriptnyelvek között. Nem csak végletekig-csiszolt "benchmarkra szánt" programokban jó a teljesítménye, hanem a való életben való felhasználása közben is. Nagyobb sebességért a LuaJIT branchet is lehet használni.
+Az interpreterje önmagában eléggé jó teljesítménnyel rendelkezik, jónéhány benchmark kimutatása szerint a Lua élvonalon jár teljesítmény szempontjából az interpretált scriptnyelvek között. Nem csak végletekig-csiszolt "benchmarkra szánt" programokban jó a teljesítménye, hanem a való életben való felhasználása közben is. Nagyobb sebességért a LuaJIT branchet is lehet használni.
 
 A \textbf{LuaJIT} a Lua olyan verziója, amely Just-In-Time compilert tartalmaz, alapjaiban is gyorsabb, mint a Lua. A LuaJIT bytecode formátuma teljesen más, mint a sima Lua-é, gyorsabb az instrukciók dekódolása. A virtuális gépe is közvetlenül Assembly-ben íródott. A LuaJIT implementáció szinten nem kötődik hivatalosan a Lua programnyelvhez, attól független, más emberek fejlesztik. \cite {luajit}
 
@@ -23,15 +23,15 @@ Előszeretettel használják a játékfejlesztők is, több neves játékban is 
 
 \Section{Lua sajátosság: metatáblák}
 Az előző szekcióban kifejtettem, hogy néhány programozási paradigma nincs előre implementálva, ezeket nekünk kell implementálunk. Öröklődést, osztályokat metatáblák segítségével tudunk implementálni.
-A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata típus adatok tárolására szolgál, a C API készíti, és az eltárolt adatok memóriacíme alapján működik (ez lehet az alap Lua IO library által megnyitott fájlok handleja (amelyek garbage collect esetén bezárják a file handleket a \detokenize{__}\textbf{gc} metametódus segítségével), vagy például játékok esetében akár játékosadat, járműadat, satöbbi).
+A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata típus adatok tárolására szolgál, a C API készíti, és az eltárolt adatok memóriacíme alapján működik (ez lehet akár az alap Lua IO library által megnyitott fájlok handleja, amelyek garbage collect esetén bezárják a file handleket a \detokenize{__}\textbf{gc} metametódus segítségével); vagy például játékok esetében akár játékosadat, járműadat, satöbbi).
 
 A \textbf{metatábla} egy olyan szokványos Lua tábla, amely meghatározza bizonyos műveletek viselkedését. Értelemszerűen egy metatáblát több táblára is fel lehet használni. A metatáblák legközelebbi rokonjai véleményem szerint a JavaScript nyelv Proxy-jai, azonban hasonlítanak a C++ nyelvben használt operator overloadingokra is. 
 
 A metatáblákban találhatóak meg a \textbf{metametódusok}, amelyek meghívódhatnak bizonyos műveletekkor. Nevük két alsóvonallal kezdődnek, majd a metametódus neve követi. Például: \texttt{\detokenize{__add}}.
 
-A metatáblák beállíthatóak a \texttt{setmetatable} funkcióval, továbbá lekérhetőek a \texttt{getmetatable} funkcióval. A metatáblákon belüli értéklekérésre célszerű a \texttt{rawget} funkciót használni (ez kikerüli a metatáblák lefutását, vizsgálatát), ha le szeretnénk kérni az egyes eltárolt értékeket benne.
+A metatáblák beállíthatóak a \texttt{setmetatable} funkcióval, továbbá lekérhetőek a \texttt{getmetatable} funkcióval. A metatáblákon belüli értéklekérésre célszerű a \texttt{rawget} funkciót használni, ez kikerüli a további metatáblákat az értéklekéréskor.
 
-Alapvetőleg csak tábláknak és userdata-knak van metatáblájuk. Minden más típusú adat saját \texttt{-a típusának megfelelő-} metatáblát használ (például van külön számoknak, szövegeknek, satöbbi). Alapvetőleg egy értéknek nincs metatáblája, viszont például a beépített string library hozzáad a szöveg típusú értékeknek saját metatáblát (ezzel használható például a string:sub, string:gsub funkció is).
+Alapvetőleg csak tábláknak és userdata-knak van metatáblájuk. Minden más típusú adat saját \texttt{-a típusának megfelelő-} metatáblát használ (például van külön számoknak, szövegeknek, satöbbi). Alapvetőleg egy értéknek nincs metatáblája, viszont például a beépített string library hozzáad a szöveg típusú értékeknek saját metatáblát, ezzel használható például a string:sub, string:gsub funkció is.
 
 Néhány érdekesebb, akár a program által is felhasznált metametódusok:
 \begin{itemize}
@@ -44,8 +44,8 @@ Néhány érdekesebb, akár a program által is felhasznált metametódusok:
 		\begin{itemize}
 			\item ha az objektumunk \textbf{nem} tábla
 			\item ha az objektumunk tábla: akkor hívódik meg, ha a táblában nem található a keresett kulcsú érték
-		\end{itemize} Az index metametódus nem csak funkció lehet, hanem tábla is. Ha funkció, akkor meghívódik, két argumenttal: az \texttt{1.} argumentum maga az objektum lesz, a \texttt{2.} pedig a keresett kulcs. Tábla esetén pedig ott próbálja megkeresni az adott kulcsú értéket, ilyenkor ez a lekérdezés sem kerüli ki a metatáblákat.
-	\item \detokenize{__}\textbf{newindex}: Működése hasonló az \detokenize{__}\textbf{index} metametódushoz. Akkor hívódik meg, amikor egy objektumon egy \texttt{obj}\detokenize{[key]} = value értéket beállítanak. A beállított érték szintén lehet funkció, vagy tábla, mint az \detokenize{__}\textbf{index} metametódusnál. Tábla argumentum esetén azon a táblán állítja be az értéket az interpreter, funkció esetén pedig meghívódik a következő argumentumokkal: objektum, key, value. Ekkor a meghívott funkció a \texttt{rawset} funkció segítségével állíthat az objektumon értékeket (kikerülve a rekurzív metametódus meghívásokat).
+		\end{itemize} Az index metametódus nem csak funkció lehet, hanem tábla is. Ha funkció, akkor meghívódik, két argumenttal: az \texttt{1.} argumentum maga az objektum lesz, a \texttt{2.} pedig a keresett kulcs. Tábla esetén pedig ott próbálja megkeresni az adott kulcsú értéket, ilyenkor ez a lekérdezés sem kerüli ki a metatáblák meghívódását.
+	\item \detokenize{__}\textbf{newindex}: Működése hasonló az \detokenize{__}\textbf{index} metametódushoz. Akkor hívódik meg, amikor egy objektumon egy \texttt{obj}\detokenize{[key]} = value értéket beállítanak. A beállított metametódus szintén lehet funkció, vagy tábla, mint az \detokenize{__}\textbf{index} metametódusnál. Tábla argumentum esetén azon a táblán állítja be az értéket az interpreter, funkció esetén pedig meghívódik a következő argumentumokkal: objektum, key, value. Ekkor a meghívott funkció a \texttt{rawset} funkció segítségével állíthat az objektumon értékeket (kikerülve a rekurzív metametódus meghívásokat).
 	\item \detokenize{__}\textbf{call}: Meghívás operátor: \emph{func(args)}. Akkor hívódik meg ez a metametódus, ha megpróbálunk meghívni egy nem funkció értéket. Ekkor func-ban kerül megkeresésre és meghívásra a metametódus (triviálisan csak akkor, ha létezik). Meghívása esetén func a legelső argumentum, a többi argumentum pedig az eredeti meghívás argumentuma (args). A meghívott funkció visszatérési értékei maga a meghívás visszatérési értékei is. Ez az egyetlen metametódus, amely több értékkel is visszatérhet.
 	\item \detokenize{__}\textbf{gc}: Garbage collector metódus. Azelőtt hívódik meg, mielőtt a garbage collector felszabadítja az adott táblát/userdatat. Ez jó lehet például megnyitott fájlok, vagy bármi más megnyitott erőforrások bezárására.
 \end{itemize}
@@ -60,7 +60,7 @@ Mivel a metatáblák átlagos táblák, ezért nem kötelező csak a metametódu
 
 Az előző szekcióban megemlített \detokenize{__}\textbf{index} metametódussal tudunk osztályokat implementálni. Minden objektumnak van egy adott állapota, a tábláknak is.
 
-A tábláknak van egy identitásuk, amely független a bennük tárolt értékektől, két tábla ugyan azokkal az értékekkel különböző objektumok is lehetnek, mindeközben egy objektum különböző értékekkel rendelkezhet különböző időkben, mégis ugyan az az objektum.
+A tábláknak van egy identitásuk, amely független a bennük tárolt értékektől, két tábla ugyan azokkal az értékekkel különböző objektumok is lehetnek, mindeközben egy tábla vagy userdata különböző értékekkel rendelkezhet különböző időkben, mégis ugyan az az objektum.
 
 A tábláknak is van saját életciklusuk, amelyek függetlenek attól, hogy hol lettek létrehozva, vagy hogy ki hozta őket létre.
 
@@ -159,11 +159,11 @@ print(a.balance) --> 0
 
 Ebben az esetben létrehozunk egy Account táblát/objektumot, amelynek lesz \texttt{new} funkciója, ez lesz a "konstruktorunk".
 
-Ez a funkció úgy működik, hogy 1. argumentként kaphat egy objectet/táblát (ekkor a már meglévő objektum lesz állapotként felhasználva), vagy csinál egy teljesen üreset.
+Ez a funkció úgy működik, hogy 1. argumentként kaphat egy állapot objectet/állapot táblát (ekkor a már meglévő objektum lesz állapotként felhasználva), vagy csinál egy teljesen üreset.
 
 Az "o" táblára pedig saját magát, vagyis a jelenlegi objektumot (Account) állítja be metatáblának. Ezután pedig a self (Account) táblán beállítja az \detokenize{__}\textbf{index} metametódus értékét saját magára (tehát tábla lesz, nem funkció). Ennek segítségével minden definiált funkció működni fog úgy, hogy a self megmarad saját állapotként.
 
-Így létrehozhatjuk az \texttt{a} változónév alatt eltárolt új objektumunk realizációját, amely most már bármire átnevezhető, bármikor törölhető. Az \texttt{a} objektumnak saját állapota lesz, saját belső változókkal, ugyanakkor az előre definiált \texttt{deposit} és \texttt{withdraw} funkciók ugyan úgy működni fognak. Ha az \texttt{a} objektumon meghívjuk ezeket a funkciókat, akkor a \texttt{self} keyword magára az \texttt{a} táblára fog mutatni, így lesz saját állapota az objektumnak.
+Így létrehozhatjuk az "\texttt{a}" változónév alatt eltárolt új objektumunk realizációját, amely most már bármire átnevezhető, bármikor törölhető. Az "\texttt{a}" objektumnak saját állapota lesz, saját belső változókkal, ugyanakkor az előre definiált \texttt{deposit} és \texttt{withdraw} funkciók ugyan úgy működni fognak. Ha az "\texttt{a}" objektumon meghívjuk ezeket a funkciókat, akkor a \texttt{self} keyword magára az "\texttt{a}" táblára (objektumra) fog mutatni, így lesz saját állapota az objektumnak.
 
 \SubSection{Destruktor}
 A korábban említett \detokenize{__}\textbf{gc} metódus segítségével tudunk destruktort írni objektjeinknek, ez lefut, mielőtt a garbage collector felszabadítaná őket. Hasznos lehet olyan erőforrások bezárására, amelyek maguktól nem szabadulnak fel.
@@ -172,10 +172,10 @@ A korábban említett \detokenize{__}\textbf{gc} metódus segítségével tudunk
 Az előző, legutolsó példakódot felhasználva könnyedén tudunk öröklődést implementálni. Ne felejtsük el, hogy a \texttt{self} változó mindig önmagunkra mutat. Az alábbi példakódban megtekinthető az öröklődés mechanizmusa:
 
 \begin{lua}
-SpecialAccount = Account:new() --letrehozunk egy uj Account objektumot, amelyet SpecialAccountkent nevezunk el. Azonban a SpecialAccount minden olyan tulajdonsaggal rendelkezik, mint az Account.
+SpecialAccount = Account:new() --letrehozunk egy uj Account objektum peldanyt, amelyet SpecialAccountkent nevezunk el. Azonban a SpecialAccount minden olyan tulajdonsaggal rendelkezik, mint az Account.
 
 s = SpecialAccount:new{limit=1000.00, balance=0} --Ezert lehet ugyan ugy peldanyositani ot is, mint az Account objektumot.
-s:deposit(100.00) --ebben az esetben a self parameter a SpecialAccountra mutat. Az "s" metatablaja SpecialAccount lesz. Ezaltal az "s" orokli a SpecialAccountot, ami pedig orokli az Accountot.
+s:deposit(100.00) --ebben az esetben a self parameter az "s"-re mutat. Az "s" metatablaja pedig SpecialAccount lesz. Ezaltal az "s" orokli a SpecialAccountot, ami pedig orokli az Accountot.
 --mivel a Lua nem talalja meg a deposit funkciot SpecialAccountban, ezert tovabb megy, es az Accountban megtalalja, meghivja azt. Azonban a metodusok felulirhatoak az uj objektumban:
 
 function SpecialAccount:withdraw(v)
@@ -189,7 +189,7 @@ function SpecialAccount:getLimit()
 	return self.limit or 0
 end
 
-s:withdraw(200.00) --[[mostmar a Lua interpreternek nem kell az Accountig visszamennie, mivel a SpecialAccountban a withdraw definialva van azt fogja meghivni. 
+s:withdraw(200.00) --[[mostmar a Lua interpreternek nem kell az Accountig visszamennie, mivel a SpecialAccountban a withdraw definialva van, ezert azt fogja meghivni. 
 a Lua nyelv erdekessege, hogy nem kell uj osztalyt letrehozni annak, hogy kulonleges viselkedest definialjunk egy adott objektumra. Felul lehet irni az "s" objektum funkcioit is, hogy maskepp viselkedjenek]]
 function s:getLimit ()
   return self.balance * 0.10
@@ -253,8 +253,6 @@ A program a szerverek konfigurációja közben igyekszik a jelenleg elérhető l
 
 Az OpenVPN Community szervert a program tudja kezelni, telepíteni. A telepítést az apt-get beépített segédprogrammal végzi. Kezelni tudja az alábbi dolgokat:
 \begin{itemize}
-	\item authentikáció módjának módosítását (kulcsalapú)
-	\item naplózási beállításokat tud módosítani
 	\item kliensek létrehozása (kulcs alapú), törlése (kulcs esetén revoke)
 	\item kliensek számára személyre szabott .ovpn config generálás
 	\item init.d beállítások, az eredeti daemon beállítása automatikus indításra
@@ -269,7 +267,6 @@ Apache2 és Nginx webszervert is tud kezelni a program, ebbe beletartozik:
 	\item telepítés apt-gettel
 	\item honlap hozzáadása külön directoryval
 	\item honlap törlése
-	\item reverse proxy kezelése
 	\item SSL certificate kezelés Let's Encrypton belül certbot segítségével, a certbot snapd-n keresztül települ; up-to-date SSL beállításokra törekszik a program
 	\item külön user a daemonoknak mind Apache2, mind nginx esetében
 	\item a jelenlegi implementáció csak statikus weboldalakat támogat, ezért egy user van egy egész daemonnak, nincs külön weboldalanként user\\PHP/bármilyen szerveroldali kiegészítő esetén célszerű különböző usereket használni weboldalanként
@@ -277,23 +274,28 @@ Apache2 és Nginx webszervert is tud kezelni a program, ebbe beletartozik:
 
 Szintén konfigurációbeállítást végez a program a webszerverek esetében is, teljes mértékben nem tudja a config fájlok helyességét ellenőrizni, sem megjavítani őket, ha már alapból hibásak.
 
-Tűzfal gyanánt az iptables nevű beépített Linux segédprogramot tudja kezelni többféle aspektusból:
+Tűzfal gyanánt az iptables nevű beépített Linux segédprogramot tudja kezelni.
+
+\pagebreak
+
+Iptables funkcionalitások:
 \begin{itemize}
 	\item telepítés apt-gettel ha nincs fent
-	\item IPv4 és IPv6-ot egyaránt támogat
+	\item IPv4 támogatás
 	\item Port nyitás, zárás
 	\item Bizonyos portra csak bizonyos IP-ről csatlakozás engedélyezése
 	\item Bizonyos IP cím felé csak bizonyos kimeneti portok felé kimenő kapcsolat engedélyezése
-	\item Rate limit a portokra a hashlimit modul segítségével
-	\item OpenVPN szerverhez köthető NAT Forwardot csinál, ha minden forgalmat a szerverre szeretnénk irányítani
+	\item Nyitott portok listázása
+	\item Zárt portok listázása
+	\item Engedélyezett kimenő kapcsolatok listázása
+	\item OpenVPN szerverhez köthető NAT Forwardot listázása, kezelése
 	\item A fenti szabályok korlátozhatóak az egyes network interfacekra
 	\item Szabályellenőrzés, például ha engedélyezünk egy portot, és nincsenek letiltva a nem engedélyezett bejövő kapcsolatok, akkor figyelmeztetés
-	\item Ki-be kapcsolható kapcsolók:
+	\item Ki-be kapcsolható togglek:
 		\begin{itemize}
-			\item Bejövő forgalom csak az engedélyezettek közül jöhet be
+			\item Bejövő forgalom csak az engedélyezettek közül jöhet be - ekkor ellenőrzi, hogy SSH port az engedélyezettek között van-e, és ha nincs, akkor figyelmeztet
 			\item Kimenő forgalom csak az engedélyezettek felé mehet ki
 		\end{itemize}
-	\item Hozzáadott, törölt szabályok kiírása tanítási célból
 \end{itemize}
 
 \SubSection{Mi az a tls-crypt?} \label{ref:tls-crypt}
@@ -302,11 +304,11 @@ Többféle előnye is van:
 \begin{itemize}
 	\item nehezebb megkülönböztetni az OpenVPN csomagjait
 	\item több biztonságot ad azzal, hogy a TLS kapcsolódást is titkosítja már
-	\item Man-in-the-middle támadás ellen is védhet, továbbá DoS támadások ellen is
+	\item Man-in-the-middle támadás ellen is védhet, továbbá DoS/DDoS támadások ellen is
 \end{itemize}
 
 \SubSection{Mi az a chroot?} \label{ref:chroot}
-A chroot\texttt{(const char *path)} egy olyan C API hívás, amely a jelenlegi gyökérkönyvtárat átváltoztatja arra, amelyet az első argumentben megadnak neki. Ez azt jelenti, hogy a jövőben az összes fájlművelet ehhez a gyökérkönyvtárhoz lesz relatív, abban a processzben, ha \texttt{/}-lel kezdődik a megnyitott fájl pathja. Kiterjed az összes child-processzre is a változtatás. \cite{chroot}
+A chroot\texttt{(const char *path)} egy olyan C API hívás, amely a jelenlegi gyökérkönyvtárat átváltoztatja arra, amelyet az első argumentben megadnak neki. Ez azt jelenti, hogy a jövőben az összes fájlművelet ehhez a gyökérkönyvtárhoz lesz relatív, abban az esetben, ha \texttt{/}-lel kezdődik a megnyitott fájl pathja. Kiterjed a mostani és az az összes child-processzre is a változtatás. \cite{chroot}
 
 Csak privilegizált programok tudják általában ezt a C API hívást meghívni. Vigyázni kell programozói szempontból a használatával, mivel ez igazából csak a védelem egy alapját adhatja meg, bizonyos módszerekkel kikerülhető.
 
@@ -330,8 +332,6 @@ Az \textbf{ispCP} projektből alakult ki az \textbf{i-MSCP}, amelynek a legutols
 Azonban jelenleg a dolgozat írásakor a projekt nincs aktívan fejlesztve. Az előzőleg említett VHCS, ispCP és i-MSCP szerverkezelő implementációk mindannyian nyílt forráskódúak, ingyenesen felhasználhatóak, többnyire Linux alapú rendszerekre készültek.
 
 A következő lehetséges implementáció az \textbf{ISPConfig}. Ez is szintén nyílt forráskódú, ingyenesen felhasználható, és Linux alapú rendszerekre készült. PHP-ban íródott. Legutolsó stabil verziószám: 3.2.11, amely 2023. augusztus 8.-án lett kiadva. \cite{ispconfig}
-
-\pagebreak
 
 Sok daemont, szervert kezel \cite{ispconfig2}:
 \begin{itemize}
@@ -374,8 +374,6 @@ Tűzfalak terén a Linux rendszerekben a legelterjedtebb netfilter implementáci
 
 Az \textbf{iptables} legelső releaseja 1998-ban jelent meg, a legutolsó stabil kiadása 2022. május 13.-án került kiadásra. C-ben íródott. \cite{iptables}
 
-\pagebreak
-
 Többféle táblát használ a parancsok feldolgozására, tud csomagokat szűrni (ki és bemenő, továbbá átirányított csomagokat), csomagok tartalmát módosítani, átirányítani. Tud NAT-ot is implementálni. \cite{iptables_man}
 
 Az \textbf{nftables} a Linux kernel 3.13-as verziójától érhető el, pontosabban 2014 január 19.-e óta. Az nftables néhány iptables-hez köthető maradandó örökséget cserél le, tudja többnyire ugyan azt a funkcionalitást, mint az \texttt{iptables}. Előnye az iptables-hez képest, hogy kevesebb kód duplikációval rendelkezik, és könnyebb az új protokollokra való kibővítése. \cite{nftables}
@@ -388,9 +386,9 @@ Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egysz
 \caption{Debian 11-es rendszeren használt iptables, amely nftables backenddel dolgozik}
 \end{figure}
 
-Létezik iptables szabálylánc konvertáló program is, amelyre meglévő szabályainkat nftables syntaxra konvertálhatjuk. 
+Létezik iptables szabálylánc konvertáló program is, amellyel meglévő szabályainkat nftables syntaxra konvertálhatjuk. 
 
-Az elkészített program az \texttt{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \texttt{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \texttt{iptables}-t használják fel, a következő táblázatban kettőt fogok összehasonlítani.
+Az elkészítendő program az \texttt{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \texttt{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \texttt{iptables}-t használják fel, a következő táblázatban kettőt fogok összehasonlítani:
 
 \begin{table}[h]
 \centering
@@ -411,16 +409,16 @@ Testreszabhatóság & nincsenek hozzá pluginok & nincsenek hozzá pluginok \\
 \end{tabularx}
 \end{table}
 
-\pagebreak
-
 \SubSection{OpenVPN}
-A következő táblázatban a saját implementációmat, amely OpenVPN Community-t használ hasonlítom össze az OpenVPN Access Server-rel.
+A következő táblázatban (\ref{tab:openvpn_apps}) a saját implementációmat, amely OpenVPN Community szervert használ, hasonlítom össze az OpenVPN Access Server-rel.
 
 Fontos megemlíteni, hogy OpenVPN szerver menedzser implementáció több is létezik, létezik C\#-ban írt, létezik Bash Scriptben írt is. A minél nagyobb cross-platform támogatás lehetősége miatt azonban úgy gondolom mégis helyt áll a program létezése, a Lua nyelv egyszerűsége, nagyszerű cross-platform támogatása miatt. Értelemszerűen a Bash Script implementációk csak Linuxra korlátozódnak. GitHubon létezik web alapú interface is az OpenVPN Community Serverhez.
 
-\begin{table}[h]
+\pagebreak
+\begin{table}[t]
+\caption{Az OpenVPN Access Server összehasonlítása saját implementációval}
 \label{tab:openvpn_apps}
-\begin{tabularx}{\textwidth}{l|D|D}
+\begin{tabularx}{\textwidth}{l|L|L}
  & OpenVPN Access Server \cite{openvpnaccessserver} & Saját implementáció (OpenVPN Community) \\
 \hline
 Ingyenes & nem & igen \\
@@ -435,7 +433,7 @@ Többfaktoros hitelesítés & beépített lehetőségek, továbbá pluginokkal b
 \hline
 Access Control (ACL) & beépített lehetőségek & saját auth scripttel, vagy tűzfallal kivitelezhető \\
 \hline
-Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával (a \texttt{route} program használatával) \\
+Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával (a \texttt{route} program használatával), továbbá szerveroldali konfigurálással (redirect-gateway) \\
 \hline
 Support & professzionális support ticketing rendszerrel & OpenVPN community fórum, Community Ticket report \\
 \hline

@@ -1,7 +1,23 @@
 \Chapter{Összefoglalás}
 
-Hasonló szerepe van, mint a bevezetésnek.
-Itt már múltidőben lehet beszélni.
-A szerző saját meglátása szerint kell összegezni és értékelni a dolgozat fontosabb eredményeit.
-Meg lehet benne említeni, hogy mi az ami jobban, mi az ami kevésbé jobban sikerült a tervezettnél.
-El lehet benne mondani, hogy milyen további tervek, fejlesztési lehetőségek vannak még a témával kapcsolatban.
+A dolgozat célja volt, hogy egy olyan Lua nyelvben általam készített eszközt mutasson be és készítsen el, amely könnyebbé teszi GNU/Linux disztribúciókon a szerverüzemeltetést.
+
+Úgy gondolom, hogy ezt a célt sikeresen teljesítettem. Sikerült egy olyan eszköztárat létrehoznom, amely a mindennapokban megkönnyítheti a szerverüzemeltetést azzal, hogy néhány műveletet átvesz a felhasználótól, például: webszerverek kezelését, tűzfal kezelését, OpenVPN szerver kezelését. Véleményem szerint az elkészült implementáció a gyakorlatban is megállja a helyét, éles környezetben, valós feladatok ellátására is használható lenne.
+
+A megvalósítás során sok érdekes (és néhányszor akadályozó) dologgal találkoztam, és habár nem szakdolgozatom során találkoztam először a Lua programozási nyelvvel, úgy érzem sikerült a szakdolgozat megírása során a már meglévő tudásomat bővíteni.
+
+Igyekeztem a program implementálása során minőségi és könnyen átlátható kódot létrehozni, amely későbbi továbbfejlesztési lehetőséget hordozhat magában.
+
+A tervekhez képest a funkcionalitás kissé elmaradt, azonban úgy gondolom, hogy így is jól használható az elkészült alkalmazás. Lehetne még tovább fejleszteni a programot, például:
+\begin{itemize}
+	\item Command line argumentumok létrehozásával, hogy támogassa az automatizációt. Ennek megfelelően különböző process exit codekra lenne szükség
+	\item A kezelőfelülethez lehetne Terminal UI támogatást létrehozni, hogy méginteraktívabb legyen a program, ezzel például támogathatná az egérkattintásokat is, és az egyszerűbb navigációt
+	\item További szerverek támogatása
+	\item Automatikus logértelmezés, olvasás (például connection log, iptables block log, access log)
+	\item OpenVPN webadmin felület implementálásával
+	\item Teljeskörű webadmin felület implementálásával
+	\item Több Linux disztribúció támogatásával (különböző csomagkezelő programok támogatása)
+	\item Esetleges Windows OS támogatással. Habár maga az implementáció egyelőre csak Linux disztribúciókhoz készült el, a programozási nyelvnek köszönhetően az elkészült szoftver platformfüggetlen lehetne. A jövőben akár ugyanebben a kódbázisban teljesen más platformok támogatását könnyedén lehetővé lehetne tenni.
+\end{itemize}
+
+Úgy gondolom, a felsorolt továbbfejlesztési lehetőségekkel való kibővítéssel akár a jelenleg elérhető népszerű eszközök alternatívája is lehet.

@@ -2,27 +2,23 @@
 
 A program az OO alapelveket igyekszik követni. Elsősorban modulokból áll, amelyek osztályként is értelmezhetőek. Vannak olyan modulok, amelyekben csak a helyi scopeban elérhető kódok vannak, tehát "private" funkciók. Továbbá vannak olyan modulok, amelyekben szintén vannak további osztályok.
 
-A következőekben a modulok UML diagramját fogom külön-külön bemutatni.
+A következőekben a modulok UML diagramját fogom külön-külön bemutatni. Következőképp néznek ki a láthatósági szabályok az UML diagramokon:
 \begin{center}
-	Következőképp néznek ki a láthatósági szabályok az UML diagramokon:
-	
-	\hfill
-	
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.35\textwidth]{Láthatósági szabályok}{0, 0}
-			\attribute {+ Public}
 			\attribute {- Private}
+			\attribute {+ Public}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
 
 \Section{general, apt\_packages, utils modulok felépítése, feladata}
 
-Legelőször a \detokenize{general, linux, apt_packages} és az utils modul került megtervezésre.
+Legelőször a \detokenize{general, linux, apt_packages} és az utils modul került megtervezésre. 
 
-A \textit{general} modulban olyan funkciók és változók találhatóak, amelyek nem OS-specifikusak, bármelyik OS-en működnek, és fontos szerepet töltenek be a program működése közben.
+A \texttt{general} modulban olyan funkciók és változók találhatóak, amelyek a legtöbb OS-en működnek, és fontos szerepet töltenek be a program működése közben.
 
-Az \textit{\detokenize{apt_packages}} modulban Linux-specifikus kód található, a \textit{linux} modulban implementált néhány funkciót használja. Feladata az apt program segítségével a csomagok menedzselése, telepítése.
+Az \texttt{\detokenize{apt_packages}} modulban Linux-specifikus kód található, a \texttt{linux} modulban implementált néhány funkciót használja. Feladata az apt program segítségével a csomagok menedzselése, telepítése.
 
 \begin{figure}[h]
 	\centering
@@ -31,11 +27,14 @@ Az \textit{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 			\begin {class}[text width=0.46\textwidth]{general}{0, 0}
 				\attribute {+ \detokenize{lineEnding : string}}
 				\operation {+ \detokenize{getOSType()}}
+				\operation {+ \detokenize{clearScreen()}}
+				\operation {+ \detokenize{sleep(n)}}
 				\operation {+ \detokenize{strSplit(str, sep)}}
 				\operation {+ \detokenize{deep_compare(tbl1, tbl2)}}
 				\operation {+ \detokenize{concatPaths(...) -> varargs}}
 				\operation {+ \detokenize{extractDirFromPath(path)}}
 				\operation {+ \detokenize{readAllFileContents(filePath)}}
+				\operation {+ \detokenize{trim2(s)}}
 			\end {class}
 			\begin {class}[text width=0.44\textwidth]{\detokenize{apt_packages}}{8, 0}
 				\operation {+ \detokenize{is_package_installed(packageName)}}
@@ -47,26 +46,18 @@ Az \textit{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 \pagebreak
 
 \begin{center}
-	Az \textit{utils} modul legfőképp debugra volt használva, jelenleg épp nincs alkalmazva a program kódjában:
-	
-	\hfill
-	
-	\begin{tikzpicture}
-		\begin {class}[text width=0.5\textwidth]{utils}{0, 0}
-			\attribute {+ \detokenize{tprint(tbl, indent)}}
-		\end {class}
-	\end {tikzpicture}
+	Az \texttt{utils} modul legfőképp debugra volt használva, jelenleg épp nincs alkalmazva a program kódjában, így ezt a modult nem mutatom be.
 \end{center}
 
 \Section{linux modul felépítése, feladatai}
 
 \begin{center}
-	A következő UML diagramon a \textit{linux} nevezetű modult fogom bemutatni, amely linux-specifikus kódrészleteket tartalmaz. Erre a modulra épül a legtöbb modul.
+	A következő UML diagramon a \texttt{linux} nevezetű modult fogom bemutatni, amely linux-specifikus kódrészleteket tartalmaz. Erre a modulra épül a legtöbb modul.
 	
 	\hfill
 	
 	\begin{tikzpicture} % [show background grid]
-		\begin {class}[text width=0.43\textwidth]{linux}{0, 0}
+		\begin {class}[text width=0.7\textwidth]{linux}{0, 0}
 			\operation {+ \detokenize{exists(file)}}
 			\operation {+ \detokenize{isdir(path)}}
 			\operation {+ \detokenize{listDirFiles(path)}}
@@ -74,11 +65,18 @@ Az \textit{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 			\operation {+ \detokenize{deleteFile(path))}}
 			\operation {+ \detokenize{deleteDirectory(path)}}
 			\operation {+ \detokenize{exec_command(cmd)}}
+			\operation {+ \detokenize{get_service_status(serviceName)}}
+			\operation {+ \detokenize{is_service_running(serviceName)}}
+			\operation {+ \detokenize{is_process_running(name)}}
+			\operation {+ \detokenize{stop_service(serviceName)}}
+			\operation {+ \detokenize{start_service(serviceName)}}
+			\operation {+ \detokenize{restart_service(serviceName)}}
+			\operation {+ \detokenize{systemctl_daemon_reload()}}
 			\operation {+ \detokenize{check_if_user_exists(userName)}}
 			\operation {+ \detokenize{create_user_with_name(userName, comment, shell, homeDir)}}
 			\operation {+ \detokenize{update_user(userName, comment, shell)}}
 			\operation {+ \detokenize{get_user_home_dir(userName)}}
-			\operation {+ \detokenize{exec_com-}\\\detokenize{mand_with_proc_ret_code(}\\cmd, linesReturned, envVariables, redirectStdErrToStdIn\detokenize{)}}
+			\operation {+ \detokenize{exec_command_with_proc_ret_code(cmd, linesReturned, envVariables, redirectStdErrToStdIn)}}
 			\operation {+ \detokenize{copy(from, to)}}
 			\operation {+ \detokenize{copyAndChown(user, from, to)}}
 			\operation {+ \detokenize{chown(path, userName, isDir)}}
@@ -87,11 +85,11 @@ Az \textit{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 	\end {tikzpicture}
 \end{center}
 
-A \textit{linux} modul feladatai szerteágazóak:
+A \texttt{linux} modul feladatai szerteágazóak:
 
 \begin{itemize}
 	\item vannak benne fájl- és könyvtár manipulációs funkciók
-	\item vannak benne parancsfuttató funkciók (amelyek közül az egyik tökéletesen kompatibilis Windows-sal is)
+	\item vannak benne parancsfuttató funkciók (amelyek közül az egyik tökéletesen kompatibilis Windows-sal is), továbbá servicet és systemctlt kezelő funkciók
 	\item vannak benne felhasználókat módosító funkciók (felhasználók létrehozása, módosítása, felhasználó létezésének ellenőrzése, felhasználó home dir lekérése)
 	\item vannak benne ownershipet változtató funkciók
 	\item vannak benne fájl és mappa hozzáférési szabályokat változtató funkciók
@@ -105,39 +103,43 @@ A következőekben az OpenVPN szerver kezelését kezdtem el megtervezni, implem
 
 Több részmodulra lett szétosztva:
 \begin{itemize}
-	\item \textbf{OpenVPN}: ez maga \textit{bootstrap} modul, ebben van OpenVPN csomagot feltelepítő funkció, továbbá ez a modul tölti be a \textit{\detokenize{server_impl}} modult
+	\item \textbf{OpenVPN}: ez maga \texttt{bootstrap} modul, ebben van OpenVPN csomagot feltelepítő funkció, szervert indító/leállító funkció, továbbá ez a modul tölti be a \texttt{\detokenize{server_impl}} modult
 	\item \textbf{\detokenize{server_impl}}: ez a modul kezeli a szerverrel kapcsolatos legtöbb dolgot
 	
-	előkészíti a könyvtárakat, feltelepíti az Easy-RSA Certificate kezelőt, létrehoz egy saját CA-t (\textit{Certificate Authority}-t), szerver-oldali certificate és kulcsfájlokat generál, saját OpenVPN usert hoz létre a szervernek, tls-auth/tls-crypt kulcsot generál, a server configot beüzemeli, beállítja a server daemon auto-startot a \textit{/etc/default/openvpn} fájlban
+	előkészíti a könyvtárakat, feltelepíti az Easy-RSA Certificate kezelőt, létrehoz egy saját CA-t (\texttt{Certificate Authority}-t), szerver-oldali certificate és kulcsfájlokat generál, saját OpenVPN usert hoz létre a szervernek, tls-auth/tls-crypt kulcsot generál, a server configot beüzemeli, beállítja a server daemon auto-startot a \texttt{/etc/default/openvpn} fájlban
 
 	\item \textbf{\detokenize{config_handler}}: az OpenVPN szerver és kliens konfigját kezelő modul, config parselést és writeolást implementál. A parser és writer az eredeti OpenVPN parser kódja alapján épült, amely megtalálható a \cite{openvpn_parser} hivatkozás alatt.
-	\item \textbf{\detokenize{clienthandler_impl}}: ez a modul kezel néhány dolgot a kliensekkel kapcsolatosan.
+	\item \textbf{\detokenize{clienthandler_impl}}: ez a modul kezeli teljesen a klienssel kapcsolatos dolgokat:
 	
 	kliens certificatet, private keyt hoz létre; kliens konfigot hoz létre, amelybe beembeddeli a generált fájlok tartalmát (így 1 db config filera van szüksége az OpenVPN kliensnek); certificate revoket támogat; továbbá le lehet kérni az összes jelenlegi klienst, amelyek valósak (nincsenek revokeolva)
 \end{itemize}
 
 \begin{center}
-	Maga az OpenVPN \textit{bootstrap} modul nagyon egyszerű felépítésű:
+	Maga az OpenVPN \texttt{bootstrap} modul nagyon egyszerű felépítésű:
 	
 	\hfill
 	
 	\begin{tikzpicture} % [show background grid]
-		\begin {class}[text width=0.45\textwidth]{OpenVPN}{0, 0}
+		\begin {class}[text width=0.7\textwidth]{OpenVPN}{0, 0}
+			\attribute {+ \detokenize{errors : table}}
 			\attribute {+ \detokenize{server_impl -> }\textbf{OpenVPN\_server\_impl} module}
 			\operation {+ \detokenize{is_openvpn_installed()}}
 			\operation {+ \detokenize{install_openvpn()}}
+			\operation {+ \detokenize{is_running()}}
+			\operation {+ \detokenize{stop_server()}}
+			\operation {+ \detokenize{start_server()}}
+			\operation {+ \detokenize{init_dirs()}}
 		\end {class}
 	\end {tikzpicture}
 	
 	\hfill
 	
-	Hozzá hasonlóan a \textit{\detokenize{config_handler}} modul is egyszerűen épül fel:
+	Hozzá hasonlóan a \texttt{\detokenize{config_handler}} modul is egyszerűen épül fel:
 	
 	\hfill
 	
 	\begin{tikzpicture} % [show background grid]
-		\begin {class}[text width=0.45\textwidth]{\detokenize{OpenVPN_config_handler}}{0, 0}
-			\attribute {- \detokenize{general -> }\textbf{general} module}
+		\begin {class}[text width=0.7\textwidth]{\detokenize{OpenVPN_config_handler}}{0, 0}
 			\operation {+ \detokenize{parse_openvpn_config(linesInStr)}}
 			\operation {+ \detokenize{write_openvpn_config(parsedLines)}}
 		\end {class}
@@ -147,53 +149,80 @@ Több részmodulra lett szétosztva:
 \pagebreak
 
 \begin{center}
-	A \textit{\detokenize{clienthandler_impl}} modul már bonyolultabb felépítésű, két osztályt is tartalmaz:
+	A \texttt{\detokenize{server_impl}} modul minden OpenVPN szerverrel kapcsolatos művelet magja, ezért sok funkcióval rendelkezik. A klienseket kezelő \texttt{\detokenize{OpenVPN_clienthandler_impl}} modulban pedig két osztály is helyet foglal az OO alapelveket követve:
 	
 	\begin{figure}[h]
+		\centering
 		\begin{tikzpicture} % [show background grid]
-			\begin {class}[text width=0.46\textwidth]{\detokenize{OpenVPN_clienthandler_impl}}{0, 0}
-				\attribute {- \detokenize{linux -> }\textbf{\detokenize{linux}} module}
-				\attribute {- \detokenize{general -> }\textbf{\detokenize{general}} module}
-				\attribute {- \detokenize{utils -> }\textbf{\detokenize{utils}} module}
-				\attribute {- \detokenize{config_handler -> }\textbf{\detokenize{OpenVPN_config_handler}} module}
-				\attribute {- \detokenize{server_impl -> }\textbf{\detokenize{OpenVPN_server_impl}} module}
-				\attribute {- \detokenize{clientObjects : table}}
-				\attribute {- \detokenize{validClients : table}}
-				\attribute {- \detokenize{clientSampleConfig : string}}
-				\attribute {+ \detokenize{Client -> }\textbf{class}}
-				\operation {- \detokenize{get}\\ \detokenize{_valid_clients_from_PKI_database()}}
-				\operation {+ \detokenize{constructor(openVPNServerImpl)}}
-				\operation {+ \detokenize{update}\\ \detokenize{_revoke_crl_for_openvpn_daemon()}}
-				\operation {+ \detokenize{get_valid_clients()}}
+			\begin {class}[text width=0.7\textwidth]{\detokenize{OpenVPN_server_impl}}{0, 0}
+				\attribute {- \detokenize{bootstrapModule -> }\textbf{\detokenize{OpenVPN}} module}
+				\attribute {- \detokenize{ca_pass : string}}
+				\attribute {- \detokenize{server_key_pass : string}}
+				\attribute {- \detokenize{sampleConfigFileContent : string}}
+				\attribute {+ \detokenize{errors : table}}
+				\operation {- \detokenize{registerNewError(errorName)}}
+				\operation {- \detokenize{getConfigFilePath(openVPNConfigDir)}}
+				\operation {+ \detokenize{constructor(_bootstrapModule)}}
+				\operation {+ \detokenize{resolveErrorToStr(error)}}
+				\operation {+ \detokenize{getEasyRSADir()}}
+				\operation {+ \detokenize{getCAPass()}}
+				\operation {+ \detokenize{getOpenVPNBaseConfigDir()}}
+				\operation {+ \detokenize{is_easy_rsa_installed()}}
+				\operation {+ \detokenize{formatPathInsideEasyRSAInstallCache(path)}}
+				\operation {+ \detokenize{formatPathInsideBasedir(path)}}
+				\operation {+ \detokenize{init_dirs()}}
+				\operation {+ \detokenize{install_easy_rsa()}}
+				\operation {+ \detokenize{getEasyRSAPKiDir()}}
+				\operation {+ \detokenize{init_easy_rsa()}}
+				\operation {+ \detokenize{enable_all_autostart_in_default()}}
+				\operation {+ \detokenize{get_openvpn_subnet()}}
+				\operation {+ \detokenize{check_server_config(homeDir, openVPNConfigDir)}}
+				\operation {+ \detokenize{check_openvpn_user_existence()}}
+				\operation {+ \detokenize{create_openvpn_user(homeDir)}}
+				\operation {+ \detokenize{update_existing_openvpn_user()}}
+				\operation {+ \detokenize{get_openvpn_home_dir()}}
+				\operation {+ \detokenize{initialize_server()}}
 			\end {class}
-			\begin {class}[text width=0.44\textwidth]{\detokenize{Client}}{8.25, 0}
-				\attribute {- \detokenize{linux -> }\textbf{\detokenize{linux}} module}
-				\attribute {- \detokenize{general -> }\textbf{\detokenize{general}} module}
-				\attribute {- \detokenize{utils -> }\textbf{\detokenize{utils}} module}
-				\attribute {- \detokenize{config_handler -> }\textbf{\detokenize{OpenVPN_config_handler}} module}
-				\attribute {- \detokenize{server_impl -> }\textbf{\detokenize{OpenVPN_server_impl}} module}
-				\attribute {- \detokenize{clientObjects : table}}
-				\attribute {- \detokenize{validClients : table}}
-				\attribute {- \detokenize{clientSampleConfig : string}}
-				\operation {+ \detokenize{new(clientName, loadedFromPKI)}}
-				\operation {+ \detokenize{genKeyAndCRT(password)}}
-				\operation {+ \detokenize{generateClientConfig()}}
-				\operation {+ \detokenize{revoke()}}
-				\operation {+ \detokenize{isValidClient()}}	
-			\end {class}
-			
-			\unidirectionalAssociation{OpenVPN_clienthandler_impl}{}{}{Client}
 		\end {tikzpicture}
 	\end{figure}
+	
+	\begin{tikzpicture} % [show background grid]
+		\begin {class}[text width=0.458\textwidth]{\detokenize{OpenVPN_clienthandler_impl}}{0, 0}
+			\attribute {- \detokenize{clientObjects : table}}
+			\attribute {- \detokenize{validClients : table}}
+			\attribute {- \detokenize{clientSampleConfig : string}}
+			\attribute {+ \detokenize{errors : table}}
+			\attribute {+ \detokenize{Client -> }\textbf{class}}
+			\operation {- \detokenize{get}\\ \detokenize{_valid_clients_from_PKI_database()}}
+			\operation {- \detokenize{registerNewError(errorName)}}
+			\operation {+ \detokenize{constructor(openVPNServerImpl)}}
+			\operation {+ \detokenize{resolveErrorToStr(error)}}
+			\operation {+ \detokenize{update}\\ \detokenize{_revoke_crl_for_openvpn_daemon()}}
+			\operation {+ \detokenize{get_valid_clients()}}
+		\end {class}
+		\begin {class}[text width=0.44\textwidth]{\detokenize{Client}}{8.25, 0}
+			\attribute {- \detokenize{clientObjects : table}}
+			\attribute {- \detokenize{validClients : table}}
+			\attribute {- \detokenize{clientSampleConfig : string}}
+			\attribute {+ \detokenize{errors : table}}
+			\operation {+ \detokenize{new(clientName, loadedFromPKI)}}
+			\operation {+ \detokenize{genKeyAndCRT(password)}}
+			\operation {+ \detokenize{generateClientConfig()}}
+			\operation {+ \detokenize{revoke()}}
+			\operation {+ \detokenize{isValidClient()}}	
+		\end {class}
+		
+		\unidirectionalAssociation{OpenVPN_clienthandler_impl}{}{}{Client}
+	\end {tikzpicture}
 \end{center}
+
+\pagebreak
 
 \Section{nginx modulok felépítései, feladatai}
 
-Az nginx-et kezelő modulok is több részre lettek osztva. Az összes modul a program jegyzékén belül a \textbf{modules/nginxHandler} jegyzékben található meg.
-
-A modulok leírásai, feladatokkal:
+Az nginx-et kezelő modulok is több részre lettek osztva. Az összes modul a program jegyzékén belül a \textbf{modules/nginxHandler} jegyzékben található meg. A modulok leírásai, feladatokkal:
 \begin{itemize}
-	\item \textbf{nginx}: ez maga egy \textit{bootstrap} modul, ebben van nginx csomagot feltelepítő funkció, továbbá ez a modul tölti be a \textit{\detokenize{server_impl}} modult
+	\item \textbf{nginx}: ez maga egy \texttt{bootstrap} modul, ebben van nginx csomagot feltelepítő funkció, szervert leállító/elindító funkció, továbbá ez a modul tölti be a \\\texttt{\detokenize{server_impl}} modult
 	\item \textbf{\detokenize{server_impl}}: ez a modul kezeli a szerverrel kapcsolatos legtöbb dolgot
 	
 	előkészíti a könyvtárakat, létrehoz az nginx daemonnak, workereknek egy usert; támogatja automatikusan a weboldalak létrehozását, törlését; támogatja az SSL-t; minden támogatott featuret bekonfigurál automatikusan
@@ -202,39 +231,28 @@ A modulok leírásai, feladatokkal:
 \end{itemize}
 
 \begin{center}
-	Az nginx \textit{bootstrap} modul ezesetben is egyszerű felépítésű:
-	
-	\hfill
-	
+	Az nginx \texttt{bootstrap} modul ezesetben is egyszerű felépítésű:
+
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.45\textwidth]{nginx}{0, 0}
+			\attribute {+ \detokenize{errors : table}}
 			\attribute {+ \detokenize{server_impl -> }\textbf{nginx\_server\_impl} module}
-			\operation {+ \detokenize{is_nginx_installed()}}
-			\operation {+ \detokenize{install_nginx()}}
+			\operation {+ \detokenize{is_installed()}}
+			\operation {+ \detokenize{install()}}
+			\operation {+ \detokenize{is_running()}}
+			\operation {+ \detokenize{stop_server()}}
+			\operation {+ \detokenize{start_server()}}
 			\operation {+ \detokenize{init_dirs()}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
-	
-\pagebreak
 
-Azonban a \textit{\detokenize{config_handler}} modul ebben az esetben már kissé bonyolultabb, mivel az nginx syntaxa is komplikáltabb. Két osztályt tartalmaz. Az ábrán látható a \textit{\detokenize{nginx_server_impl}} modul felépítése is.
+Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kissé bonyolultabb, mivel az nginx syntaxa is komplikáltabb. Két osztályt tartalmaz.
 
 \hfill
 
 \begin{tikzpicture} % [show background grid]
 	\begin {class}[text width=0.45\textwidth]{\detokenize{nginx_config_handler}}{0, 0}
-		\attribute {- \detokenize{CR : string}}
-		\attribute {- \detokenize{LF : string}}
-		\attribute {- \detokenize{NGX_ERROR : number}}
-		\attribute {- \detokenize{NGX_CONF_BLOCK_DONE : number}}
-		\attribute {- \detokenize{NGX_CONF_FILE_DONE : number}}
-		\attribute {- \detokenize{NGX_CONF_BLOCK_START : number}}
-		\attribute {- \detokenize{NGX_CONF_BLOCK_DONE : number}}
-		\attribute {- \detokenize{NGX_OK : number}}
-		\attribute {- \detokenize{NGX_CONF_MAX_ARGS : number}}
-		\attribute {- \detokenize{inspect -> }\textbf{inspect} module}
-		\attribute {- \detokenize{general -> }\textbf{general} module}
 		\attribute {+ \detokenize{nginxConfigHandler -> }\textbf{nginxConfigHandler} class}
 		\operation {- \detokenize{concatArgsProperlyForBlockName(args)}}
 		\operation {- \detokenize{parse_nginx_config(linesInStr)}}
@@ -252,34 +270,40 @@ Azonban a \textit{\detokenize{config_handler}} modul ebben az esetben már kiss�
 		\operation {+ \detokenize{toString()}}
 	\end {class}
 	
-	\begin {class}[text width=0.45\textwidth]{\detokenize{nginx_server_impl}}{7.5, -5}
-		\attribute {- \detokenize{os -> }\textbf{os} module}
-		\attribute {- \detokenize{packageManager -> }\textbf{\detokenize{apt_packages}} module}
-		\attribute {- \detokenize{linux -> }\textbf{linux} module}
-		\attribute {- \detokenize{general -> }\textbf{general} module}
-		\attribute {- \detokenize{nginxConfigHandlerModule -> }\textbf{\detokenize{config_handler}} module}
-		\attribute {- \detokenize{inspect -> }\textbf{inspect} module}
-		\attribute {- \detokenize{sampleConfigForWebsite : string}}
-		\attribute {+ \detokenize{nginx_user : string}}
-		\attribute {+ \detokenize{nginx_user_comment : string}}
-		\attribute {+ \detokenize{nginx_user_shell : string}}
-		\attribute {+ \detokenize{base_dir : string}}
-		\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-		\operation {+ \detokenize{init_dirs()}}
-		\operation {+ \detokenize{check_nginx_user_existence()}}
-		\operation {+ \detokenize{create_nginx_user(homeDir)}}
-		\operation {+ \detokenize{update_existing_nginx_user()}}
-		\operation {+ \detokenize{get_nginx_home_dir()}}
-		\operation {+ \detokenize{get_nginx_master_config_}\\\detokenize{path_from_daemon()}}
-		\operation {+ \detokenize{initialize_server()}}
-		\operation {+ \detokenize{create_new_website(websiteUrl)}}
-		\operation {+ \detokenize{delete_website(websiteUrl)}}
-		\operation {+ \detokenize{get_current_available_websites()}}
-		\operation {+ \detokenize{init_ssl_for_website(webUrl, certDetails)}}
-	\end {class}
-	
-	\unidirectionalAssociation{nginx_config_handler}{}{}{nginxConfigHandler}
+	\unidirectionalAssociation{nginx_config_handler}{}{}{nginxConfigHandler}	
 \end {tikzpicture}
+
+\pagebreak
+
+\begin{center}
+	A következő ábrán látható a \texttt{\detokenize{nginx_server_impl}} modul felépítése:
+
+	\begin{tikzpicture} % [show background grid]
+		\begin {class}[text width=0.7\textwidth]{\detokenize{nginx_server_impl}}{0, 0}
+			\attribute {- \detokenize{sampleConfigForWebsite : string}}
+			\attribute {+ \detokenize{nginx_user : string}}
+			\attribute {+ \detokenize{nginx_user_comment : string}}
+			\attribute {+ \detokenize{nginx_user_shell : string}}
+			\attribute {+ \detokenize{base_dir : string}}
+			\attribute {+ \detokenize{errors : table}}
+			\operation {- \detokenize{registerNewError(errorName)}}
+			\operation {+ \detokenize{constructor(_bootstrapModule)}}
+			\operation {+ \detokenize{resolveErrorToStr(error)}}
+			\operation {+ \detokenize{formatPathInsideBasedir(path)}}
+			\operation {+ \detokenize{init_dirs()}}
+			\operation {+ \detokenize{check_nginx_user_existence()}}
+			\operation {+ \detokenize{create_nginx_user(homeDir)}}
+			\operation {+ \detokenize{update_existing_nginx_user()}}
+			\operation {+ \detokenize{get_nginx_home_dir()}}
+			\operation {+ \detokenize{get_nginx_master_config_}\\\detokenize{path_from_daemon()}}
+			\operation {+ \detokenize{initialize_server()}}
+			\operation {+ \detokenize{create_new_website(websiteUrl)}}
+			\operation {+ \detokenize{delete_website(websiteUrl)}}
+			\operation {+ \detokenize{get_current_available_websites()}}
+			\operation {+ \detokenize{init_ssl_for_website(webUrl, certDetails)}}
+		\end {class}
+	\end {tikzpicture}
+\end{center}
 
 \Section{apache modulok felépítései, feladatai}
 
@@ -287,20 +311,20 @@ Az apache kezeléséhez tartozó modulok a program jegyzékén belül a \textbf{
 
 A modulok leírásai, feladatokkal:
 \begin{itemize}
-	\item \textbf{apache}: ez maga egy \textit{bootstrap} modul, ebben van apache2 csomagot feltelepítő funkció, továbbá ez a modul tölti be a \textit{\detokenize{server_impl}} modult
-	\item \textbf{\detokenize{server_impl}}: ez a modul kezeli a szerverrel kapcsolatos legtöbb dolgot
+	\item \textbf{apache}: ez maga egy \texttt{bootstrap} modul, ebben van apache2 csomagot feltelepítő funkció, szervert leállító/elindító funkció, továbbá ez a modul tölti be a \texttt{\detokenize{server_impl}} modult
+	\item \textbf{\detokenize{server_impl}}: ez a modul kezeli a szerverrel kapcsolatos legtöbb dolgot:
 	
 	előkészíti a könyvtárakat, létrehoz az apache2 daemonnak, processeknek egy usert\\támogatja automatikusan a weboldalak létrehozását, törlését; támogatja az SSL-t; minden támogatott featuret bekonfigurál automatikusan (envvars-t is)
 
-	\item \textbf{\detokenize{config_handler}}: apache szerver konfigját kezelő modul\\Config parselést és writeolást implementál. Az apache2 szerver parsere az előzőleg tárgyalt programokhoz képest bonyolultabb, ezért from scratch terveztem a parsert és a writert. Ehhez az apache2 config syntax dokumentációját vettem segítségül, amely megtalálható a \cite{apache_configuring} hivatkozás alatt.
+	\item \textbf{\detokenize{config_handler}}: apache szerver konfigját kezelő modul:\\Config parselést és writeolást implementál. Az apache2 szerver parsere az előzőleg tárgyalt programokhoz képest bonyolultabb, ezért teljesen az alapoktól terveztem a parsert és a writert. Ehhez az apache2 config syntax dokumentációját vettem segítségül, amely megtalálható a \cite{apache_configuring} hivatkozás alatt.
 	\\Az envvars nevű fájl szerkesztését implementáló class is ebben a modulban van.
 \end{itemize}
 
-\begin{center}
-	Az apache \textit{bootstrap} modul ezesetben is egyszerű felépítésű, a \textit{\detokenize{config_handler}} pedig három osztályt tartalmaz:
+\pagebreak
+
+Az apache \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, a \texttt{\detokenize{config_handler}} pedig három osztályt tartalmaz. A \texttt{\detokenize{server_impl}} modul hasonló bonyolultságú az \\\texttt{\detokenize{nginx_server_impl}} modulhoz:
 	
-	\hfill
-\end{center}
+\hfill
 	
 \begin{tikzpicture} % [show background grid]
 	\begin {class}[text width=0.45\textwidth]{apache}{0, 0}
@@ -311,10 +335,6 @@ A modulok leírásai, feladatokkal:
 	\end {class}
 	
 	\begin {class}[text width=0.45\textwidth]{\detokenize{apache_config_handler}}{7.6, 0}
-		\attribute {- \detokenize{CR : string}}
-		\attribute {- \detokenize{LF : string}}
-		\attribute {- \detokenize{inspect -> }\textbf{inspect} module}
-		\attribute {- \detokenize{general -> }\textbf{general} module}
 		\attribute {+ \detokenize{apacheConfigHandler -> }\textbf{apacheConfigHandler} class}
 		\attribute {+ \detokenize{apacheEnvvarsHandler -> }\textbf{apacheEnvvarsHandler} class}
 		\operation {- \detokenize{parse_apache_config(linesInStr)}}
@@ -325,7 +345,7 @@ A modulok leírásai, feladatokkal:
 		\operation {- \detokenize{escape_magic(s)}}
 	\end {class}
 	
-	\begin {class}[text width=0.44\textwidth]{\detokenize{apacheConfigHandler}}{0, -5}
+	\begin {class}[text width=0.45\textwidth]{\detokenize{apacheConfigHandler}}{0, -5}
 		\operation {+ \detokenize{new(linesInStr, paramToLine)}}
 		\operation {+ \detokenize{getParsedLines()}}
 		\operation {+ \detokenize{getParamsToIdx()}}
@@ -334,107 +354,91 @@ A modulok leírásai, feladatokkal:
 		\operation {+ \detokenize{toString()}}
 	\end {class}
 	
-	\begin {class}[text width=0.44\textwidth]{\detokenize{apacheEnvvarsHandler}}{5, -11}
+	\begin {class}[text width=0.45\textwidth]{\detokenize{apacheEnvvarsHandler}}{7.6, -7}
 		\operation {+ \detokenize{new(linesInStr)}}
 		\operation {+ \detokenize{getArgs()}}
 		\operation {+ \detokenize{toString()}}
 	\end {class}
 	
+	\begin {class}[text width=0.45\textwidth]{\detokenize{apache_server_impl}}{4.5, -10.3}
+		\attribute {+ \detokenize{apache_user : string}}
+		\attribute {+ \detokenize{apache_user_comment : string}}
+		\attribute {+ \detokenize{apache_user_shell : string}}
+		\attribute {+ \detokenize{base_dir : string}}
+		\attribute {+ \detokenize{errors : table}}
+		\attribute {- \detokenize{sampleConfigForWebsite : string}}
+		\operation {- \detokenize{resolveErrorToStr(error)}}
+		\operation {+ \detokenize{constructor(_bootstrapModule)}}
+		\operation {+ \detokenize{formatPathInsideBasedir(path)}}
+		\operation {+ \detokenize{check_apache_user_existence()}}
+		\operation {+ \detokenize{create_apache_user(homeDir)}}
+		\operation {+ \detokenize{update_existing_apache_user()}}
+		\operation {+ \detokenize{get_apache_home_dir()}}
+		\operation {+ \detokenize{get_apache_master_config_}\\\detokenize{path_from_daemon()}}
+		\operation {+ \detokenize{init_dirs()}}
+		\operation {+ \detokenize{initialize_server()}}
+		\operation {+ \detokenize{create_new_website(websiteUrl)}}
+		\operation {+ \detokenize{delete_website(websiteUrl)}}
+		\operation {+ \detokenize{get_current_available_websites()}}
+		\operation {+ \detokenize{init_ssl_for_website(webUrl, certDetails)}}
+	\end {class}
+
 	\unidirectionalAssociation{apache_config_handler}{}{}{apacheConfigHandler}
 	\unidirectionalAssociation{apache_config_handler}{}{}{apacheEnvvarsHandler}
 \end {tikzpicture}
 
 \pagebreak
 
-\begin{center}
-	Az apache esetében a \textit{server\_impl} modul hasonló bonyolultságú az \textit{nginx\_server\_impl} modulhoz:
-	
-	\hfill
-	
-	\begin{tikzpicture} % [show background grid]
-		\begin {class}[text width=0.45\textwidth]{\detokenize{apache_server_impl}}{0, 0}
-			\attribute {- \detokenize{os -> }\textbf{os} module}
-			\attribute {- \detokenize{packageManager -> }\textbf{\detokenize{apt_packages}} module}
-			\attribute {- \detokenize{linux -> }\textbf{linux} module}
-			\attribute {- \detokenize{general -> }\textbf{general} module}
-			\attribute {- \detokenize{apacheConfigHandlerModule -> }\textbf{\detokenize{config_handler}} module}
-			\attribute {- \detokenize{inspect -> }\textbf{inspect} module}
-			\attribute {+ \detokenize{apache_user : string}}
-			\attribute {+ \detokenize{apache_user_comment : string}}
-			\attribute {+ \detokenize{apache_user_shell : string}}
-			\attribute {+ \detokenize{base_dir : string}}
-			\attribute {- \detokenize{sampleConfigForWebsite : string}}
-			\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-			\operation {+ \detokenize{check_apache_user_existence()}}
-			\operation {+ \detokenize{create_apache_user(homeDir)}}
-			\operation {+ \detokenize{update_existing_apache_user()}}
-			\operation {+ \detokenize{get_apache_home_dir()}}
-			\operation {+ \detokenize{get_apache_master_config_}\\\detokenize{path_from_daemon()}}
-			\operation {+ \detokenize{init_dirs()}}
-			\operation {+ \detokenize{initialize_server()}}
-			\operation {+ \detokenize{create_new_website(websiteUrl)}}
-			\operation {+ \detokenize{delete_website(websiteUrl)}}
-			\operation {+ \detokenize{get_current_available_websites()}}
-			\operation {+ \detokenize{init_ssl_for_website(webUrl, certDetails)}}
-		\end {class}
-	\end {tikzpicture}
-\end{center}
-	
 \Section{certbot modul felépítése, feladata}
 
 A certbot csak egy modult foglal magában. Működéséhez több modult is felhasznál. A modulban megtalálható a certbot telepítése snapd-n keresztül, symlink létrehozás, SSL certificate létrehozás HTTP-01 challenge és DNS challenge segítségével, továbbá be is konfigurálja az adott webszervereket a használathoz.
 
-Habár a certbot akár az \textit{apt} package managerrel is felrakható, az \textit{apt-get install certbot} parancs segítségével, maga a program weboldalán a leírás szerint snapd-vel telepítik. \cite{certbot_install_debian}
+Habár a certbot akár az \texttt{apt} package managerrel is felrakható, az \texttt{apt-get install certbot} parancs segítségével, maga a program weboldalán a leírás szerint snapd-vel telepítik. \cite{certbot_install_debian}
 
-A különbség főképp a kettő között az, hogy az \textit{apt} package manager deb csomagokkal dolgozik, a \textit{snap} pedig teljes archívumokkal.
+A különbség főképp a kettő között az, hogy az \texttt{apt} package manager deb csomagokkal dolgozik, a \texttt{snap} pedig teljes archívumokkal. Teljesen két külön CDN-nel dolgoznak.
 
-Az \textit{apt} esetében a függőségek külön rakódnak fel a csomagok feltelepítésekor, és a \textit{deb} archívumok csak a csomagokat tartalmazzák. Ebben az esetben a frissítések késhetnek, mivel több szervezet, személy is átnézi a frissítés tartalmát.
+Az \texttt{apt} esetében a függőségek külön rakódnak fel a csomagok feltelepítésekor, és a \texttt{deb} archívumok csak a csomagokat tartalmazzák. Ebben az esetben a frissítések késhetnek, mivel több szervezet, személy is átnézi a frissítés tartalmát.
 
-A \textit{snapd} esetében egy teljes archívumot tölt le a rendszer, ebben benne van a csomag összes függősége pont azzal a verzióval, amellyel a csomag fejlesztői szerették volna. Ez az archívum egy "zárt térbe" kerül kicsomagolásra, és limitált hozzáférése van magához a rendszerhez (hasonlóan a Docker-alkalmazásokhoz). Frissítéskor a fejlesztő adja ki a frissítéseket, nem validálják őket külön, ezáltal gyorsabban eljut a userekhez.\cite{snap_vs_apt}
+A \texttt{snapd} esetében egy teljes archívumot tölt le a rendszer, ebben benne van a csomag összes függősége pont azzal a verzióval, amellyel a csomag fejlesztői szerették volna. Ez az archívum egy "zárt térbe" kerül kicsomagolásra, és limitált hozzáférése van magához a rendszerhez (hasonlóan a Docker-alkalmazásokhoz). Frissítéskor a fejlesztő adja ki a frissítéseket, nem validálják őket külön, ezáltal gyorsabban eljut a userekhez. \cite{snap_vs_apt}
 
 \begin{center}
-	A \textit{certbot} modul UML diagramja:
+	A \texttt{certbot} modul UML diagramja:
 	
 	\hfill
 	
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.6\textwidth]{\detokenize{certbot}}{0, 0}
-			\attribute {- \detokenize{os -> }\textbf{os} module}
-			\attribute {- \detokenize{aptPackageManager -> }\textbf{\detokenize{apt_packages}} module}
-			\attribute {- \detokenize{snapPackageManager -> }\textbf{\detokenize{snapd}} module}
-			\attribute {- \detokenize{linux -> }\textbf{linux} module}
-			\attribute {- \detokenize{general -> }\textbf{general} module}
-			\attribute {- \detokenize{inspect -> }\textbf{\detokenize{inspect}} module}
-			\attribute {- \detokenize{nginx -> }\textbf{\detokenize{nginx}} module}
-			\attribute {- \detokenize{apache -> }\textbf{\detokenize{apache}} module}
+			\attribute {- \detokenize{errors : table}}
 			\attribute {- \detokenize{certFileName : string}}
 			\attribute {- \detokenize{keyFileName : string}}
 			\attribute {- \detokenize{dhParamFileName : string}}
 			\attribute {- \detokenize{dryRunStr : string} - kizárólag debugra}
+			\operation {- \detokenize{registerNewError(errorName)}}
 			\operation {- \detokenize{sleep(n)}}
+			\operation {+ \detokenize{resolveErrorToStr(error)}}
 			\operation {+ \detokenize{is_certbot_installed()}}
 			\operation {+ \detokenize{create_certbot_symlink()}}
 			\operation {+ \detokenize{install_certbot()}}
 			\operation {+ \detokenize{get_cert_datas(domain)}}
 			\operation {+ \detokenize{try_ssl_certification_creation(method, domain, webserverType)}}
+			\operation {+ \detokenize{init()}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
 
 \Section{snapd modul felépítése, feladata}
 
-A snapd modul egyszerű felépítésű. Feladata maga a snapd feltelepítése az \textit{apt} package manager segítségével, továbbá csomagok telepítése, és a már feltelepített csomagok meglétének ellenőrzése.
+A snapd modul egyszerű felépítésű. Feladata maga a snapd feltelepítése az \texttt{apt} package manager segítségével, továbbá csomagok telepítése, és a már feltelepített csomagok meglétének ellenőrzése.
+
+\pagebreak
 
 \begin{center}
-	A \textit{snapd} modul UML diagramja:
+	A \texttt{snapd} modul UML diagramja:
 	
 	\hfill
 	
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.6\textwidth]{\detokenize{snapd}}{0, 0}
-			\attribute {- \detokenize{os -> }\textbf{os} module}
-			\attribute {- \detokenize{linux -> }\textbf{linux} module}
-			\attribute {- \detokenize{aptPackageManager -> }\textbf{\detokenize{apt_packages}} module}
 			\operation {+ \detokenize{isSnapdInstalled()}}
 			\operation {+ \detokenize{installSnapd()}}
 			\operation {+ \detokenize{is_package_installed(packageName)}}
@@ -443,38 +447,40 @@ A snapd modul egyszerű felépítésű. Feladata maga a snapd feltelepítése az
 	\end {tikzpicture}
 \end{center}
 
-\pagebreak
-
 \Section{iptables modul felépítése, feladata}
 
-Ez a modul kezeli a tűzfalszabályokat az \textit{iptables} frontend segítségével. Funkcionalitása maga az iptables telepítése, a portok nyitása/zárása, kimenő/bemenő csomagok szűrése, továbbá a NAT előkészítése az OpenVPN szerver számára.
+Ez a modul kezeli a tűzfalszabályokat az \texttt{iptables} frontend segítségével. Funkcionalitása maga az iptables telepítése, a portok nyitása/zárása, kimenő/bemenő csomagok szűrése, továbbá a NAT előkészítése az OpenVPN szerver számára. 
 
 \begin{center}
-	Az \textit{iptables} modul UML diagramja:
-	
-	\hfill
-	
+	A modul UML diagramja:
+
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.9\textwidth]{\detokenize{iptables}}{0, 0}
-			\attribute {- \detokenize{os -> }\textbf{os} module}
-			\attribute {- \detokenize{packageManager -> }\textbf{apt\_packages} module}
-			\attribute {- \detokenize{general -> }\textbf{general} module}
-			\attribute {- \detokenize{linux -> }\textbf{linux} module}
-			\attribute {- \detokenize{inspect -> }\textbf{\detokenize{inspect}} module}
 			\attribute {- \detokenize{iptablesAliases : table}}
+			\attribute {+ \detokenize{errors : table}}
+			\operation {+ \detokenize{resolveErrorToStr(error)}}
 			\operation {+ \detokenize{is_iptables_installed()}}
 			\operation {+ \detokenize{install_iptables()}}
+			\operation {+ \detokenize{get_current_network_interfaces()}}
 			\operation {+ \detokenize{get_current_ssh_ports()}}
 			\operation {+ \detokenize{parse_current_rules()}}
 			\operation {+ \detokenize{get_open_ports(interface)}}
+			\operation {+ \detokenize{delete_open_port_rule(interface, idx)}}
+			\operation {+ \detokenize{get_closed_ports(interface)}}
+			\operation {+ \detokenize{delete_close_port_rule(interface, idx)}}
 			\operation {+ \detokenize{close_port(interface, protocol, dport, fromIP)}}
 			\operation {+ \detokenize{open_port(interface, protocol, dport, fromIP)}}
+			\operation {+ \detokenize{list_allowed_outgoing_connections(interface)}}
+			\operation {+ \detokenize{delete_outgoing_rule(interface, idx)}}
 			\operation {+ \detokenize{allow_outgoing_new_connection(interface, protocol, dip, dport)}}
 			\operation {+ \detokenize{check_if_inbound_packets_are_being_filtered_already(interface, protocol)}}
 			\operation {+ \detokenize{tog_only_allow_accepted_packets_inbound(toggle, interface, protocol)}}
 			\operation {+ \detokenize{check_if_outbound_packets_are_being_filtered_already(interface, protocol)}}
 			\operation {+ \detokenize{tog_only_allow_accepted_packets_outbound(toggle, interface, protocol)}}
+			\operation {+ \detokenize{delete_nat_rules(mainInterface, tunnelInterface, forwardTblIdx, forwardTblAllIdx, postroutingTblAllIdx)}}
+			\operation {+ \detokenize{get_current_active_nat_for_openvpn()}}
 			\operation {+ \detokenize{init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubnet)}}
+			\operation {+ \detokenize{loadOurRulesToIptables()}}
 			\operation {+ \detokenize{iptables_to_string()}}
 			\operation {+ \detokenize{init_module()}}
 		\end {class}
