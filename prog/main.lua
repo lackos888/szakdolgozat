@@ -14,7 +14,7 @@ local linux = require("linux");
 local function doOpenVPNInstall(OpenVPNHandler)
     print("==> Elkezdődött az OpenVPN szerver telepítése, kérlek várj...");
 
-    local installRet, aptRet = OpenVPNHandler.install_openvpn();
+    local installRet, aptRet = OpenVPNHandler.installOpenvpn();
 
     if installRet then
         print("==> Sikeresen feltelepítésre került az OpenVPN szerver. Nyomjon ENTER-t a folytatáshoz.");
@@ -26,7 +26,7 @@ local function doOpenVPNInstall(OpenVPNHandler)
 end
 
 local function doOpenVPNStartStop(isRunning, OpenVPNHandler)
-    local func = isRunning and OpenVPNHandler.stop_server or OpenVPNHandler.start_server;
+    local func = isRunning and OpenVPNHandler.stopServer or OpenVPNHandler.startServer;
 
     if isRunning then
         if func() then
@@ -48,10 +48,10 @@ local function doOpenVPNInitOrRefresh(isRunning, serverImpl)
     print("==> Szerver inicializálása folyamatban...");
 
     if isRunning then
-        serverImpl.stop_server();
+        serverImpl.stopServer();
     end
 
-    local retOfInitDirs = serverImpl.init_dirs();
+    local retOfInitDirs = serverImpl.initDirs();
     local retOfInitialize, possibleError, possibleError2 = false, false, false; --elore definialas a goto miatt
 
     if not retOfInitDirs then
@@ -60,10 +60,10 @@ local function doOpenVPNInitOrRefresh(isRunning, serverImpl)
         goto serverInitGoto;
     end
 
-    retOfInitialize, possibleError, possibleError2 = serverImpl.initialize_server();
+    retOfInitialize, possibleError, possibleError2 = serverImpl.initializeServer();
 
     if isRunning then
-        serverImpl.start_server();
+        serverImpl.startServer();
     end
 
     if retOfInitialize ~= true then
@@ -80,8 +80,8 @@ end
 
 local function doOpenVPNClientListing(serverImpl)
     general.clearScreen();
-    serverImpl.init_dirs();
-    serverImpl.initialize_server();
+    serverImpl.initDirs();
+    serverImpl.initializeServer();
 
     local clientHandler = serverImpl.client_handler;
 
@@ -96,7 +96,7 @@ local function doOpenVPNClientListing(serverImpl)
     while true do
         general.clearScreen();
 
-        local validClients = clientHandler.get_valid_clients();
+        local validClients = clientHandler.getValidClients();
 
         print("<==> OpenVPN BEKONFIGURÁLT KLIENSEK <==>");
 
@@ -186,8 +186,8 @@ end
 
 local function doOpenVPNClientCreation(serverImpl)
     general.clearScreen();
-    serverImpl.init_dirs();
-    serverImpl.initialize_server();
+    serverImpl.initDirs();
+    serverImpl.initializeServer();
 
     local clientHandler = serverImpl.client_handler;
     local clientInstance = false;
@@ -269,9 +269,9 @@ local function doWebserverMenu(webserverType)
 
         local webserverBootstrapModule = webserverType == "apache" and apacheHandler or nginxHandler;
 
-        local isInstalled = webserverBootstrapModule.is_installed();
-        local isRunning = webserverBootstrapModule.is_running();
-        local serverImpl = webserverBootstrapModule.server_impl;
+        local isInstalled = webserverBootstrapModule.isInstalled();
+        local isRunning = webserverBootstrapModule.isRunning();
+        local serverImpl = webserverBootstrapModule.serverImpl;
         local errors = serverImpl.errors;
 
         local counter = 1;
@@ -328,7 +328,7 @@ local function doWebserverMenu(webserverType)
                 if isRunning then
                     print(tostring(webserverType).." webszerver leállítása...");
 
-                    if webserverBootstrapModule.stop_server() then
+                    if webserverBootstrapModule.stopServer() then
                         print("=> "..tostring(webserverType).." sikeresen leállításra került!");
                     else
                         print("=> Hiba történt a(z) "..tostring(webserverType).." leállítása közben!");
@@ -336,7 +336,7 @@ local function doWebserverMenu(webserverType)
                 else
                     print(tostring(webserverType).." webszerver elindítása...");
 
-                    if webserverBootstrapModule.start_server() then
+                    if webserverBootstrapModule.startServer() then
                         print("=> "..tostring(webserverType).." sikeresen elindításra került!");
                     else
                         print("=> Hiba történt a(z) "..tostring(webserverType).." elindítása közben!");
@@ -346,7 +346,7 @@ local function doWebserverMenu(webserverType)
                 print("Nyomjon ENTER-t a folytatáshoz.");
                 io.read();
             elseif numOfChoice == 2 then --manage current websites
-                if not serverImpl.init_dirs() or not serverImpl.initialize_server() then
+                if not serverImpl.initDirs() or not serverImpl.initializeServer() then
                     print("Nem sikerült inicializálni a(z) "..tostring(webserverType).." webszervert!");
                     print("Nyomjon ENTER-t a folytatáshoz.");
                     io.read();
@@ -362,7 +362,7 @@ local function doWebserverMenu(webserverType)
                 while true do
                     general.clearScreen();
 
-                    local websites = serverImpl.get_current_available_websites();
+                    local websites = serverImpl.getCurrentAvailableWebsites();
 
                     if #websites == 0 then
                         print("Nincs még egyetlen weboldal sem létrehozva. Hozzon létre egyet először.");
@@ -415,12 +415,12 @@ local function doWebserverMenu(webserverType)
 
                             print("=> "..tostring(websiteData.websiteUrl).." weboldal törlése...");
 
-                            local websiteDeletionRet = serverImpl.delete_website(websiteData.websiteUrl);
+                            local websiteDeletionRet = serverImpl.deleteWebsite(websiteData.websiteUrl);
 
                             if websiteDeletionRet == true then
                                 if isRunning then
-                                    serverImpl.stop_server();
-                                    serverImpl.start_server();
+                                    serverImpl.stopServer();
+                                    serverImpl.startServer();
                                 end
 
                                 print("Sikeresen törlésre került a(z) "..tostring(websiteData.websiteUrl).." weboldal!");
@@ -475,7 +475,7 @@ local function doWebserverMenu(webserverType)
                                     
                                     print("=> SSL certificate létrehozása "..tostring(challengeTypeDisplayStr).." challenge segítségével a(z) "..tostring(websiteData.websiteUrl).." weboldal számára...");
 
-                                    local retOfSSLCreation, possibleRetCode, possibleRetLinesFromCertbot = certbot.try_ssl_certification_creation(challengeType, tostring(websiteData.websiteUrl), webserverType);
+                                    local retOfSSLCreation, possibleRetCode, possibleRetLinesFromCertbot = certbot.trySSLCertificateCreation(challengeType, tostring(websiteData.websiteUrl), webserverType);
 
                                     if retOfSSLCreation == true then
                                         print("=> Sikeresen létrehozásra került az SSL certificate "..tostring(challengeTypeDisplayStr).." challenge segítségével a(z) "..tostring(websiteData.websiteUrl).." weboldal számára!");
@@ -529,7 +529,7 @@ local function doWebserverMenu(webserverType)
                     if readStr:match("[a-z]*://[^ >,;]*") then --from https://stackoverflow.com/questions/68694608/how-to-check-url-whether-url-is-valid-in-lua
                         print("=> Kizárólag alfanumerikus lehet az új weboldal címe...");
                     else
-                        if not serverImpl.init_dirs() or not serverImpl.initialize_server() then
+                        if not serverImpl.initDirs() or not serverImpl.initializeServer() then
                             print("Nem sikerült inicializálni a(z) "..tostring(webserverType).." webszervert!");
                             print("Nyomjon ENTER-t a folytatáshoz.");
                             io.read();
@@ -537,10 +537,10 @@ local function doWebserverMenu(webserverType)
                         end
 
                         if isRunning then
-                            webserverBootstrapModule.stop_server();
+                            webserverBootstrapModule.stopServer();
                         end
 
-                        local websiteCreationRet = serverImpl.create_new_website(readStr);
+                        local websiteCreationRet = serverImpl.createNewWebsite(readStr);
 
                         if websiteCreationRet ~= true then
                             print("=> Hiba történt a weboldal létrehozása közben!");
@@ -550,7 +550,7 @@ local function doWebserverMenu(webserverType)
                         end
 
                         if isRunning then
-                            webserverBootstrapModule.start_server();
+                            webserverBootstrapModule.startServer();
                         end
 
                         print("Nyomjon ENTER-t a folytatáshoz.");
@@ -575,7 +575,7 @@ local function doIptablesMenu()
             counter = counter + 1;
         end
         
-        local isInstalled = iptables.is_iptables_installed();
+        local isInstalled = iptables.isIptablesInstalled();
 
         if not isInstalled then
             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Feltelepítés");
@@ -588,7 +588,7 @@ local function doIptablesMenu()
             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Engedélyezett kimenő kapcsolatok");
             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Interface alapú togglek");
 
-            if OpenVPNHandler.is_openvpn_installed() then
+            if OpenVPNHandler.isOpenVPNInstalled() then
                 printOptionAndIncreaseCounter("=> "..tostring(counter)..". OpenVPN NAT setup");
             end
         end
@@ -607,7 +607,7 @@ local function doIptablesMenu()
 
                 print("=> iptables telepítése...");
 
-                local installRet, possibleError = iptables.install_iptables();
+                local installRet, possibleError = iptables.installIptables();
 
                 if installRet then
                     print("Az iptables sikeresen telepítésre került! Nyomjon ENTER-t a folytatáshoz.");
@@ -630,7 +630,7 @@ local function doIptablesMenu()
 
                 general.clearScreen();
 
-                local initModuleRet = iptables.init_module();
+                local initModuleRet = iptables.initModule();
 
                 if not initModuleRet then
                     print("Hiba történt az iptables modul inicializálása közben! Hiba: "..tostring(iptables.resolveErrorToStr(initModuleRet)));
@@ -646,11 +646,11 @@ local function doIptablesMenu()
                     counter = counter + 1;
                 end
 
-                if originallyChosenOption ~= 8 or not OpenVPNHandler.is_openvpn_installed() then --OpenVPN nat
+                if originallyChosenOption ~= 8 or not OpenVPNHandler.isOpenVPNInstalled() then --OpenVPN nat
                     printOptionAndIncreaseCounter("=> "..tostring(counter)..". Összes (mindegyikre vonatkozik egyszerre)");
                 end
 
-                local interfaces = iptables.get_current_network_interfaces();
+                local interfaces = iptables.getCurrentNetworkInterfaces();
                 for t, v in pairs(interfaces) do
                     printOptionAndIncreaseCounter("=> "..tostring(counter)..". "..tostring(v));
                 end
@@ -662,7 +662,7 @@ local function doIptablesMenu()
                     break;
                 end
                 
-                if originallyChosenOption ~= 8 or not OpenVPNHandler.is_openvpn_installed() then
+                if originallyChosenOption ~= 8 or not OpenVPNHandler.isOpenVPNInstalled() then
                     interfaceSelected = num == 1 and "all" or interfaces[num - 1];
                 else --OpenVPN nat
                     interfaceSelected = interfaces[num];
@@ -678,11 +678,11 @@ local function doIptablesMenu()
                     while true do
                         local needToBreakOpenPorts = true;
                         general.clearScreen();
-                        iptables.init_module();
+                        iptables.initModule();
 
                         print("=> Az összes, felhasználó által kinyitott port a(z) "..tostring(interfaceSelected).." interfacen:");
 
-                        local portsOpened = iptables.get_open_ports(interfaceSelected);
+                        local portsOpened = iptables.getOpenPorts(interfaceSelected);
 
                         if portsOpened == "all" or #portsOpened == 0 then
                             print("Nincs korlátozás, az összes port nyitva van.");
@@ -698,11 +698,11 @@ local function doIptablesMenu()
                                 print(tostring(t)..". Protokoll: "..tostring(v.protocol == "all" and "Összes" or v.protocol).." Port: "..tostring(v.dport == "all" and "Összes" or v.dport).." IP korlátozás: "..tostring(v.sourceIP and v.sourceIP or "nincs"));
                             end
 
-                            if not iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "tcp") and not iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "udp") then
+                            if not iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "tcp") and not iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "udp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen nincs bekapcsolva az, hogy csak engedélyezett bejövő portok legyenek nyitva, így ezek a szabályok jelenleg nem effektívek.");
-                            elseif not iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "tcp") then
+                            elseif not iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "tcp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen nincs bekapcsolva az, hogy csak engedélyezett bejövő portok legyenek nyitva TCP protokollon, így a TCP-protokoll alapú szabályok jelenleg nem effektívek.");
-                            elseif not iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "udp") then
+                            elseif not iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "udp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen nincs bekapcsolva az, hogy csak engedélyezett bejövő portok legyenek nyitva UDP protokollon, így az UDP-protokoll alapú szabályok jelenleg nem effektívek.");
                             end
 
@@ -720,7 +720,7 @@ local function doIptablesMenu()
                                 end
                                 local num = tonumber(numberStr);
 
-                                local deletionRet = iptables.delete_open_port_rule(interfaceSelected, num);
+                                local deletionRet = iptables.deleteOpenPortRule(interfaceSelected, num);
 
                                 if deletionRet == true then
                                     if iptables.loadOurRulesToIptables() then
@@ -747,11 +747,11 @@ local function doIptablesMenu()
                     while true do
                         local needToBreakClosePorts = true;
                         general.clearScreen();
-                        iptables.init_module();
+                        iptables.initModule();
 
                         print("=> Az összes, felhasználó által zárt port a(z) "..tostring(interfaceSelected).." interfacen:");
 
-                        local portsClosed = iptables.get_closed_ports(interfaceSelected);
+                        local portsClosed = iptables.getClosedPorts(interfaceSelected);
 
                         if portsClosed == "none" or #portsClosed == 0 then
                             print("Nincs korlátozás, az összes port nyitva van.");
@@ -767,11 +767,11 @@ local function doIptablesMenu()
                                 print(tostring(t)..". Protokoll: "..tostring(v.protocol == "all" and "Összes" or v.protocol).." Port: "..tostring(v.dport == "all" and "Összes" or v.dport).." IP korlátozás: "..tostring(v.sourceIP and v.sourceIP or "nincs"));
                             end
 
-                            if iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "tcp") and iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "udp") then
+                            if iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "tcp") and iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "udp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen be van kapcsolva, hogy csak engedélyezett bejövő portok legyenek nyitva. Így ezek a szabályok kiegészítő szabályok. Ha nem léteznének, akkor is le lenne tiltva az összes nem engedélyezett port.");
-                            elseif iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "tcp") then
+                            elseif iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "tcp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen be van kapcsolva, hogy csak engedélyezett bejövő portok legyenek nyitva TCP protokollon, így a TCP-protokoll alapú szabályoknak jelenleg nem kötelező létezniük a portok letiltásához.");
-                            elseif iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "udp") then
+                            elseif iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "udp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen be van kapcsolva, hogy csak engedélyezett bejövő portok legyenek nyitva UDP protokollon, így az UDP-protokoll alapú szabályoknak jelenleg nem kötelező létezniük a portok letiltásához.");
                             end
 
@@ -788,7 +788,7 @@ local function doIptablesMenu()
                                 end
                                 local num = tonumber(numberStr);
 
-                                local deletionRet = iptables.delete_close_port_rule(interfaceSelected, num);
+                                local deletionRet = iptables.deleteClosePortRule(interfaceSelected, num);
 
                                 if deletionRet == true then
                                     if iptables.loadOurRulesToIptables() then
@@ -813,7 +813,7 @@ local function doIptablesMenu()
                     end
                 elseif originallyChosenOption == 3 then --open port
                     general.clearScreen();
-                    iptables.init_module();
+                    iptables.initModule();
                     print("=> Port nyitása a(z) "..tostring(interfaceSelected).." interfacen...");
 
                     local protocol = false;
@@ -867,10 +867,10 @@ local function doIptablesMenu()
                     
                     ret = false;
                     if protocol ~= "all" then
-                        ret = iptables.open_port(interfaceSelected, protocol, portNum, readStr);
+                        ret = iptables.openPort(interfaceSelected, protocol, portNum, readStr);
                     else
-                        ret = iptables.open_port(interfaceSelected, "tcp", portNum, readStr);
-                        ret = iptables.open_port(interfaceSelected, "udp", portNum, readStr);
+                        ret = iptables.openPort(interfaceSelected, "tcp", portNum, readStr);
+                        ret = iptables.openPort(interfaceSelected, "udp", portNum, readStr);
                     end
 
                     if not ret then
@@ -889,7 +889,7 @@ local function doIptablesMenu()
                     ::openPortEnd::
                 elseif originallyChosenOption == 4 then --close port
                     general.clearScreen();
-                    iptables.init_module();
+                    iptables.initModule();
                     print("=> Port letiltása a(z) "..tostring(interfaceSelected).." interfacen...");
 
                     local protocol = false;
@@ -943,10 +943,10 @@ local function doIptablesMenu()
                     
                     ret = false;
                     if protocol ~= "all" then
-                        ret = iptables.close_port(interfaceSelected, protocol, portNum, readStr);
+                        ret = iptables.closePort(interfaceSelected, protocol, portNum, readStr);
                     else
-                        ret = iptables.close_port(interfaceSelected, "tcp", portNum, readStr);
-                        ret = iptables.close_port(interfaceSelected, "udp", portNum, readStr);
+                        ret = iptables.closePort(interfaceSelected, "tcp", portNum, readStr);
+                        ret = iptables.closePort(interfaceSelected, "udp", portNum, readStr);
                     end
 
                     if not ret then
@@ -964,7 +964,7 @@ local function doIptablesMenu()
                     ::closePortEnd::
                 elseif originallyChosenOption == 5 then --allow outgoing connection
                     general.clearScreen();
-                    iptables.init_module();
+                    iptables.initModule();
                     print("=> Kimenő kapcsolat engedélyezése a(z) "..tostring(interfaceSelected).." interfacen...");
 
                     local protocol = false;
@@ -1017,10 +1017,10 @@ local function doIptablesMenu()
                     print("=> Kimenő kapcsolatot engedélyező szabály létrehozása a(z) "..tostring(interfaceSelected).." interfacen... Protokoll: "..tostring(protocol).." port: "..tostring(portNum).." IP: "..tostring(readStr and readStr or "nincs megadva"));
                     
                     if protocol ~= "all" then
-                        ret = iptables.allow_outgoing_new_connection(interfaceSelected, protocol, readStr, portNum);
+                        ret = iptables.allowOutgoingNewConnection(interfaceSelected, protocol, readStr, portNum);
                     else
-                        ret = iptables.allow_outgoing_new_connection(interfaceSelected, "tcp", readStr, portNum);
-                        ret = iptables.allow_outgoing_new_connection(interfaceSelected, "udp", readStr, portNum);
+                        ret = iptables.allowOutgoingNewConnection(interfaceSelected, "tcp", readStr, portNum);
+                        ret = iptables.allowOutgoingNewConnection(interfaceSelected, "udp", readStr, portNum);
                     end
 
                     if not ret then
@@ -1041,11 +1041,11 @@ local function doIptablesMenu()
                     while true do
                         local needToBreakOutgoingConnections = true;
                         general.clearScreen();
-                        iptables.init_module();
+                        iptables.initModule();
 
                         print("=> Az összes, felhasználó által engedélyezett kimenő kapcsolatok a(z) "..tostring(interfaceSelected).." interfacen:");
 
-                        local allowedOutgoingConnections = iptables.list_allowed_outgoing_connections(interfaceSelected);
+                        local allowedOutgoingConnections = iptables.listAllowedOutgoingConnections(interfaceSelected);
 
                         if allowedOutgoingConnections == "all" or #allowedOutgoingConnections == 0 then
                             print("Nincs korlátozás, bármelyik IP cím & port felé mehet kimenő kapcsolat.");
@@ -1061,11 +1061,11 @@ local function doIptablesMenu()
                                 print(tostring(t)..". Protokoll: "..tostring(v.protocol == "all" and "Összes" or v.protocol).." Port: "..tostring(v.dport == "all" and "Összes" or v.dport).." IP korlátozás: "..tostring(v.destinationIP and v.destinationIP or "nincs"));
                             end
 
-                            if not iptables.check_if_outbound_packets_are_being_filtered_already(interfaceSelected, "tcp") and not iptables.check_if_outbound_packets_are_being_filtered_already(interfaceSelected, "udp") then
+                            if not iptables.checkIfOutboundPacketsAreBeingFilteredAlready(interfaceSelected, "tcp") and not iptables.checkIfOutboundPacketsAreBeingFilteredAlready(interfaceSelected, "udp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen nincs bekapcsolva, hogy csak engedélyezett irányba mehessen ki kimenő kapcsolat. Így ezek a szabályok nem effektívek jelenleg.");
-                            elseif not iptables.check_if_outbound_packets_are_being_filtered_already(interfaceSelected, "tcp") then
+                            elseif not iptables.checkIfOutboundPacketsAreBeingFilteredAlready(interfaceSelected, "tcp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen nincs bekapcsolva, hogy csak engedélyezett irányba mehessen ki kimenő kapcsolat TCP protokollon. Így a TCP-protokoll alapú szabályok nem effektívek jelenleg.");
-                            elseif not iptables.check_if_outbound_packets_are_being_filtered_already(interfaceSelected, "udp") then
+                            elseif not iptables.checkIfOutboundPacketsAreBeingFilteredAlready(interfaceSelected, "udp") then
                                 print("=> A(z) "..tostring(interfaceSelected).." interfacen nincs bekapcsolva, hogy csak engedélyezett irányba mehessen ki kimenő kapcsolat UDP protokollon. Így az UDP-protokoll alapú szabályok nem effektívek jelenleg.");
                             end
 
@@ -1083,7 +1083,7 @@ local function doIptablesMenu()
                                 end
                                 local num = tonumber(numberStr);
 
-                                local deletionRet = iptables.delete_outgoing_rule(interfaceSelected, num);
+                                local deletionRet = iptables.deleteOutgoingRule(interfaceSelected, num);
 
                                 if deletionRet == true then
                                     if iptables.loadOurRulesToIptables() then
@@ -1109,7 +1109,7 @@ local function doIptablesMenu()
                 elseif originallyChosenOption == 7 then --toggle interface stuff
                     while true do
                         general.clearScreen();
-                        iptables.init_module();
+                        iptables.initModule();
                         print("=> Beállítások a(z) "..tostring(interfaceSelected).." interfacen...");
                         print("Válasszon az alábbi lehetőségek közül:");
                         local counter = 1;
@@ -1118,8 +1118,8 @@ local function doIptablesMenu()
                             counter = counter + 1;
                         end
 
-                        local inboundFiltered = iptables.check_if_inbound_packets_are_being_filtered_already(interfaceSelected, "all");
-                        local outboundFiltered = iptables.check_if_outbound_packets_are_being_filtered_already(interfaceSelected, "all");
+                        local inboundFiltered = iptables.checkIfInboundPacketsAreBeingFilteredAlready(interfaceSelected, "all");
+                        local outboundFiltered = iptables.checkIfOutboundPacketsAreBeingFilteredAlready(interfaceSelected, "all");
 
                         if inboundFiltered then
                             printOptionAndIncreaseCounter("=> "..tostring(counter)..". Bármely bejövő kapcsolat engedélyezve legyen");
@@ -1142,8 +1142,8 @@ local function doIptablesMenu()
                         end
 
                         if num == 1 then
-                            local sshPorts = iptables.get_current_ssh_ports();
-                            local openPorts = iptables.get_open_ports(interfaceSelected);
+                            local sshPorts = iptables.getCurrentSSHPorts();
+                            local openPorts = iptables.getOpenPorts(interfaceSelected);
                             local notAllowedSSHPorts = {};
                             local ret = false;
                             if openPorts == "all" then
@@ -1175,7 +1175,7 @@ local function doIptablesMenu()
                                 end
                             end
 
-                            ret = iptables.tog_only_allow_accepted_packets_inbound(not inboundFiltered, interfaceSelected, "all");
+                            ret = iptables.togOnlyAllowAcceptedPacketsInbound(not inboundFiltered, interfaceSelected, "all");
 
                             if ret == true then
                                 if iptables.loadOurRulesToIptables() then
@@ -1191,7 +1191,7 @@ local function doIptablesMenu()
                             print("Nyomjon ENTER-t a folytatáshoz.");
                             io.read();
                         elseif num == 2 then
-                            local ret = iptables.tog_only_allow_accepted_packets_outbound(not outboundFiltered, interfaceSelected, "all");
+                            local ret = iptables.togOnlyAllowAcceptedPacketsOutbound(not outboundFiltered, interfaceSelected, "all");
 
                             if ret == true then
                                 if iptables.loadOurRulesToIptables() then
@@ -1207,11 +1207,11 @@ local function doIptablesMenu()
                             io.read();
                         end
                     end
-                elseif originallyChosenOption == 8 and OpenVPNHandler.is_openvpn_installed() then --openvpn nat setup
+                elseif originallyChosenOption == 8 and OpenVPNHandler.isOpenVPNInstalled() then --openvpn nat setup
                     while true do
                         general.clearScreen();
 
-                        local currentNATDatas = iptables.get_current_active_nat_for_openvpn();
+                        local currentNATDatas = iptables.getCurrentActiveNATForOpenVPN();
 
                         if not currentNATDatas or #currentNATDatas == 0 then
                             print("=> Nincs még NAT létrehozva egy interfacen sem...");
@@ -1220,16 +1220,16 @@ local function doIptablesMenu()
                             readStr = io.read();
 
                             if readStr == "Y" then
-                                local serverImpl = OpenVPNHandler.server_impl;
+                                local serverImpl = OpenVPNHandler.serverImpl;
 
-                                if serverImpl.init_dirs() ~= true or serverImpl.initialize_server() ~= true then
+                                if serverImpl.initDirs() ~= true or serverImpl.initializeServer() ~= true then
                                     print("=> Hiba történt az OpenVPN szerver inicializálása közben.");
                                     print("Nyomjon ENTER-t a folytatáshoz.");
                                     io.read();
                                     break;
                                 end
 
-                                local subnet = serverImpl.get_openvpn_subnet();
+                                local subnet = serverImpl.getOpenVPNSubnet();
 
                                 if not subnet then
                                     print("=> Hiba történt az OpenVPN subnet lekérdezése közben.");
@@ -1238,7 +1238,7 @@ local function doIptablesMenu()
                                     break;
                                 end
 
-                                local creationRet = iptables.init_nat_for_openvpn(interfaceSelected, "tun0", subnet);
+                                local creationRet = iptables.initNATForOpenVPN(interfaceSelected, "tun0", subnet);
 
                                 if creationRet == true then
                                     if iptables.loadOurRulesToIptables() then
@@ -1287,7 +1287,7 @@ local function doIptablesMenu()
                                     goto continueInsideNAT;
                                 end
 
-                                if iptables.delete_nat_rules(data.mainInterface, data.outInterface, data.forwardTblIdx, data.forwardTblAllIdx, data.postroutingTblAllIdx) == true then
+                                if iptables.deleteNATRules(data.mainInterface, data.outInterface, data.forwardTblIdx, data.forwardTblAllIdx, data.postroutingTblAllIdx) == true then
                                     if iptables.loadOurRulesToIptables() then
                                         print("=> Sikeresen törölve lett a(z) "..tostring(num).." számú szabály.");
                                     else
@@ -1316,7 +1316,7 @@ end
 
 --main interface starts here
 
-local idLines, idRet = linux.exec_command_with_proc_ret_code("id", true, nil, true);
+local idLines, idRet = linux.execCommandWithProcRetCode("id", true, nil, true);
 
 if not idLines:find("uid=0(root)", 0, true) then
     print("Hiba: ez az alkalmazás csak root jogosultságokkal futtatható.");
@@ -1351,9 +1351,9 @@ while true do
         while true do
             general.clearScreen();
 
-            local isInstalled = OpenVPNHandler.is_openvpn_installed();
-            local isRunning = OpenVPNHandler.is_running();
-            local serverImpl = OpenVPNHandler.server_impl;
+            local isInstalled = OpenVPNHandler.isOpenVPNInstalled();
+            local isRunning = OpenVPNHandler.isRunning();
+            local serverImpl = OpenVPNHandler.serverImpl;
             local errors = serverImpl.errors;
 
             local counter = 1;
@@ -1368,7 +1368,7 @@ while true do
             else  
                 printOptionAndIncreaseCounter("=> "..tostring(counter)..". "..tostring(isRunning and "Leállítás" or "Elindítás"));
 
-                if not serverImpl.is_easy_rsa_installed() then
+                if not serverImpl.isEasyRSAInstalled() then
                     printOptionAndIncreaseCounter("=> "..tostring(counter)..". Szerver automatikus bekonfigurálása");
                 else
                     printOptionAndIncreaseCounter("=> "..tostring(counter)..". Szerver konfigurációjának frissítése");
@@ -1437,16 +1437,16 @@ while true do
 end
 
 --initialize handlers
---OpenVPNHandler.init_dirs();
--- nginxHandler.init_dirs(); --TODO: reverse proxy
--- apacheHandler.init_dirs(); --TODO: reverse proxy
+--OpenVPNHandler.initDirs();
+-- nginxHandler.initDirs(); --TODO: reverse proxy
+-- apacheHandler.initDirs(); --TODO: reverse proxy
 -- certbotHandler.init();
 
--- print("Apache website creation: "..tostring(apacheHandler.server_impl.create_new_website("lszlo.ltd")));
--- print("Certbot test: "..tostring(certbotHandler.try_ssl_certification_creation("dns", "lszlo.ltd", "apache")));
+-- print("Apache website creation: "..tostring(apacheHandler.serverImpl.createNewWebsite("lszlo.ltd")));
+-- print("Certbot test: "..tostring(certbotHandler.trySSLCertificateCreation("dns", "lszlo.ltd", "apache")));
 
---[[ print("ssh port: "..tostring(inspect(iptables.get_current_ssh_ports())));
-print("module init: "..tostring(iptables.init_module())); ]]
+--[[ print("ssh port: "..tostring(inspect(iptables.getCurrentSSHPorts())));
+print("module init: "..tostring(iptables.initModule())); ]]
 
 --[[
 local configFileContents = general.readAllFileContents("/home/nginx-www/websiteconfigs/lszlo.ltd.conf");
@@ -1458,7 +1458,7 @@ print(tostring(configInstance:toString()));
 ]]
 
 --[[
-local nginxConfigParsedLines, paramsLines = nginxConfigHandler.parse_nginx_config(require("general").readAllFileContents("/home/lackos/default"));
+local nginxConfigParsedLines, paramsLines = nginxConfigHandler.parseNginxConfig(require("general").readAllFileContents("/home/lackos/default"));
 
 local testNginxConf = io.open("testnginx.conf", "wb");
 
@@ -1466,27 +1466,27 @@ if not testNginxConf then
     return -1
 end
 
-testNginxConf:write(nginxConfigHandler.write_nginx_config(nginxConfigParsedLines));
+testNginxConf:write(nginxConfigHandler.writeNginxConfig(nginxConfigParsedLines));
 testNginxConf:flush();
 testNginxConf:close();
 ]]
 
 --main stuff
 --[[
-local vpnInstalled = OpenVPNHandler.is_openvpn_installed();
+local vpnInstalled = OpenVPNHandler.isOpenVPNInstalled();
 
 print("is openvpn installed: "..tostring(vpnInstalled));
 
 if not vpnInstalled then
     print("Trying to install OpenVPN server binaries...");
 
-    OpenVPNHandler.install_openvpn();
+    OpenVPNHandler.installOpenvpn();
 
     print("Installed OpenVPN basic server binaries...");
 else
     print("OpenVPN is installed!");
 end
 
-print("easy_rsa install ret: "..tostring(OpenVPNHandler.server_impl.install_easy_rsa()));
-print("initialize_server ret: "..tostring(OpenVPNHandler.server_impl.initialize_server()));
+print("easy_rsa install ret: "..tostring(OpenVPNHandler.serverImpl.installEasyRSA()));
+print("initializeServer ret: "..tostring(OpenVPNHandler.serverImpl.initializeServer()));
 ]]

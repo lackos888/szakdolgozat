@@ -30,15 +30,15 @@ Az \texttt{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 				\operation {+ \detokenize{clearScreen()}}
 				\operation {+ \detokenize{sleep(n)}}
 				\operation {+ \detokenize{strSplit(str, sep)}}
-				\operation {+ \detokenize{deep_compare(tbl1, tbl2)}}
+				\operation {+ \detokenize{deepCompare(tbl1, tbl2)}}
 				\operation {+ \detokenize{concatPaths(...) -> varargs}}
 				\operation {+ \detokenize{extractDirFromPath(path)}}
 				\operation {+ \detokenize{readAllFileContents(filePath)}}
 				\operation {+ \detokenize{trim2(s)}}
 			\end {class}
 			\begin {class}[text width=0.44\textwidth]{\detokenize{apt_packages}}{8, 0}
-				\operation {+ \detokenize{is_package_installed(packageName)}}
-				\operation {+ \detokenize{install_package(packageName)}}
+				\operation {+ \detokenize{isPackageInstalled(packageName)}}
+				\operation {+ \detokenize{installPackage(packageName)}}
 			\end {class}
 		\end {tikzpicture}
 \end{figure}
@@ -59,24 +59,24 @@ Az \texttt{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.7\textwidth]{linux}{0, 0}
 			\operation {+ \detokenize{exists(file)}}
-			\operation {+ \detokenize{isdir(path)}}
+			\operation {+ \detokenize{isDir(path)}}
 			\operation {+ \detokenize{listDirFiles(path)}}
-			\operation {+ \detokenize{mkdir(path)}}
+			\operation {+ \detokenize{mkDir(path)}}
 			\operation {+ \detokenize{deleteFile(path))}}
 			\operation {+ \detokenize{deleteDirectory(path)}}
-			\operation {+ \detokenize{exec_command(cmd)}}
-			\operation {+ \detokenize{get_service_status(serviceName)}}
-			\operation {+ \detokenize{is_service_running(serviceName)}}
-			\operation {+ \detokenize{is_process_running(name)}}
-			\operation {+ \detokenize{stop_service(serviceName)}}
-			\operation {+ \detokenize{start_service(serviceName)}}
-			\operation {+ \detokenize{restart_service(serviceName)}}
-			\operation {+ \detokenize{systemctl_daemon_reload()}}
-			\operation {+ \detokenize{check_if_user_exists(userName)}}
-			\operation {+ \detokenize{create_user_with_name(userName, comment, shell, homeDir)}}
-			\operation {+ \detokenize{update_user(userName, comment, shell)}}
-			\operation {+ \detokenize{get_user_home_dir(userName)}}
-			\operation {+ \detokenize{exec_command_with_proc_ret_code(cmd, linesReturned, envVariables, redirectStdErrToStdIn)}}
+			\operation {+ \detokenize{execCommand(cmd)}}
+			\operation {+ \detokenize{getServiceStatus(serviceName)}}
+			\operation {+ \detokenize{isServiceRunning(serviceName)}}
+			\operation {+ \detokenize{isProcessRunning(name)}}
+			\operation {+ \detokenize{stopService(serviceName)}}
+			\operation {+ \detokenize{startService(serviceName)}}
+			\operation {+ \detokenize{restartService(serviceName)}}
+			\operation {+ \detokenize{systemctlDaemonReload()}}
+			\operation {+ \detokenize{checkIfUserExists(userName)}}
+			\operation {+ \detokenize{createUserWithName(userName, comment, shell, homeDir)}}
+			\operation {+ \detokenize{updateUser(userName, comment, shell)}}
+			\operation {+ \detokenize{getUserHomeDir(userName)}}
+			\operation {+ \detokenize{execCommandWithProcRetCode(cmd, linesReturned, envVariables, redirectStdErrToStdIn)}}
 			\operation {+ \detokenize{copy(from, to)}}
 			\operation {+ \detokenize{copyAndChown(user, from, to)}}
 			\operation {+ \detokenize{chown(path, userName, isDir)}}
@@ -122,13 +122,13 @@ Több részmodulra lett szétosztva:
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.7\textwidth]{OpenVPN}{0, 0}
 			\attribute {+ \detokenize{errors : table}}
-			\attribute {+ \detokenize{server_impl -> }\textbf{OpenVPN\_server\_impl} module}
-			\operation {+ \detokenize{is_openvpn_installed()}}
-			\operation {+ \detokenize{install_openvpn()}}
-			\operation {+ \detokenize{is_running()}}
-			\operation {+ \detokenize{stop_server()}}
-			\operation {+ \detokenize{start_server()}}
-			\operation {+ \detokenize{init_dirs()}}
+			\attribute {+ \detokenize{serverImpl -> }\textbf{OpenVPN\_server\_impl} module}
+			\operation {+ \detokenize{isOpenVPNInstalled()}}
+			\operation {+ \detokenize{installOpenvpn()}}
+			\operation {+ \detokenize{isRunning()}}
+			\operation {+ \detokenize{stopServer()}}
+			\operation {+ \detokenize{startServer()}}
+			\operation {+ \detokenize{initDirs()}}
 		\end {class}
 	\end {tikzpicture}
 	
@@ -140,8 +140,8 @@ Több részmodulra lett szétosztva:
 	
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.7\textwidth]{\detokenize{OpenVPN_config_handler}}{0, 0}
-			\operation {+ \detokenize{parse_openvpn_config(linesInStr)}}
-			\operation {+ \detokenize{write_openvpn_config(parsedLines)}}
+			\operation {+ \detokenize{parseOpenVPNConfig(linesInStr)}}
+			\operation {+ \detokenize{writeOpenVPNConfig(parsedLines)}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
@@ -156,8 +156,8 @@ Több részmodulra lett szétosztva:
 		\begin{tikzpicture} % [show background grid]
 			\begin {class}[text width=0.7\textwidth]{\detokenize{OpenVPN_server_impl}}{0, 0}
 				\attribute {- \detokenize{bootstrapModule -> }\textbf{\detokenize{OpenVPN}} module}
-				\attribute {- \detokenize{ca_pass : string}}
-				\attribute {- \detokenize{server_key_pass : string}}
+				\attribute {- \detokenize{caPass : string}}
+				\attribute {- \detokenize{serverKeyPass : string}}
 				\attribute {- \detokenize{sampleConfigFileContent : string}}
 				\attribute {+ \detokenize{errors : table}}
 				\operation {- \detokenize{registerNewError(errorName)}}
@@ -167,21 +167,21 @@ Több részmodulra lett szétosztva:
 				\operation {+ \detokenize{getEasyRSADir()}}
 				\operation {+ \detokenize{getCAPass()}}
 				\operation {+ \detokenize{getOpenVPNBaseConfigDir()}}
-				\operation {+ \detokenize{is_easy_rsa_installed()}}
+				\operation {+ \detokenize{isEasyRSAInstalled()}}
 				\operation {+ \detokenize{formatPathInsideEasyRSAInstallCache(path)}}
 				\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-				\operation {+ \detokenize{init_dirs()}}
-				\operation {+ \detokenize{install_easy_rsa()}}
+				\operation {+ \detokenize{initDirs()}}
+				\operation {+ \detokenize{installEasyRSA()}}
 				\operation {+ \detokenize{getEasyRSAPKiDir()}}
-				\operation {+ \detokenize{init_easy_rsa()}}
-				\operation {+ \detokenize{enable_all_autostart_in_default()}}
-				\operation {+ \detokenize{get_openvpn_subnet()}}
-				\operation {+ \detokenize{check_server_config(homeDir, openVPNConfigDir)}}
-				\operation {+ \detokenize{check_openvpn_user_existence()}}
-				\operation {+ \detokenize{create_openvpn_user(homeDir)}}
-				\operation {+ \detokenize{update_existing_openvpn_user()}}
-				\operation {+ \detokenize{get_openvpn_home_dir()}}
-				\operation {+ \detokenize{initialize_server()}}
+				\operation {+ \detokenize{initEasyRSA()}}
+				\operation {+ \detokenize{enableAllAutostartInDefault()}}
+				\operation {+ \detokenize{getOpenVPNSubnet()}}
+				\operation {+ \detokenize{checkServerConfig(homeDir, openVPNConfigDir)}}
+				\operation {+ \detokenize{checkOpenVPNUserExistence()}}
+				\operation {+ \detokenize{createOpenVPNUser(homeDir)}}
+				\operation {+ \detokenize{updateExistingOpenVPNUser()}}
+				\operation {+ \detokenize{getOpenVPNHomeDir()}}
+				\operation {+ \detokenize{initializeServer()}}
 			\end {class}
 		\end {tikzpicture}
 	\end{figure}
@@ -193,12 +193,12 @@ Több részmodulra lett szétosztva:
 			\attribute {- \detokenize{clientSampleConfig : string}}
 			\attribute {+ \detokenize{errors : table}}
 			\attribute {+ \detokenize{Client -> }\textbf{class}}
-			\operation {- \detokenize{get}\\ \detokenize{_valid_clients_from_PKI_database()}}
+			\operation {- \detokenize{getValidClientsFromPKIDatabase()}}
 			\operation {- \detokenize{registerNewError(errorName)}}
 			\operation {+ \detokenize{constructor(openVPNServerImpl)}}
 			\operation {+ \detokenize{resolveErrorToStr(error)}}
-			\operation {+ \detokenize{update}\\ \detokenize{_revoke_crl_for_openvpn_daemon()}}
-			\operation {+ \detokenize{get_valid_clients()}}
+			\operation {+ \detokenize{updateRevokeCRLForOpenVPNDaemon()}}
+			\operation {+ \detokenize{getValidClients()}}
 		\end {class}
 		\begin {class}[text width=0.44\textwidth]{\detokenize{Client}}{8.25, 0}
 			\attribute {- \detokenize{clientObjects : table}}
@@ -236,13 +236,13 @@ Az nginx-et kezelő modulok is több részre lettek osztva. Az összes modul a p
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.45\textwidth]{nginx}{0, 0}
 			\attribute {+ \detokenize{errors : table}}
-			\attribute {+ \detokenize{server_impl -> }\textbf{nginx\_server\_impl} module}
-			\operation {+ \detokenize{is_installed()}}
+			\attribute {+ \detokenize{serverImpl -> }\textbf{nginx\_server\_impl} module}
+			\operation {+ \detokenize{isInstalled()}}
 			\operation {+ \detokenize{install()}}
-			\operation {+ \detokenize{is_running()}}
-			\operation {+ \detokenize{stop_server()}}
-			\operation {+ \detokenize{start_server()}}
-			\operation {+ \detokenize{init_dirs()}}
+			\operation {+ \detokenize{isRunning()}}
+			\operation {+ \detokenize{stopServer()}}
+			\operation {+ \detokenize{startServer()}}
+			\operation {+ \detokenize{initDirs()}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
@@ -255,10 +255,10 @@ Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kiss�
 	\begin {class}[text width=0.45\textwidth]{\detokenize{nginx_config_handler}}{0, 0}
 		\attribute {+ \detokenize{nginxConfigHandler -> }\textbf{nginxConfigHandler} class}
 		\operation {- \detokenize{concatArgsProperlyForBlockName(args)}}
-		\operation {- \detokenize{parse_nginx_config(linesInStr)}}
+		\operation {- \detokenize{parseNginxConfig(linesInStr)}}
 		\operation {- \detokenize{formatDataAccordingQuoting(tbl)}}
 		\operation {- \detokenize{doPaddingWithBlockDeepness(blockDeepness)}}
-		\operation {- \detokenize{write_nginx_config(parsedLines)}}
+		\operation {- \detokenize{writeNginxConfig(parsedLines)}}
 	\end {class}
 
 	\begin {class}[text width=0.44\textwidth]{\detokenize{nginxConfigHandler}}{7.5, 0}
@@ -281,26 +281,26 @@ Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kiss�
 	\begin{tikzpicture} % [show background grid]
 		\begin {class}[text width=0.7\textwidth]{\detokenize{nginx_server_impl}}{0, 0}
 			\attribute {- \detokenize{sampleConfigForWebsite : string}}
-			\attribute {+ \detokenize{nginx_user : string}}
-			\attribute {+ \detokenize{nginx_user_comment : string}}
-			\attribute {+ \detokenize{nginx_user_shell : string}}
-			\attribute {+ \detokenize{base_dir : string}}
+			\attribute {+ \detokenize{nginxUser : string}}
+			\attribute {+ \detokenize{nginxUserComment : string}}
+			\attribute {+ \detokenize{nginxUserShell : string}}
+			\attribute {+ \detokenize{baseDir : string}}
 			\attribute {+ \detokenize{errors : table}}
 			\operation {- \detokenize{registerNewError(errorName)}}
 			\operation {+ \detokenize{constructor(_bootstrapModule)}}
 			\operation {+ \detokenize{resolveErrorToStr(error)}}
 			\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-			\operation {+ \detokenize{init_dirs()}}
-			\operation {+ \detokenize{check_nginx_user_existence()}}
-			\operation {+ \detokenize{create_nginx_user(homeDir)}}
-			\operation {+ \detokenize{update_existing_nginx_user()}}
-			\operation {+ \detokenize{get_nginx_home_dir()}}
-			\operation {+ \detokenize{get_nginx_master_config_}\\\detokenize{path_from_daemon()}}
-			\operation {+ \detokenize{initialize_server()}}
-			\operation {+ \detokenize{create_new_website(websiteUrl)}}
-			\operation {+ \detokenize{delete_website(websiteUrl)}}
-			\operation {+ \detokenize{get_current_available_websites()}}
-			\operation {+ \detokenize{init_ssl_for_website(webUrl, certDetails)}}
+			\operation {+ \detokenize{initDirs()}}
+			\operation {+ \detokenize{checkNginxUserExistence()}}
+			\operation {+ \detokenize{createNginxUser(homeDir)}}
+			\operation {+ \detokenize{updateExistingNginxUser()}}
+			\operation {+ \detokenize{getNginxHomeDir()}}
+			\operation {+ \detokenize{getNginxMasterConfigPathFromDaemon()}}
+			\operation {+ \detokenize{initializeServer()}}
+			\operation {+ \detokenize{createNewWebsite(websiteUrl)}}
+			\operation {+ \detokenize{deleteWebsite(websiteUrl)}}
+			\operation {+ \detokenize{getCurrentAvailableWebsites()}}
+			\operation {+ \detokenize{initSSLForWebsite(webUrl, certDetails)}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
@@ -328,21 +328,25 @@ Az apache \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, a \tex
 	
 \begin{tikzpicture} % [show background grid]
 	\begin {class}[text width=0.45\textwidth]{apache}{0, 0}
-		\attribute {+ \detokenize{server_impl -> }\textbf{apache\_server\_impl} module}
-		\operation {+ \detokenize{is_apache_installed()}}
-		\operation {+ \detokenize{install_apache()}}
-		\operation {+ \detokenize{init_dirs()}}
+		\attribute {+ \detokenize{errors : table}}
+		\attribute {+ \detokenize{serverImpl -> }\textbf{apache\_server\_impl} module}
+		\operation {+ \detokenize{isInstalled()}}
+		\operation {+ \detokenize{install()}}
+		\operation {+ \detokenize{isRunning()}}
+		\operation {+ \detokenize{stopServer()}}
+		\operation {+ \detokenize{startServer()}}
+		\operation {+ \detokenize{initDirs()}}
 	\end {class}
 	
 	\begin {class}[text width=0.45\textwidth]{\detokenize{apache_config_handler}}{7.6, 0}
 		\attribute {+ \detokenize{apacheConfigHandler -> }\textbf{apacheConfigHandler} class}
 		\attribute {+ \detokenize{apacheEnvvarsHandler -> }\textbf{apacheEnvvarsHandler} class}
-		\operation {- \detokenize{parse_apache_config(linesInStr)}}
+		\operation {- \detokenize{parseApacheConfig(linesInStr)}}
 		\operation {- \detokenize{doPaddingWithBlockDeepness(blockDeepness)}}
 		\operation {- \detokenize{formatDataAccordingQuoting(tbl)}}
-		\operation {- \detokenize{write_apache_config(parsedLines)}}
+		\operation {- \detokenize{writeApacheConfig(parsedLines)}}
 		\operation {- \detokenize{parse_envvar_args_from_line(line)}}
-		\operation {- \detokenize{escape_magic(s)}}
+		\operation {- \detokenize{escapeMagic(s)}}
 	\end {class}
 	
 	\begin {class}[text width=0.45\textwidth]{\detokenize{apacheConfigHandler}}{0, -5}
@@ -361,26 +365,26 @@ Az apache \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, a \tex
 	\end {class}
 	
 	\begin {class}[text width=0.45\textwidth]{\detokenize{apache_server_impl}}{4.5, -10.3}
-		\attribute {+ \detokenize{apache_user : string}}
-		\attribute {+ \detokenize{apache_user_comment : string}}
-		\attribute {+ \detokenize{apache_user_shell : string}}
-		\attribute {+ \detokenize{base_dir : string}}
+		\attribute {+ \detokenize{apacheUser : string}}
+		\attribute {+ \detokenize{apacheUserComment : string}}
+		\attribute {+ \detokenize{apacheUserShell : string}}
+		\attribute {+ \detokenize{baseDir : string}}
 		\attribute {+ \detokenize{errors : table}}
 		\attribute {- \detokenize{sampleConfigForWebsite : string}}
 		\operation {- \detokenize{resolveErrorToStr(error)}}
 		\operation {+ \detokenize{constructor(_bootstrapModule)}}
 		\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-		\operation {+ \detokenize{check_apache_user_existence()}}
-		\operation {+ \detokenize{create_apache_user(homeDir)}}
-		\operation {+ \detokenize{update_existing_apache_user()}}
-		\operation {+ \detokenize{get_apache_home_dir()}}
-		\operation {+ \detokenize{get_apache_master_config_}\\\detokenize{path_from_daemon()}}
-		\operation {+ \detokenize{init_dirs()}}
-		\operation {+ \detokenize{initialize_server()}}
-		\operation {+ \detokenize{create_new_website(websiteUrl)}}
-		\operation {+ \detokenize{delete_website(websiteUrl)}}
-		\operation {+ \detokenize{get_current_available_websites()}}
-		\operation {+ \detokenize{init_ssl_for_website(webUrl, certDetails)}}
+		\operation {+ \detokenize{checkApacheUserExistence()}}
+		\operation {+ \detokenize{createApacheUser(homeDir)}}
+		\operation {+ \detokenize{updateExistingApacheUser()}}
+		\operation {+ \detokenize{getApacheHomeDir()}}
+		\operation {+ \detokenize{getApacheMasterConfigPathFromDaemon()}}
+		\operation {+ \detokenize{initDirs()}}
+		\operation {+ \detokenize{initializeServer()}}
+		\operation {+ \detokenize{createNewWebsite(websiteUrl)}}
+		\operation {+ \detokenize{deleteWebsite(websiteUrl)}}
+		\operation {+ \detokenize{getCurrentAvailableWebsites()}}
+		\operation {+ \detokenize{initSSLForWebsite(webUrl, certDetails)}}
 	\end {class}
 
 	\unidirectionalAssociation{apache_config_handler}{}{}{apacheConfigHandler}
@@ -416,11 +420,11 @@ A \texttt{snapd} esetében egy teljes archívumot tölt le a rendszer, ebben ben
 			\operation {- \detokenize{registerNewError(errorName)}}
 			\operation {- \detokenize{sleep(n)}}
 			\operation {+ \detokenize{resolveErrorToStr(error)}}
-			\operation {+ \detokenize{is_certbot_installed()}}
-			\operation {+ \detokenize{create_certbot_symlink()}}
-			\operation {+ \detokenize{install_certbot()}}
-			\operation {+ \detokenize{get_cert_datas(domain)}}
-			\operation {+ \detokenize{try_ssl_certification_creation(method, domain, webserverType)}}
+			\operation {+ \detokenize{isCertbotInstalled()}}
+			\operation {+ \detokenize{createCertbotSymlink()}}
+			\operation {+ \detokenize{installCertbot()}}
+			\operation {+ \detokenize{getCertDatas(domain)}}
+			\operation {+ \detokenize{trySSLCertificateCreation(method, domain, webserverType)}}
 			\operation {+ \detokenize{init()}}
 		\end {class}
 	\end {tikzpicture}
@@ -441,8 +445,8 @@ A snapd modul egyszerű felépítésű. Feladata maga a snapd feltelepítése az
 		\begin {class}[text width=0.6\textwidth]{\detokenize{snapd}}{0, 0}
 			\operation {+ \detokenize{isSnapdInstalled()}}
 			\operation {+ \detokenize{installSnapd()}}
-			\operation {+ \detokenize{is_package_installed(packageName)}}
-			\operation {+ \detokenize{install_package(packageName, classic)}}
+			\operation {+ \detokenize{isPackageInstalled(packageName)}}
+			\operation {+ \detokenize{installPackage(packageName, classic)}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}
@@ -459,30 +463,30 @@ Ez a modul kezeli a tűzfalszabályokat az \texttt{iptables} frontend segítség
 			\attribute {- \detokenize{iptablesAliases : table}}
 			\attribute {+ \detokenize{errors : table}}
 			\operation {+ \detokenize{resolveErrorToStr(error)}}
-			\operation {+ \detokenize{is_iptables_installed()}}
-			\operation {+ \detokenize{install_iptables()}}
-			\operation {+ \detokenize{get_current_network_interfaces()}}
-			\operation {+ \detokenize{get_current_ssh_ports()}}
-			\operation {+ \detokenize{parse_current_rules()}}
-			\operation {+ \detokenize{get_open_ports(interface)}}
-			\operation {+ \detokenize{delete_open_port_rule(interface, idx)}}
-			\operation {+ \detokenize{get_closed_ports(interface)}}
-			\operation {+ \detokenize{delete_close_port_rule(interface, idx)}}
-			\operation {+ \detokenize{close_port(interface, protocol, dport, fromIP)}}
-			\operation {+ \detokenize{open_port(interface, protocol, dport, fromIP)}}
-			\operation {+ \detokenize{list_allowed_outgoing_connections(interface)}}
-			\operation {+ \detokenize{delete_outgoing_rule(interface, idx)}}
-			\operation {+ \detokenize{allow_outgoing_new_connection(interface, protocol, dip, dport)}}
-			\operation {+ \detokenize{check_if_inbound_packets_are_being_filtered_already(interface, protocol)}}
-			\operation {+ \detokenize{tog_only_allow_accepted_packets_inbound(toggle, interface, protocol)}}
-			\operation {+ \detokenize{check_if_outbound_packets_are_being_filtered_already(interface, protocol)}}
-			\operation {+ \detokenize{tog_only_allow_accepted_packets_outbound(toggle, interface, protocol)}}
-			\operation {+ \detokenize{delete_nat_rules(mainInterface, tunnelInterface, forwardTblIdx, forwardTblAllIdx, postroutingTblAllIdx)}}
-			\operation {+ \detokenize{get_current_active_nat_for_openvpn()}}
-			\operation {+ \detokenize{init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubnet)}}
+			\operation {+ \detokenize{isIptablesInstalled()}}
+			\operation {+ \detokenize{installIptables()}}
+			\operation {+ \detokenize{getCurrentNetworkInterfaces()}}
+			\operation {+ \detokenize{getCurrentSSHPorts()}}
+			\operation {+ \detokenize{parseCurrentRules()}}
+			\operation {+ \detokenize{getOpenPorts(interface)}}
+			\operation {+ \detokenize{deleteOpenPortRule(interface, idx)}}
+			\operation {+ \detokenize{getClosedPorts(interface)}}
+			\operation {+ \detokenize{deleteClosePortRule(interface, idx)}}
+			\operation {+ \detokenize{closePort(interface, protocol, dport, fromIP)}}
+			\operation {+ \detokenize{openPort(interface, protocol, dport, fromIP)}}
+			\operation {+ \detokenize{listAllowedOutgoingConnections(interface)}}
+			\operation {+ \detokenize{deleteOutgoingRule(interface, idx)}}
+			\operation {+ \detokenize{allowOutgoingNewConnection(interface, protocol, dip, dport)}}
+			\operation {+ \detokenize{checkIfInboundPacketsAreBeingFilteredAlready(interface, protocol)}}
+			\operation {+ \detokenize{togOnlyAllowAcceptedPacketsInbound(toggle, interface, protocol)}}
+			\operation {+ \detokenize{checkIfOutboundPacketsAreBeingFilteredAlready(interface, protocol)}}
+			\operation {+ \detokenize{togOnlyAllowAcceptedPacketsOutbound(toggle, interface, protocol)}}
+			\operation {+ \detokenize{deleteNATRules(mainInterface, tunnelInterface, forwardTblIdx, forwardTblAllIdx, postroutingTblAllIdx)}}
+			\operation {+ \detokenize{getCurrentActiveNATForOpenVPN()}}
+			\operation {+ \detokenize{initNATForOpenVPN(mainInterface, tunnelInterface, openvpnSubnet)}}
 			\operation {+ \detokenize{loadOurRulesToIptables()}}
-			\operation {+ \detokenize{iptables_to_string()}}
-			\operation {+ \detokenize{init_module()}}
+			\operation {+ \detokenize{iptablesToString()}}
+			\operation {+ \detokenize{initModule()}}
 		\end {class}
 	\end {tikzpicture}
 \end{center}

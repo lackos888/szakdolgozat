@@ -7,38 +7,38 @@ module.errors = {
     WEBSERVER_INSTALLED_ALREADY = -1
 };
 
-function module.is_installed()
-    return packageManager.is_package_installed("nginx");
+function module.isInstalled()
+    return packageManager.isPackageInstalled("nginx");
 end
 
 function module.install()
-    if module.is_installed() then
+    if module.isInstalled() then
         return module.errors.WEBSERVER_INSTALLED_ALREADY;
     end
 
-    return packageManager.install_package("nginx");
+    return packageManager.installPackage("nginx");
 end
 
-function module.is_running()
-    if linux.get_service_status("nginx") == "dead" then
+function module.isRunning()
+    if linux.getServiceStatus("nginx") == "dead" then
         return false;
     end
 
-    return linux.is_service_running("nginx") == true or linux.is_process_running("nginx") == true;
+    return linux.isServiceRunning("nginx") == true or linux.isProcessRunning("nginx") == true;
 end
 
-function module.stop_server()
-    return linux.stop_service("nginx");
+function module.stopServer()
+    return linux.stopService("nginx");
 end
 
-function module.start_server()
-    return linux.start_service("nginx");
+function module.startServer()
+    return linux.startService("nginx");
 end
 
-module.server_impl = require("nginxHandler/nginx_server_impl")(module);
+module.serverImpl = require("nginxHandler/nginx_server_impl")(module);
 
-function module.init_dirs()
-    module.server_impl.init_dirs();
+function module.initDirs()
+    module.serverImpl.initDirs();
 end
 
 return module

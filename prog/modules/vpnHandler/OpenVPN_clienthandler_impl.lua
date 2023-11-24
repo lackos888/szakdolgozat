@@ -80,7 +80,7 @@ function Client:genKeyAndCRT(password)
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
     envVariables["EASYRSA_PASSOUT"] = "pass:"..password;
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, envVariables);
+    local retCode = linux.execCommandWithProcRetCode("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." build-client-full "..self["name"], nil, envVariables);
 
     if retCode ~= 0 then
         return module.errors.BUILD_CLIENT_FULL_FAIL, retCode;
@@ -101,7 +101,7 @@ function Client:generateClientConfig()
         return false;
     end
 
-    local configFileContent, paramsToLines = config_handler.parse_openvpn_config(clientSampleConfig);
+    local configFileContent, paramsToLines = config_handler.parseOpenVPNConfig(clientSampleConfig);
 
     if paramsToLines["remote"] then
         local paramTbl = configFileContent[paramsToLines["remote"]];
@@ -110,7 +110,7 @@ function Client:generateClientConfig()
         paramTbl["params"][3].val = 1194; --test Port
     end
 
-    local clientConfig = config_handler.write_openvpn_config(configFileContent);
+    local clientConfig = config_handler.writeOpenVPNConfig(configFileContent);
 
     local serverCAPath = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/issued/"..serverImpl["openvpn_server_name_in_ca"]..".crt");
 
@@ -118,7 +118,7 @@ function Client:generateClientConfig()
 
     local clientKeyPath = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/private/"..self["name"]..".key");
 
-    local tlsCryptKeyPath = general.concatPaths(serverImpl.get_openvpn_home_dir(), "/ta.key");
+    local tlsCryptKeyPath = general.concatPaths(serverImpl.getOpenVPNHomeDir(), "/ta.key");
 
     local serverCACrt = general.readAllFileContents(serverCAPath);
 
@@ -169,13 +169,13 @@ function Client:revoke()
     envVariables["EASYRSA_DIGEST"] = "sha512";
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, envVariables);
+    local retCode = linux.execCommandWithProcRetCode("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." revoke "..self["name"], nil, envVariables);
 
     if retCode ~= 0 and retCode ~= 1 then
         return module.errors.REVOKE_FAIL;
     end
 
-    if not module.update_revoke_crl_for_openvpn_daemon() then
+    if not module.updateRevokeCRLForOpenVPNDaemon() then
         return module.errors.REVOKE_CRL_UPDATE_FAIL;
     end
 
@@ -192,7 +192,7 @@ end
 registerNewError("GEN_CRL_FAILED");
 registerNewError("CRL_COPY_FAILED");
 
-function module.update_revoke_crl_for_openvpn_daemon()
+function module.updateRevokeCRLForOpenVPNDaemon()
     local envVariables = {
         ["EASYRSA_PKI"] = serverImpl.getEasyRSAPKiDir()
     };
@@ -203,14 +203,14 @@ function module.update_revoke_crl_for_openvpn_daemon()
     envVariables["EASYRSA_DIGEST"] = "sha512";
     envVariables["EASYRSA_PASSIN"] = "pass:"..serverImpl.getCAPass();
 
-    local retCode = linux.exec_command_with_proc_ret_code("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, envVariables);
+    local retCode = linux.execCommandWithProcRetCode("./"..general.concatPaths(serverImpl.getEasyRSADir(), "/easyrsa").." gen-crl", nil, envVariables);
 
     if retCode ~= 0 then
         return module.errors.GEN_CRL_FAILED;
     end
 
     local crlPathInPKI = general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/crl.pem");
-    local crlPathInOpenVPNDir = general.concatPaths(serverImpl.get_openvpn_home_dir(), "/crl.pem");
+    local crlPathInOpenVPNDir = general.concatPaths(serverImpl.getOpenVPNHomeDir(), "/crl.pem");
 
     if not linux.copy(crlPathInPKI, crlPathInOpenVPNDir) then
         return module.errors.CRL_COPY_FAILED;
@@ -219,7 +219,7 @@ function module.update_revoke_crl_for_openvpn_daemon()
     return true;
 end
 
-function module.get_valid_clients()
+function module.getValidClients()
     if validClients then
         local ret = {};
 
@@ -233,8 +233,8 @@ function module.get_valid_clients()
     return false;
 end
 
-local function get_valid_clients_from_PKI_database()
-    local retStr, retCode = linux.exec_command_with_proc_ret_code("cat "..general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/index.txt").." | awk '{if($1 == \"V\"){ print $5; } }' | awk -F '/CN=' '{print $2; }'", true);
+local function getValidClientsFromPKIDatabase()
+    local retStr, retCode = linux.execCommandWithProcRetCode("cat "..general.concatPaths(serverImpl.getEasyRSAPKiDir(), "/index.txt").." | awk '{if($1 == \"V\"){ print $5; } }' | awk -F '/CN=' '{print $2; }'", true);
 
     local validClientsFromPKI = {};
 
@@ -250,7 +250,7 @@ end
 return function(openVPNServerImpl)
     serverImpl = openVPNServerImpl;
 
-    for _, v in pairs(get_valid_clients_from_PKI_database()) do
+    for _, v in pairs(getValidClientsFromPKIDatabase()) do
         Client:new(v, true);
     end
 
@@ -263,7 +263,7 @@ return function(openVPNServerImpl)
     newClient:genKeyAndCRT("teszt1234");
     ]]
 
-    module.update_revoke_crl_for_openvpn_daemon();
+    module.updateRevokeCRLForOpenVPNDaemon();
 
     return module;
 end;

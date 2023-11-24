@@ -31,7 +31,7 @@ function module.strSplit(str, sep)
  end
 
  --https://gist.github.com/sapphyrus/fd9aeb871e3ce966cc4b0b969f62f539
-function module.deep_compare(tbl1, tbl2)
+function module.deepCompare(tbl1, tbl2)
 	if tbl1 == tbl2 then
 		return true
 	elseif type(tbl1) == "table" and type(tbl2) == "table" then
@@ -43,7 +43,7 @@ function module.deep_compare(tbl1, tbl2)
 				return false
 			elseif value1 ~= value2 then
 				if type(value1) == "table" and type(value2) == "table" then
-					if not module.deep_compare(value1, value2) then
+					if not module.deepCompare(value1, value2) then
 						return false
 					end
 				else

@@ -37,7 +37,7 @@ local function concatArgsProperlyForBlockName(args)
     return concattedStr;
 end
 
-local function parse_nginx_config(linesInStr)
+local function parseNginxConfig(linesInStr)
     --escape empty lines: [^\r\n]+
     --not escaping empty lines: ([^\n]*)\n?
 
@@ -458,7 +458,7 @@ local function doPaddingWithBlockDeepness(blockDeepness)
     return str;
 end
 
-local function write_nginx_config(parsedLines)
+local function writeNginxConfig(parsedLines)
     if not parsedLines then
         return "";
     end
@@ -493,7 +493,7 @@ function nginxConfigHandler:new(linesInStr, paramToLine)
     };
 
     if linesInStr and not paramToLine then
-        local parsedLinesNew, paramToLineNew = parse_nginx_config(linesInStr);
+        local parsedLinesNew, paramToLineNew = parseNginxConfig(linesInStr);
 
         if not parsedLinesNew then
             return false;
@@ -577,7 +577,7 @@ function nginxConfigHandler:deleteData(pos)
 end
 
 function nginxConfigHandler:toString()
-    return write_nginx_config(self["parsedLines"]);
+    return writeNginxConfig(self["parsedLines"]);
 end
 
 return module;

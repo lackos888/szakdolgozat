@@ -13,12 +13,12 @@ function module.exists(file)
     return ok, err
 end
  
-function module.isdir(path)
+function module.isDir(path)
     return module.exists(path.."/")
 end
 
 function module.listDirFiles(path)
-    local retLines, retCode = module.exec_command_with_proc_ret_code("dir "..tostring(path), true, nil, true);
+    local retLines, retCode = module.execCommandWithProcRetCode("dir "..tostring(path), true, nil, true);
 
     local files = {};
 
@@ -32,13 +32,13 @@ function module.listDirFiles(path)
     return files;
 end
 
-function module.mkdir(path)
-    local retCodeForMkdir = module.exec_command_with_proc_ret_code("mkdir "..path);
+function module.mkDir(path)
+    local retCodeForMkdir = module.execCommandWithProcRetCode("mkdir "..path);
     return retCodeForMkdir == 0 or retCodeForMkdir == 1; --new dir successfully created/already exists
 end
 
 function module.deleteFile(path)
-    local retCodeForDelete = module.exec_command_with_proc_ret_code("rm "..path, nil, nil, true);
+    local retCodeForDelete = module.execCommandWithProcRetCode("rm "..path, nil, nil, true);
 
     if retCodeForDelete ~= 0 then --file don't exist anymore or perm problems
         return false;
@@ -48,7 +48,7 @@ function module.deleteFile(path)
 end
 
 function module.deleteDirectory(path)
-    local retCodeForDelete = module.exec_command_with_proc_ret_code("rm -r "..path, nil, nil, true);
+    local retCodeForDelete = module.execCommandWithProcRetCode("rm -r "..path, nil, nil, true);
 
     if retCodeForDelete ~= 0 then --dir don't exist anymore or perm problems
         return false;
@@ -57,7 +57,7 @@ function module.deleteDirectory(path)
     return true;
 end
 
-function module.exec_command(cmd)
+function module.execCommand(cmd)
     local handle = io.popen(cmd);
     local result = handle:read("*a");
     handle:close();
@@ -65,43 +65,43 @@ function module.exec_command(cmd)
     return result;
 end
 
-function module.get_service_status(serviceName)
-    local output, retCode = module.exec_command_with_proc_ret_code("systemctl show -p SubState --value "..tostring(serviceName), true);
+function module.getServiceStatus(serviceName)
+    local output, retCode = module.execCommandWithProcRetCode("systemctl show -p SubState --value "..tostring(serviceName), true);
     return output;
 end
 
-function module.is_service_running(serviceName)
-    return module.get_service_status(serviceName) == "running";
+function module.isServiceRunning(serviceName)
+    return module.getServiceStatus(serviceName) == "running";
 end
 
-function module.is_process_running(name)
-    return module.exec_command_with_proc_ret_code("pidof "..tostring(name), nil, nil, true) == 0;
+function module.isProcessRunning(name)
+    return module.execCommandWithProcRetCode("pidof "..tostring(name), nil, nil, true) == 0;
 end
 
-function module.stop_service(serviceName)
-    return module.exec_command_with_proc_ret_code("systemctl stop --quiet "..tostring(serviceName), nil, nil, true) == 0;
+function module.stopService(serviceName)
+    return module.execCommandWithProcRetCode("systemctl stop --quiet "..tostring(serviceName), nil, nil, true) == 0;
 end
 
-function module.start_service(serviceName)
-    return module.exec_command_with_proc_ret_code("systemctl start --quiet "..tostring(serviceName), nil, nil, true) == 0;
+function module.startService(serviceName)
+    return module.execCommandWithProcRetCode("systemctl start --quiet "..tostring(serviceName), nil, nil, true) == 0;
 end
 
-function module.restart_service(serviceName)
-    return module.exec_command_with_proc_ret_code("systemctl restart --quiet "..tostring(serviceName), nil, nil, true) == 0;
+function module.restartService(serviceName)
+    return module.execCommandWithProcRetCode("systemctl restart --quiet "..tostring(serviceName), nil, nil, true) == 0;
 end
 
-function module.systemctl_daemon_reload()
-    return module.exec_command_with_proc_ret_code("systemctl daemon-reload", nil, nil, true) == 0;
+function module.systemctlDaemonReload()
+    return module.execCommandWithProcRetCode("systemctl daemon-reload", nil, nil, true) == 0;
 end
 
-function module.check_if_user_exists(userName)
-    return module.exec_command_with_proc_ret_code("id "..userName, nil, nil, true) == 0;
+function module.checkIfUserExists(userName)
+    return module.execCommandWithProcRetCode("id "..userName, nil, nil, true) == 0;
 end
 
-function module.create_user_with_name(userName, comment, shell, homeDir)
+function module.createUserWithName(userName, comment, shell, homeDir)
     local additionalStr = homeDir and (" -d "..homeDir.." ") or ("");
 
-    local retCodeForUserCreation = module.exec_command_with_proc_ret_code("useradd -c \""..comment.."\" -m -s "..shell.." "..additionalStr..""..userName, nil, nil, true);
+    local retCodeForUserCreation = module.execCommandWithProcRetCode("useradd -c \""..comment.."\" -m -s "..shell.." "..additionalStr..""..userName, nil, nil, true);
 
     if retCodeForUserCreation ~= 0 and retCodeForUserCreation ~= 9 then
         return false, retCodeForUserCreation
@@ -110,8 +110,8 @@ function module.create_user_with_name(userName, comment, shell, homeDir)
     return true;
 end
 
-function module.update_user(userName, comment, shell)
-    local retCodeForUserUpdate = module.exec_command_with_proc_ret_code("usermod -c \""..comment.."\" -s "..shell.." "..userName, nil, nil, true);
+function module.updateUser(userName, comment, shell)
+    local retCodeForUserUpdate = module.execCommandWithProcRetCode("usermod -c \""..comment.."\" -s "..shell.." "..userName, nil, nil, true);
 
     if retCodeForUserUpdate ~= 0 then
         return false
@@ -120,8 +120,8 @@ function module.update_user(userName, comment, shell)
     return true;
 end
 
-function module.get_user_home_dir(userName)
-    local retLines, retCodeForUser = module.exec_command_with_proc_ret_code("cat /etc/passwd | grep \""..userName..":\" | awk -F ':' '{print $6}'", true, nil, true);
+function module.getUserHomeDir(userName)
+    local retLines, retCodeForUser = module.execCommandWithProcRetCode("cat /etc/passwd | grep \""..userName..":\" | awk -F ':' '{print $6}'", true, nil, true);
 
     if #retLines > 0 then
         return retLines;
@@ -130,7 +130,7 @@ function module.get_user_home_dir(userName)
     return false;
 end
 
-function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables, redirectStdErrToStdIn)
+function module.execCommandWithProcRetCode(cmd, linesReturned, envVariables, redirectStdErrToStdIn)
     local exportCmd = "";
 
     if envVariables then
@@ -165,7 +165,7 @@ function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables
         overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine - #newLineChar * 2); --skip return code line
     end
     
-    -- print("[exec_command_with_proc_ret_code] cmd: "..tostring(cmd).." overallReturn: "..tostring(overallReturn).."|||retCode: "..tostring(retCode));
+    -- print("[execCommandWithProcRetCode] cmd: "..tostring(cmd).." overallReturn: "..tostring(overallReturn).."|||retCode: "..tostring(retCode));
 
     if linesReturned then
         return overallReturn, retCode;
@@ -175,13 +175,13 @@ function module.exec_command_with_proc_ret_code(cmd, linesReturned, envVariables
 end
 
 function module.copy(from, to)
-    local retCode = module.exec_command_with_proc_ret_code("cp "..tostring(from).." "..tostring(to), nil, nil, true);
+    local retCode = module.execCommandWithProcRetCode("cp "..tostring(from).." "..tostring(to), nil, nil, true);
 
     return retCode == 0;
 end
 
 function module.copyAndChown(user, from, to)
-    local retCode = module.exec_command_with_proc_ret_code("cp "..tostring(from).." "..tostring(to), nil, nil, true);
+    local retCode = module.execCommandWithProcRetCode("cp "..tostring(from).." "..tostring(to), nil, nil, true);
 
     if retCode == 0 then
         return module.chown(to, user);
@@ -193,7 +193,7 @@ end
 function module.chown(path, userName, isDir)
     local additionalString = (isDir and (" -hR") or (""));
 
-    local retCode = module.exec_command_with_proc_ret_code("chown"..additionalString.." "..userName..":"..userName.." "..path, nil, nil, true);
+    local retCode = module.execCommandWithProcRetCode("chown"..additionalString.." "..userName..":"..userName.." "..path, nil, nil, true);
 
     return retCode == 0;
 end
@@ -201,7 +201,7 @@ end
 function module.chmod(path, perm, isDir)
     local additionalString = (isDir and (" -R") or (""));
 
-    local retCode = module.exec_command_with_proc_ret_code("chmod"..additionalString.." "..tostring(perm).." "..path, nil, nil, true);
+    local retCode = module.execCommandWithProcRetCode("chmod"..additionalString.." "..tostring(perm).." "..path, nil, nil, true);
 
     return retCode == 0;
 end

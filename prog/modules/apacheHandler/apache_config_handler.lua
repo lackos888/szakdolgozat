@@ -6,7 +6,7 @@ local general = require("general");
 
 --based on https://httpd.apache.org/docs/2.4/configuring.html
 
-local function parse_apache_config(linesInStr)
+local function parseApacheConfig(linesInStr)
     --escape empty lines: [^\r\n]+
     --not escaping empty lines: ([^\n]*)\n?
 
@@ -380,7 +380,7 @@ local function formatDataAccordingQuoting(tbl, blockDeepness)
     return argsStr;
 end
 
-local function write_apache_config(parsedLines)
+local function writeApacheConfig(parsedLines)
     if not parsedLines then
         return "";
     end
@@ -419,7 +419,7 @@ function apacheConfigHandler:new(linesInStr, paramToLine)
     };
 
     if linesInStr and not paramToLine then
-        local parsedLinesNew, paramToLineNew = parse_apache_config(linesInStr);
+        local parsedLinesNew, paramToLineNew = parseApacheConfig(linesInStr);
 
         if not parsedLinesNew then
             return false;
@@ -503,7 +503,7 @@ function apacheConfigHandler:deleteData(pos)
 end
 
 function apacheConfigHandler:toString()
-    return write_apache_config(self["parsedLines"]);
+    return writeApacheConfig(self["parsedLines"]);
 end
 
 apacheEnvvarsHandler = {};
@@ -560,7 +560,7 @@ function apacheEnvvarsHandler:getArgs()
     return self["args"];
 end
 
-local function escape_magic(s) --from https://stackoverflow.com/questions/29503721/lua-plain-searching-with-string-gsub
+local function escapeMagic(s) --from https://stackoverflow.com/questions/29503721/lua-plain-searching-with-string-gsub
     return (s:gsub('[%^%$%(%)%%%.%[%]%*%+%-%?]','%%%1'))
 end
 
@@ -571,7 +571,7 @@ function apacheEnvvarsHandler:toString()
         local argsFound = parse_envvar_args_from_line(v);
 
         if argsFound then
-            v = v:gsub(escape_magic("="..tostring(argsFound.val)), "="..tostring(self["args"][argsFound.exportName]));
+            v = v:gsub(escapeMagic("="..tostring(argsFound.val)), "="..tostring(self["args"][argsFound.exportName]));
         end
 
         ret = ret..v..tostring(general.lineEnding);

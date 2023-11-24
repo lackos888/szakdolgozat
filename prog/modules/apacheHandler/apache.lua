@@ -7,38 +7,38 @@ module.errors = {
     WEBSERVER_INSTALLED_ALREADY = -1
 };
 
-function module.is_installed()
-    return packageManager.is_package_installed("apache2");
+function module.isInstalled()
+    return packageManager.isPackageInstalled("apache2");
 end
 
 function module.install()
-    if module.is_installed() then
+    if module.isInstalled() then
         return module.errors.WEBSERVER_INSTALLED_ALREADY;
     end
 
-    return packageManager.install_package("apache2");
+    return packageManager.installPackage("apache2");
 end
 
-function module.is_running()
-    if linux.get_service_status("apache2") == "dead" then
+function module.isRunning()
+    if linux.getServiceStatus("apache2") == "dead" then
         return false;
     end
 
-    return linux.is_service_running("apache2") == true or linux.is_process_running("apache2") == true;
+    return linux.isServiceRunning("apache2") == true or linux.isProcessRunning("apache2") == true;
 end
 
-function module.stop_server()
-    return linux.stop_service("apache2");
+function module.stopServer()
+    return linux.stopService("apache2");
 end
 
-function module.start_server()
-    return linux.start_service("apache2");
+function module.startServer()
+    return linux.startService("apache2");
 end
 
-module.server_impl = require("apacheHandler/apache_server_impl")(module);
+module.serverImpl = require("apacheHandler/apache_server_impl")(module);
 
-function module.init_dirs()
-    module.server_impl.init_dirs();
+function module.initDirs()
+    module.serverImpl.initDirs();
 end
 
 return module

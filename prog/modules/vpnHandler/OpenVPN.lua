@@ -7,38 +7,38 @@ module.errors = {
     OPENVPN_INSTALLED_ALREADY = -1
 };
 
-function module.is_openvpn_installed()
-    return packageManager.is_package_installed("openvpn");
+function module.isOpenVPNInstalled()
+    return packageManager.isPackageInstalled("openvpn");
 end
 
-function module.install_openvpn()
-    if module.is_openvpn_installed() then
+function module.installOpenvpn()
+    if module.isOpenVPNInstalled() then
         return module.errors.OPENVPN_INSTALLED_ALREADY;
     end
 
-    return packageManager.install_package("openvpn");
+    return packageManager.installPackage("openvpn");
 end
 
-function module.is_running()
-    if linux.get_service_status("openvpn") == "dead" then
+function module.isRunning()
+    if linux.getServiceStatus("openvpn") == "dead" then
         return false;
     end
 
-    return linux.is_service_running("openvpn") == true or linux.is_process_running("openvpn") == true;
+    return linux.isServiceRunning("openvpn") == true or linux.isProcessRunning("openvpn") == true;
 end
 
-function module.stop_server()
-    return linux.stop_service("openvpn");
+function module.stopServer()
+    return linux.stopService("openvpn");
 end
 
-function module.start_server()
-    return linux.start_service("openvpn");
+function module.startServer()
+    return linux.startService("openvpn");
 end
 
-module.server_impl = require("vpnHandler/OpenVPN_server_impl")(module);
+module.serverImpl = require("vpnHandler/OpenVPN_server_impl")(module);
 
-function module.init_dirs()
-    module.server_impl.init_dirs();
+function module.initDirs()
+    module.serverImpl.initDirs();
 end
 
 return module

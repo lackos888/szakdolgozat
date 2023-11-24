@@ -3,7 +3,7 @@ local general = require("general");
 
 --based on src/openvpn/options.c
   
-function module.parse_openvpn_config(linesInStr)
+function module.parseOpenVPNConfig(linesInStr)
     --escape empty lines: [^\r\n]+
     --not escaping empty lines: ([^\n]*)\n?
 
@@ -108,7 +108,7 @@ function module.parse_openvpn_config(linesInStr)
     return parsedLines, paramToLine;
 end
 
-function module.write_openvpn_config(parsedLines)
+function module.writeOpenVPNConfig(parsedLines)
     local lines = "";
 
     for t, v in pairs(parsedLines) do

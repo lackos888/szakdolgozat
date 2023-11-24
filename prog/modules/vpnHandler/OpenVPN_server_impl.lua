@@ -7,7 +7,7 @@ local config_handler = require("vpnHandler/OpenVPN_config_handler");
 local bootstrapModule = false;
 
 local module = {
-    ["base_dir"] = "openvpn",
+    ["baseDir"] = "openvpn",
     ["easy_rsa_install_cache_dir"] = "easy_rsa_install_cache",
     ["easy_rsa_installation_dir"] = "easy_rsa",
     ["openvpn_user"] = "openvpn_serv",
@@ -37,25 +37,25 @@ function module.resolveErrorToStr(error)
     return "";
 end
 
-local ca_pass = "ca-pass";
-local server_key_pass = "server-key-pass";
+local caPass = "ca-pass";
+local serverKeyPass = "server-key-pass";
 
 function module.getEasyRSADir()
     return module.formatPathInsideBasedir(module["easy_rsa_installation_dir"]);
 end
 
 function module.getCAPass()
-    return ca_pass;
+    return caPass;
 end
 
 function module.getOpenVPNBaseConfigDir()
-    local retStr, retCode = linux.exec_command_with_proc_ret_code("cat /etc/init.d/openvpn | grep -m 1 \"CONFIG_DIR\" | awk -F '=' '{print $2}'", true);
+    local retStr, retCode = linux.execCommandWithProcRetCode("cat /etc/init.d/openvpn | grep -m 1 \"CONFIG_DIR\" | awk -F '=' '{print $2}'", true);
 
     return retStr;
 end
 
-function module.is_easy_rsa_installed()
-    if linux.isdir(module.getEasyRSADir()) and linux.exists(module.getEasyRSADir().."/installed.txt") then
+function module.isEasyRSAInstalled()
+    if linux.isDir(module.getEasyRSADir()) and linux.exists(module.getEasyRSADir().."/installed.txt") then
         return true
     end
 
@@ -67,18 +67,18 @@ function module.formatPathInsideEasyRSAInstallCache(path)
 end
 
 function module.formatPathInsideBasedir(path)
-    return general.concatPaths(module["base_dir"], "/", path);
+    return general.concatPaths(module["baseDir"], "/", path);
 end
 
-function module.init_dirs()
-    if not linux.isdir(module.base_dir) then
-        if not linux.mkdir(module.base_dir) then
+function module.initDirs()
+    if not linux.isDir(module.baseDir) then
+        if not linux.mkDir(module.baseDir) then
             return false;
         end
     end
 
-    if not linux.isdir(module.easy_rsa_install_cache_dir) then
-        if not linux.mkdir(module.easy_rsa_install_cache_dir) then
+    if not linux.isDir(module.easy_rsa_install_cache_dir) then
+        if not linux.mkDir(module.easy_rsa_install_cache_dir) then
             return false;
         end
     end
@@ -93,12 +93,12 @@ registerNewError("EASYRSA_TAR_FAILED");
 registerNewError("EASYRSA_MV_FAILED");
 registerNewError("PACKAGE_INSTALL_FAIL");
 
-function module.install_easy_rsa()
-    if module.is_easy_rsa_installed() then
+function module.installEasyRSA()
+    if module.isEasyRSAInstalled() then
         return true;
     end
 
-    if not packageManager.install_package("wget") or not packageManager.install_package("tar") or not packageManager.install_package("openssl") then
+    if not packageManager.installPackage("wget") or not packageManager.installPackage("tar") or not packageManager.installPackage("openssl") then
         return module.errors.PACKAGE_INSTALL_FAIL, 0;
     end
 
@@ -106,47 +106,47 @@ function module.install_easy_rsa()
 
     if linux.exists(tgzOutput) then
         if not linux.deleteFile(tgzOutput) then
-            print("[OpenVPN init - install_easy_rsa] couldn't delete file at "..tostring(tgzOutput));
+            print("[OpenVPN init - installEasyRSA] couldn't delete file at "..tostring(tgzOutput));
 
             return module.errors.EASYRSA_RM_FAILED, 0;
         end
     end
 
-    local retCodeForWget = linux.exec_command_with_proc_ret_code("wget https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz -O "..tgzOutput);
+    local retCodeForWget = linux.execCommandWithProcRetCode("wget https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz -O "..tgzOutput);
 
     if retCodeForWget ~= 0 then
-        print("[OpenVPN init - install_easy_rsa] couldn't wget file");
+        print("[OpenVPN init - installEasyRSA] couldn't wget file");
 
         return module.errors.EASYRSA_DOWNLOAD_WGET_FAILED, retCodeForWget;
     end
 
     local outputDir = module.getEasyRSADir();
 
-    local retCodeForMkdir = linux.mkdir(outputDir);
+    local retCodeForMkdir = linux.mkDir(outputDir);
 
     if not retCodeForMkdir then
-        print("[OpenVPN init - install_easy_rsa] couldn't create directory at "..tostring(outputDir));
+        print("[OpenVPN init - installEasyRSA] couldn't create directory at "..tostring(outputDir));
 
         return module.errors.EASYRSA_MKDIR_FAILED, retCodeForMkdir;
     end
 
-    local retCodeForTar = linux.exec_command_with_proc_ret_code("tar -x --overwrite --directory "..outputDir.." -f "..tgzOutput);
+    local retCodeForTar = linux.execCommandWithProcRetCode("tar -x --overwrite --directory "..outputDir.." -f "..tgzOutput);
 
     if retCodeForTar ~= 0 then
-        print("[OpenVPN init - install_easy_rsa] couldn't extract to directory at "..tostring(outputDir).." archive: "..tostring(tgzOutput));
+        print("[OpenVPN init - installEasyRSA] couldn't extract to directory at "..tostring(outputDir).." archive: "..tostring(tgzOutput));
 
         return module.errors.EASYRSA_TAR_FAILED, retCodeForTar;
     end
 
-    local retCodeForMove = linux.exec_command_with_proc_ret_code("mv "..outputDir.."/*/* "..outputDir);
+    local retCodeForMove = linux.execCommandWithProcRetCode("mv "..outputDir.."/*/* "..outputDir);
 
     if retCodeForMove ~= 0 then
-        print("[OpenVPN init - install_easy_rsa] couldn't move outputDir files");
+        print("[OpenVPN init - installEasyRSA] couldn't move outputDir files");
 
         return module.errors.EASYRSA_MV_FAILED, retCodeForMove;
     end
 
-    linux.exec_command("rmdir "..outputDir.."/EasyRSA-* && echo yes > "..outputDir.."/installed.txt");
+    linux.execCommand("rmdir "..outputDir.."/EasyRSA-* && echo yes > "..outputDir.."/installed.txt");
 
     return true;
 end
@@ -160,22 +160,22 @@ registerNewError("BUILD_CA_FAILED");
 registerNewError("BUILD_SERVER_FULL_FAILED");
 registerNewError("OPENSSL_VERIFY_FAILED");
 
-function module.init_easy_rsa()
+function module.initEasyRSA()
     local easyRSADir = module.getEasyRSADir();
     local easyRSAPKIDir = module.getEasyRSAPKiDir();
 
-    if not linux.isdir(easyRSAPKIDir) then
+    if not linux.isDir(easyRSAPKIDir) then
         local envVariables = {
             ["EASYRSA_PKI"] = easyRSAPKIDir
         };
 
-        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa init-pki", nil, envVariables, true);
+        local retCode = linux.execCommandWithProcRetCode(easyRSADir.."/easyrsa init-pki", nil, envVariables, true);
 
         if retCode ~= 0 then
             return module.errors.INIT_PKI_CMD_FAILED;
         end
 
-        envVariables["EASYRSA_PASSIN"] = "pass:"..ca_pass;
+        envVariables["EASYRSA_PASSIN"] = "pass:"..caPass;
         envVariables["EASYRSA_PASSOUT"] = envVariables["EASYRSA_PASSIN"];
         envVariables["EASYRSA_BATCH"] = 1;
         envVariables["EASYRSA_REQ_CN"] = "Szakdolgozat Certificate Authority";
@@ -189,23 +189,23 @@ function module.init_easy_rsa()
         envVariables["EASYRSA_CURVE"] = "ed25519";
         envVariables["EASYRSA_DIGEST"] = "sha512";
 
-        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa build-ca", nil, envVariables, true);
+        local retCode = linux.execCommandWithProcRetCode(easyRSADir.."/easyrsa build-ca", nil, envVariables, true);
 
         if retCode ~= 0 then
             return module.errors.BUILD_CA_CMD_FAILED, retCode;
         end
 
-        envVariables["EASYRSA_PASSOUT"] = "pass:"..server_key_pass;
+        envVariables["EASYRSA_PASSOUT"] = "pass:"..serverKeyPass;
 
         envVariables["EASYRSA_REQ_CN"] = nil;
 
-        local retCode = linux.exec_command_with_proc_ret_code(easyRSADir.."/easyrsa build-server-full "..tostring(module["openvpn_server_name_in_ca"]), nil, envVariables, true);
+        local retCode = linux.execCommandWithProcRetCode(easyRSADir.."/easyrsa build-server-full "..tostring(module["openvpn_server_name_in_ca"]), nil, envVariables, true);
 
         if retCode ~= 0 then
             return module.errors.BUILD_SERVER_FULL_FAILED, retCode;
         end
 
-        local retCode = linux.exec_command_with_proc_ret_code("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, envVariables, true);
+        local retCode = linux.execCommandWithProcRetCode("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, envVariables, true);
 
         if retCode ~= 0 then
             return module.errors.OPENSSL_VERIFY_FAILED, retCode;
@@ -215,7 +215,7 @@ function module.init_easy_rsa()
             ["EASYRSA_PKI"] = easyRSADir.."/pki"
         };
 
-        local retCode = linux.exec_command_with_proc_ret_code("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, envVariables, true);
+        local retCode = linux.execCommandWithProcRetCode("openssl verify -CAfile "..envVariables["EASYRSA_PKI"].."/ca.crt "..envVariables["EASYRSA_PKI"].."/issued/"..tostring(module["openvpn_server_name_in_ca"])..".crt", nil, envVariables, true);
 
         if retCode ~= 0 then
             return module.errors.OPENSSL_VERIFY_FAILED, retCode;
@@ -560,8 +560,8 @@ local sampleConfigFileContent = [[
     explicit-exit-notify 1    
 ]];
 
-function module.enable_all_autostart_in_default()
-    return linux.exec_command_with_proc_ret_code("sed -i 's/#AUTOSTART=\"all\"/AUTOSTART=\"all\"/g' /etc/default/openvpn");
+function module.enableAllAutostartInDefault()
+    return linux.execCommandWithProcRetCode("sed -i 's/#AUTOSTART=\"all\"/AUTOSTART=\"all\"/g' /etc/default/openvpn");
 end
 
 registerNewError("CRLPEM_HANDLE_OPEN_FAIL");
@@ -584,7 +584,7 @@ local function getConfigFilePath(openVPNConfigDir)
     return general.concatPaths(openVPNConfigDir, "/server_"..tostring(module["openvpn_user"])..".conf");
 end
 
-function module.get_openvpn_subnet()
+function module.getOpenVPNSubnet()
     if not module.client_handler then
         return false;
     end
@@ -597,7 +597,7 @@ function module.get_openvpn_subnet()
         return false;
     end
 
-    local configFileContent, paramsToLines = config_handler.parse_openvpn_config(fileContent);
+    local configFileContent, paramsToLines = config_handler.parseOpenVPNConfig(fileContent);
 
     if not configFileContent then
         return false;
@@ -615,8 +615,8 @@ function module.get_openvpn_subnet()
     return false;
 end
 
-function module.check_server_config(homeDir, openVPNConfigDir)
-    local pwd = linux.exec_command("pwd"):gsub("%s+", "");
+function module.checkServerConfig(homeDir, openVPNConfigDir)
+    local pwd = linux.execCommand("pwd"):gsub("%s+", "");
 
     local configFilePath = getConfigFilePath(openVPNConfigDir);
 
@@ -628,7 +628,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         local crlPemHandle = io.open(crlPemPath, "wb");
 
         if not crlPemHandle then
-            print("[OpenVPN init - check_server_config] couldn't open PEM handle at "..tostring(crlPemPath));
+            print("[OpenVPN init - checkServerConfig] couldn't open PEM handle at "..tostring(crlPemPath));
 
             return module.errors.CRLPEM_HANDLE_OPEN_FAIL;
         end
@@ -638,14 +638,14 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         crlPemHandle:close();
 
         if not linux.chown(crlPemPath, module["openvpn_user"]) then
-            print("[OpenVPN init - check_server_config] couldn't chown PEM file at "..tostring(crlPemPath));
+            print("[OpenVPN init - checkServerConfig] couldn't chown PEM file at "..tostring(crlPemPath));
 
             return module.errors.CRLPEM_CHOWN_FAIL;
         end
     end
 
     if not linux.chmod(crlPemPath, 700) then
-        print("[OpenVPN init - check_server_config] couldn't chmod PEM file at "..tostring(crlPemPath));
+        print("[OpenVPN init - checkServerConfig] couldn't chmod PEM file at "..tostring(crlPemPath));
 
         return module.errors.CRLPEM_CHMOD_FAIL;
     end
@@ -656,30 +656,30 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         local askPassHandle = io.open(askPassPath, "wb");
 
         if not askPassHandle then
-            print("[OpenVPN init - check_server_config] couldn't open askpass handle at "..tostring(askPassPath));
+            print("[OpenVPN init - checkServerConfig] couldn't open askpass handle at "..tostring(askPassPath));
 
             return module.errors.ASKPASS_HANDLE_FAIL;
         end
 
-        askPassHandle:write(server_key_pass);
+        askPassHandle:write(serverKeyPass);
         askPassHandle:flush();
         askPassHandle:close();
     end
 
     if not linux.chown(askPassPath, module["openvpn_user"]) then
-        print("[OpenVPN init - check_server_config] couldn't chown askpass file at "..tostring(askPassPath));
+        print("[OpenVPN init - checkServerConfig] couldn't chown askpass file at "..tostring(askPassPath));
 
         return module.errors.ASKPASS_CHOWN_FAIL;
     end
 
     if not linux.chmod(askPassPath, 700) then
-        print("[OpenVPN init - check_server_config] couldn't chmod askpass file at "..tostring(askPassPath));
+        print("[OpenVPN init - checkServerConfig] couldn't chmod askpass file at "..tostring(askPassPath));
 
         return module.errors.ASKPASS_CHMOD_FAIL;
     end
 
     if not linux.exists(configFilePath) then
-        local configFileContent, paramsToLines = config_handler.parse_openvpn_config(sampleConfigFileContent);
+        local configFileContent, paramsToLines = config_handler.parseOpenVPNConfig(sampleConfigFileContent);
 
         if paramsToLines["crl-verify"] then
             local paramTbl = configFileContent[paramsToLines["crl-verify"]];
@@ -694,7 +694,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
             local crtPathInsideHome = general.concatPaths(homeDir, "/ca.crt");
 
             if not linux.copyAndChown(module["openvpn_user"], origCrtPathInPKI, crtPathInsideHome) then
-                print("[OpenVPN init - check_server_config] couldn't copy & chown pki ca.crt file to "..tostring(crtPathInsideHome));
+                print("[OpenVPN init - checkServerConfig] couldn't copy & chown pki ca.crt file to "..tostring(crtPathInsideHome));
 
                 return module.errors.CACRT_COPYCHOWN_FAIL;
             end
@@ -709,7 +709,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
             local crtPathInsideHome = general.concatPaths(homeDir, "/"..tostring(module["openvpn_server_name_in_ca"])..".crt");
 
             if not linux.copyAndChown(module["openvpn_user"], origCrtPathInPKI, crtPathInsideHome) then
-                print("[OpenVPN init - check_server_config] couldn't copy & chown pki server crt file to "..tostring(crtPathInsideHome));
+                print("[OpenVPN init - checkServerConfig] couldn't copy & chown pki server crt file to "..tostring(crtPathInsideHome));
 
                 return module.errors.OPENVPN_CRT_COPYCHOWN_FAIL;
             end
@@ -724,7 +724,7 @@ function module.check_server_config(homeDir, openVPNConfigDir)
             local keyPathInsideHome = general.concatPaths(homeDir, "/"..tostring(module["openvpn_server_name_in_ca"])..".key");
 
             if not linux.copyAndChown(module["openvpn_user"], origKeyPathInPKI, keyPathInsideHome) then
-                print("[OpenVPN init - check_server_config] couldn't copy & chown server key file to "..tostring(keyPathInsideHome));
+                print("[OpenVPN init - checkServerConfig] couldn't copy & chown server key file to "..tostring(keyPathInsideHome));
 
                 return module.errors.OPENVPN_KEY_COPYCHOWN_FAIL;
             end
@@ -765,21 +765,21 @@ function module.check_server_config(homeDir, openVPNConfigDir)
         local configFileHandle = io.open(configFilePath, "wb");
 
         if not configFileHandle then
-            print("[OpenVPN init - check_server_config] couldn't open config file handle at "..tostring(configFilePath));
+            print("[OpenVPN init - checkServerConfig] couldn't open config file handle at "..tostring(configFilePath));
 
             return module.errors.CONFIG_FILE_HANDLE_FAIL;
         end
 
-        configFileHandle:write(config_handler.write_openvpn_config(configFileContent));
+        configFileHandle:write(config_handler.writeOpenVPNConfig(configFileContent));
         configFileHandle:flush();
         configFileHandle:close();
     end
 
     if not linux.exists(tlsAuthKeyPath) then
-        local retCode = linux.exec_command_with_proc_ret_code("openvpn --genkey tls-auth "..tlsAuthKeyPath);
+        local retCode = linux.execCommandWithProcRetCode("openvpn --genkey tls-auth "..tlsAuthKeyPath);
 
         if retCode ~= 0 then
-            print("[OpenVPN init - check_server_config] couldn't do tls-auth genkey to "..tostring(tlsAuthKeyPath));
+            print("[OpenVPN init - checkServerConfig] couldn't do tls-auth genkey to "..tostring(tlsAuthKeyPath));
 
             return module.errors.OPENVPN_GENKEY_FAIL;
         end
@@ -787,28 +787,28 @@ function module.check_server_config(homeDir, openVPNConfigDir)
 
     local tmpDirForOpenVPN = general.concatPaths(homeDir, "tmp");
 
-    if not linux.isdir(tmpDirForOpenVPN) then
-        if not linux.mkdir(tmpDirForOpenVPN) then
-            print("[OpenVPN init - check_server_config] couldn't create dir at "..tostring(tmpDirForOpenVPN));
+    if not linux.isDir(tmpDirForOpenVPN) then
+        if not linux.mkDir(tmpDirForOpenVPN) then
+            print("[OpenVPN init - checkServerConfig] couldn't create dir at "..tostring(tmpDirForOpenVPN));
 
             return module.errors.TMPDIR_CR_FAIL;
         end
     end
 
     if not linux.chown(tmpDirForOpenVPN, module["openvpn_user"], true) then
-        print("[OpenVPN init - check_server_config] couldn't chown dir at "..tostring(tmpDirForOpenVPN));
+        print("[OpenVPN init - checkServerConfig] couldn't chown dir at "..tostring(tmpDirForOpenVPN));
 
         return module.errors.TMPDIR_CHOWN_FAIL;
     end
 
     if not linux.chown(tlsAuthKeyPath, module["openvpn_user"]) then
-        print("[OpenVPN init - check_server_config] couldn't chown file at "..tostring(tlsAuthKeyPath));
+        print("[OpenVPN init - checkServerConfig] couldn't chown file at "..tostring(tlsAuthKeyPath));
 
         return module.errors.TLSAUTH_CHOWN_FAIL;
     end
 
     if not linux.chmod(tmpDirForOpenVPN, 700) then
-        print("[OpenVPN init - check_server_config] couldn't chmod tmp dir at "..tostring(tmpDirForOpenVPN));
+        print("[OpenVPN init - checkServerConfig] couldn't chmod tmp dir at "..tostring(tmpDirForOpenVPN));
 
         return module.errors.TMPDIR_CHMOD_FAIL;
     end
@@ -816,20 +816,20 @@ function module.check_server_config(homeDir, openVPNConfigDir)
     return true;
 end
 
-function module.check_openvpn_user_existence()
-    return linux.check_if_user_exists(module["openvpn_user"]);
+function module.checkOpenVPNUserExistence()
+    return linux.checkIfUserExists(module["openvpn_user"]);
 end
 
-function module.create_openvpn_user(homeDir)
-    return linux.create_user_with_name(module["openvpn_user"], module["openvpn_user_comment"], module["openvpn_user_shell"], homeDir);
+function module.createOpenVPNUser(homeDir)
+    return linux.createUserWithName(module["openvpn_user"], module["openvpn_user_comment"], module["openvpn_user_shell"], homeDir);
 end
 
-function module.update_existing_openvpn_user()
-    return linux.update_user(module["openvpn_user"], module["openvpn_user_comment"], module["openvpn_user_shell"]);
+function module.updateExistingOpenVPNUser()
+    return linux.updateUser(module["openvpn_user"], module["openvpn_user_comment"], module["openvpn_user_shell"]);
 end
 
-function module.get_openvpn_home_dir()
-    return linux.get_user_home_dir(module["openvpn_user"]);
+function module.getOpenVPNHomeDir()
+    return linux.getUserHomeDir(module["openvpn_user"]);
 end
 
 registerNewError("EASYRSA_INSTALL_ERROR");
@@ -840,14 +840,14 @@ registerNewError("SERVER_CONFIG_CHECK_ERROR");
 registerNewError("ENABLE_AUTOSTART_ERROR");
 registerNewError("DAEMON_RELOAD_AND_RESTART_ERROR");
 
-function module.initialize_server()
-    local retOfEasyRSAInstall, additionalError = module.install_easy_rsa();
+function module.initializeServer()
+    local retOfEasyRSAInstall, additionalError = module.installEasyRSA();
 
     if retOfEasyRSAInstall ~= true then
         return module.errors.EASYRSA_INSTALL_ERROR, retOfEasyRSAInstall, additionalError;
     end
 
-    local easyRsaInitRet, additionalError = module.init_easy_rsa();
+    local easyRsaInitRet, additionalError = module.initEasyRSA();
 
     if easyRsaInitRet ~= true then
         return module.errors.EASYRSA_INIT_ERROR, easyRsaInitRet, additionalError;
@@ -857,39 +857,39 @@ function module.initialize_server()
 
     local homeOfOpenVPNUser = general.concatPaths(openVPNConfigDir, "h_"..module["openvpn_user"]);
 
-    local openVPNUser = module.check_openvpn_user_existence();
+    local openVPNUser = module.checkOpenVPNUserExistence();
 
     if not openVPNUser then
-        local creationRet = module.create_openvpn_user(homeOfOpenVPNUser);
+        local creationRet = module.createOpenVPNUser(homeOfOpenVPNUser);
 
         if not creationRet then
             return module.errors.USER_CREATION_ERROR, creationRet;
         end
     else
-        local updateRet = module.update_existing_openvpn_user();
+        local updateRet = module.updateExistingOpenVPNUser();
 
         if not updateRet then
             return module.errors.USER_UPDATE_ERROR, updateRet;
         end
     end
 
-    local serverConfigCheck = module.check_server_config(homeOfOpenVPNUser, openVPNConfigDir);
+    local serverConfigCheck = module.checkServerConfig(homeOfOpenVPNUser, openVPNConfigDir);
 
     if serverConfigCheck ~= true then
         return module.errors.SERVER_CONFIG_CHECK_ERROR, serverConfigCheck;
     end
 
-    local autoStartEnable = module.enable_all_autostart_in_default();
+    local autoStartEnable = module.enableAllAutostartInDefault();
 
     if autoStartEnable ~= 0 then
         return module.errors.ENABLE_AUTOSTART_ERROR, autoStartEnable;
     end
 
-    if not linux.systemctl_daemon_reload() then
+    if not linux.systemctlDaemonReload() then
         return module.errors.DAEMON_RELOAD_AND_RESTART_ERROR, 0;
     end
 
-    if bootstrapModule.is_running() and not linux.restart_service("openvpn") then
+    if bootstrapModule.isRunning() and not linux.restartService("openvpn") then
         return module.errors.DAEMON_RELOAD_AND_RESTART_ERROR, 1;
     end
 
@@ -903,9 +903,9 @@ end
 return function(_bootstrapModule)
     bootstrapModule = _bootstrapModule;
 
-    module.is_running = bootstrapModule.is_running;
-    module.stop_server = bootstrapModule.stop_server;
-    module.start_server = bootstrapModule.start_server;
+    module.isRunning = bootstrapModule.isRunning;
+    module.stopServer = bootstrapModule.stopServer;
+    module.startServer = bootstrapModule.startServer;
 
     return module;
 end

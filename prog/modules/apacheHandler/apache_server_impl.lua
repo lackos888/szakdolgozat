@@ -7,10 +7,10 @@ local inspect = require("inspect");
 local bootstrapModule = false;
 
 local module = {
-    ["apache_user"] = "apache-www",
-    ["apache_user_comment"] = "User for running apache daemon.",
-    ["apache_user_shell"] = "/bin/false",
-    ["base_dir"] = nil,
+    ["apacheUser"] = "apache-www",
+    ["apacheUserComment"] = "User for running apache daemon.",
+    ["apacheUserShell"] = "/bin/false",
+    ["baseDir"] = nil,
     ["errors"] = {}
 };
 
@@ -68,31 +68,31 @@ local sampleConfigForWebsite = [[
 ]];
 
 function module.formatPathInsideBasedir(path)
-    return general.concatPaths(module["base_dir"], "/", path);
+    return general.concatPaths(module["baseDir"], "/", path);
 end
 
-function module.check_apache_user_existence()
-    return linux.check_if_user_exists(module["apache_user"]);
+function module.checkApacheUserExistence()
+    return linux.checkIfUserExists(module["apacheUser"]);
 end
 
-function module.create_apache_user(homeDir)
-    return linux.create_user_with_name(module["apache_user"], module["apache_user_comment"], module["apache_user_shell"], homeDir);
+function module.createApacheUser(homeDir)
+    return linux.createUserWithName(module["apacheUser"], module["apacheUserComment"], module["apacheUserShell"], homeDir);
 end
 
-function module.update_existing_apache_user()
-    return linux.update_user(module["apache_user"], module["apache_user_comment"], module["apache_user_shell"]);
+function module.updateExistingApacheUser()
+    return linux.updateUser(module["apacheUser"], module["apacheUserComment"], module["apacheUserShell"]);
 end
 
-function module.get_apache_home_dir()
-    return linux.get_user_home_dir(module["apache_user"]);
+function module.getApacheHomeDir()
+    return linux.getUserHomeDir(module["apacheUser"]);
 end
 
-function module.get_apache_master_config_path_from_daemon()
+function module.getApacheMasterConfigPathFromDaemon()
     if module["cached_apache_conf_path"] then
         return module["cached_apache_conf_path"];
     end
 
-    local retLines, retCode = linux.exec_command_with_proc_ret_code("apache2 -V", true, nil, true);
+    local retLines, retCode = linux.execCommandWithProcRetCode("apache2 -V", true, nil, true);
 
     if retCode ~= 1 then
         return false;
@@ -140,44 +140,44 @@ registerNewError("FAILED_TO_CHOWN_WEBSITECONFIGS_DIR");
 registerNewError("FAILED_TO_CREATE_WWWDATAS_DIR");
 registerNewError("FAILED_TO_CHOWN_WWWDATAS_DIR")
 
-function module.init_dirs()
+function module.initDirs()
     if areDirsInited then
         return true;
     end
 
     areDirsInited = true;
 
-    if not module.check_apache_user_existence() then
-        local ret, retForUserCreation = module.create_apache_user();
+    if not module.checkApacheUserExistence() then
+        local ret, retForUserCreation = module.createApacheUser();
     
         if ret ~= true then
-            print("[apache init_dirs error] Failed to initialize apache user! Ret: "..tostring(retForUserCreation));
+            print("[apache initDirs error] Failed to initialize apache user! Ret: "..tostring(retForUserCreation));
 
             return module.errors.FAILED_TO_INIT_USER;
         end
     end
 
-    if not module.update_existing_apache_user() then
-        print("[apache init_dirs error] Failed to update existing "..tostring(module.apache_user).." user!");
+    if not module.updateExistingApacheUser() then
+        print("[apache initDirs error] Failed to update existing "..tostring(module.apacheUser).." user!");
 
         return module.errors.FAILED_TO_UPDATE_USER;
     end
 
-    local apacheHomeDir = module.get_apache_home_dir();
-    module["base_dir"] = apacheHomeDir;
+    local apacheHomeDir = module.getApacheHomeDir();
+    module["baseDir"] = apacheHomeDir;
 
     local pathForConfigs = module.formatPathInsideBasedir("websiteconfigs/");
 
-    if not linux.isdir(pathForConfigs) then
-        if not linux.mkdir(pathForConfigs) then
-            print("[apache init_dirs error] Failed to create website config folder at path "..tostring(pathForConfigs));
+    if not linux.isDir(pathForConfigs) then
+        if not linux.mkDir(pathForConfigs) then
+            print("[apache initDirs error] Failed to create website config folder at path "..tostring(pathForConfigs));
 
             return module.errors.FAILED_TO_CREATE_WEBSITECONFIGS_DIR;
         end
     end
 
-    if not linux.chown(pathForConfigs, module.apache_user, true) then
-        print("[apache init_dirs error] couldn't chown folder at path "..tostring(pathForConfigs).." for user "..tostring(module.apache_user));
+    if not linux.chown(pathForConfigs, module.apacheUser, true) then
+        print("[apache initDirs error] couldn't chown folder at path "..tostring(pathForConfigs).." for user "..tostring(module.apacheUser));
 
         return module.errors.FAILED_TO_CHOWN_WEBSITECONFIGS_DIR;
     end
@@ -186,16 +186,16 @@ function module.init_dirs()
 
     local pathForWWWDatas = module.formatPathInsideBasedir("wwwdatas/");
 
-    if not linux.isdir(pathForWWWDatas) then
-        if not linux.mkdir(pathForWWWDatas) then
-            print("[apache init_dirs error] Failed to create website wwwdata folder at path "..tostring(pathForWWWDatas));
+    if not linux.isDir(pathForWWWDatas) then
+        if not linux.mkDir(pathForWWWDatas) then
+            print("[apache initDirs error] Failed to create website wwwdata folder at path "..tostring(pathForWWWDatas));
 
             return module.errors.FAILED_TO_CREATE_WWWDATAS_DIR;
         end
     end
 
-    if not linux.chown(pathForWWWDatas, module.apache_user, true) then
-        print("[apache init_dirs error] couldn't chown folder at path "..tostring(pathForWWWDatas).." for user "..tostring(module.apache_user));
+    if not linux.chown(pathForWWWDatas, module.apacheUser, true) then
+        print("[apache initDirs error] couldn't chown folder at path "..tostring(pathForWWWDatas).." for user "..tostring(module.apacheUser));
 
         return module.errors.FAILED_TO_CHOWN_WEBSITECONFIGS_DI;
     end
@@ -215,17 +215,17 @@ registerNewError("NO_HTTP_BLOCK_FOUND");
 registerNewError("COULDNT_OPEN_FILE_HANDLE_TO_CONF");
 registerNewError("COULDNT_OPEN_FILE_HANDLE_TO_ENVVARS");
 
-function module.initialize_server()
+function module.initializeServer()
     if not areDirsInited then
-        print("[apache initialize_server error] init_dir didn't finish successfully!");
+        print("[apache initializeServer error] init_dir didn't finish successfully!");
 
         return module.errors.DIRS_ARENT_INITED;
     end
 
-    local apacheConfFile = module.get_apache_master_config_path_from_daemon();
+    local apacheConfFile = module.getApacheMasterConfigPathFromDaemon();
 
     if not apacheConfFile then
-        print("[apache initialize_server error] couldn't retrieve apache config file path!");
+        print("[apache initializeServer error] couldn't retrieve apache config file path!");
 
         return module.errors.FAILED_TO_RETRIEVE_MASTER_CONFIG_PATH;
     end
@@ -233,7 +233,7 @@ function module.initialize_server()
     local apacheFileContents = general.readAllFileContents(apacheConfFile);
 
     if not apacheFileContents then
-        print("[apache initialize_server error] apache master config at "..tostring(apacheConfFile).." doesn't exist!");
+        print("[apache initializeServer error] apache master config at "..tostring(apacheConfFile).." doesn't exist!");
 
         --TODO: maybe regenerate it?
 
@@ -243,7 +243,7 @@ function module.initialize_server()
     local apacheConfigInstance = apacheConfigHandler:new(apacheFileContents);
 
     if not apacheConfigInstance then
-        print("[apache initialize_server error] couldn't parse apache master config at "..tostring(apacheConfFile));
+        print("[apache initializeServer error] couldn't parse apache master config at "..tostring(apacheConfFile));
 
         --TODO: maybe regenerate it?
 
@@ -360,7 +360,7 @@ function module.initialize_server()
         local configFileHandle = io.open(apacheConfFile, "w");
         
         if not configFileHandle then
-            print("[apache initialize_server error] Couldn't overwrite apache config file at path "..tostring(apacheConfFile));
+            print("[apache initializeServer error] Couldn't overwrite apache config file at path "..tostring(apacheConfFile));
 
             return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_CONF;
         end
@@ -376,7 +376,7 @@ function module.initialize_server()
     local envVarsContents = general.readAllFileContents(envVarsPath);
 
     if not envVarsContents then
-        print("[apache initialize_server error] Couldn't read envvars content at path "..tostring(envVarsPath));
+        print("[apache initializeServer error] Couldn't read envvars content at path "..tostring(envVarsPath));
 
         return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_ENVVARS;
     end
@@ -384,14 +384,14 @@ function module.initialize_server()
     local apacheEnvVarsInstance = apacheEnvvarsHandler:new(envVarsContents);
     local envvarsArgs = apacheEnvVarsInstance:getArgs();
 
-    if envvarsArgs["APACHE_RUN_USER"] ~= module["apache_user"] or envvarsArgs["APACHE_RUN_GROUP"] ~= module["apache_user"] then
-        envvarsArgs["APACHE_RUN_USER"] = module["apache_user"];
-        envvarsArgs["APACHE_RUN_GROUP"] = module["apache_user"];
+    if envvarsArgs["APACHE_RUN_USER"] ~= module["apacheUser"] or envvarsArgs["APACHE_RUN_GROUP"] ~= module["apacheUser"] then
+        envvarsArgs["APACHE_RUN_USER"] = module["apacheUser"];
+        envvarsArgs["APACHE_RUN_GROUP"] = module["apacheUser"];
 
         local envvarsFileHandle = io.open(envVarsPath, "wb");
 
         if not envvarsFileHandle then
-            print("[apache initialize_server error] Couldn't open envvars at path "..tostring(envVarsPath).." for writing!");
+            print("[apache initializeServer error] Couldn't open envvars at path "..tostring(envVarsPath).." for writing!");
 
             return module.errors.COULDNT_OPEN_FILE_HANDLE_TO_ENVVARS;
         end
@@ -401,11 +401,11 @@ function module.initialize_server()
         envvarsFileHandle:close();
     end
 
-    -- print("[apache] available websites: "..tostring(inspect(module.get_current_available_websites())));
-    -- print("[apache] lszlo.ltd website creation ret: "..tostring(module.create_new_website("lszlo.ltd")));
-    -- print("[apache] => available websites: "..tostring(inspect(module.get_current_available_websites())));
-    -- print("[apache] lszlo.ltd deletion ret: "..tostring(module.delete_website("lszlo.ltd")));
-    -- print("[apache] => available websites: "..tostring(inspect(module.get_current_available_websites())));
+    -- print("[apache] available websites: "..tostring(inspect(module.getCurrentAvailableWebsites())));
+    -- print("[apache] lszlo.ltd website creation ret: "..tostring(module.createNewWebsite("lszlo.ltd")));
+    -- print("[apache] => available websites: "..tostring(inspect(module.getCurrentAvailableWebsites())));
+    -- print("[apache] lszlo.ltd deletion ret: "..tostring(module.deleteWebsite("lszlo.ltd")));
+    -- print("[apache] => available websites: "..tostring(inspect(module.getCurrentAvailableWebsites())));
 
     --[[
     print("<==NEW CONFIG==>");
@@ -432,8 +432,8 @@ registerNewError("COULDNT_CHOWN_INDEXHTML");
 module.WEBSITE_ALREADY_EXISTS = -1;
 module.SAMPLE_WEBSITE_CONFIG_PARSE_ERROR = -2;
 
-function module.create_new_website(websiteUrl)
-    local websites = module.get_current_available_websites();
+function module.createNewWebsite(websiteUrl)
+    local websites = module.getCurrentAvailableWebsites();
 
     for t, v in pairs(websites) do
         if v.websiteUrl == websiteUrl then
@@ -465,16 +465,16 @@ function module.create_new_website(websiteUrl)
         configData[paramIdx].args[1].data = wwwDataDir;
     end
 
-    if not linux.isdir(wwwDataDir) then
-        if not linux.mkdir(wwwDataDir) then
+    if not linux.isDir(wwwDataDir) then
+        if not linux.mkDir(wwwDataDir) then
             print("[apache website creation] Failed to create website ("..tostring(websiteUrl)..") wwwdata folder at path "..tostring(wwwDataDir));
 
             return module.errors.COULDNT_CREATE_WEBSITE_DIR;
         end
     end
 
-    if not linux.chown(wwwDataDir, module.apache_user, true) then
-        print("[apache website creation] couldn't chown folder at path "..tostring(wwwDataDir).." for user "..tostring(module.apache_user));
+    if not linux.chown(wwwDataDir, module.apacheUser, true) then
+        print("[apache website creation] couldn't chown folder at path "..tostring(wwwDataDir).." for user "..tostring(module.apacheUser));
 
         return module.errors.COULDNT_CHOWN_WEBSITE_DIR;
     end
@@ -504,8 +504,8 @@ function module.create_new_website(websiteUrl)
     indexFileHandle:flush();
     indexFileHandle:close();
 
-    if not linux.chown(indexPath, module.apache_user, true) then
-        print("[apache website creation] couldn't chown index.html at path "..tostring(indexPath).." for user "..tostring(module.apache_user));
+    if not linux.chown(indexPath, module.apacheUser, true) then
+        print("[apache website creation] couldn't chown index.html at path "..tostring(indexPath).." for user "..tostring(module.apacheUser));
 
         return module.errors.COULDNT_CHOWN_INDEXHTML;
     end
@@ -517,8 +517,8 @@ registerNewError("WEBSITE_DOESNT_EXIST");
 registerNewError("COULDNT_DELETE_WEBSITE_DIR");
 registerNewError("COULDNT_DELETE_WEBSITE_CONFIG");
 
-function module.delete_website(websiteUrl)
-    local websites = module.get_current_available_websites();
+function module.deleteWebsite(websiteUrl)
+    local websites = module.getCurrentAvailableWebsites();
     local foundWebsiteData = false;
 
     for t, v in pairs(websites) do
@@ -548,7 +548,7 @@ function module.delete_website(websiteUrl)
     return true;
 end
 
-function module.get_current_available_websites(dirPath)
+function module.getCurrentAvailableWebsites(dirPath)
     local websites = {};
 
     local websiteConfigsFinalPathForApache = dirPath and dirPath or general.concatPaths(module["website_configs_dir"], "/*.conf");
@@ -618,16 +618,16 @@ registerNewError("CONFIG_FILE_COULDNT_BE_PARSED");
 registerNewError("CONFIG_FILE_COULDNT_BE_WRITTEN");
 registerNewError("COULDNT_COPY_SAMPLE_APACHE_CONFIG");
 
-function module.init_ssl_for_website(webUrl, certDetails)
-    if linux.exec_command_with_proc_ret_code("a2enmod headers") ~= 0 then
+function module.initSSLForWebsite(webUrl, certDetails)
+    if linux.execCommandWithProcRetCode("a2enmod headers") ~= 0 then
         return module.errors.COULDNT_ENABLE_HEADERS_MODULE;
     end
 
-    if linux.exec_command_with_proc_ret_code("a2enmod ssl") ~= 0 then
+    if linux.execCommandWithProcRetCode("a2enmod ssl") ~= 0 then
         return module.errors.COULDNT_ENABLE_SSL_MODULE;
     end
 
-    local websites = module.get_current_available_websites();
+    local websites = module.getCurrentAvailableWebsites();
     local data = false;
 
     for t, v in pairs(websites) do
@@ -665,7 +665,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
     if not linux.exists(pathForLetsEncryptApacheConfig) then
         local foundStuff = false;
 
-        local retLines, retCode = linux.exec_command_with_proc_ret_code("find / -name 'options-ssl-apache.conf'", true, nil, true);
+        local retLines, retCode = linux.execCommandWithProcRetCode("find / -name 'options-ssl-apache.conf'", true, nil, true);
 
         if retLines then
             local linesIterator = retLines:gmatch("[^\r\n]+");
@@ -688,7 +688,7 @@ function module.init_ssl_for_website(webUrl, certDetails)
         end
 
         if not foundStuff then
-            retLines, retCode = linux.exec_command_with_proc_ret_code("find / -name 'current-options-ssl-apache.conf'", true, nil, true);
+            retLines, retCode = linux.execCommandWithProcRetCode("find / -name 'current-options-ssl-apache.conf'", true, nil, true);
 
             if retLines then
                 local linesIterator = retLines:gmatch("[^\r\n]+");
@@ -957,9 +957,9 @@ end
 return function(_bootstrapModule)
     bootstrapModule = _bootstrapModule;
 
-    module.is_running = bootstrapModule.is_running;
-    module.stop_server = bootstrapModule.stop_server;
-    module.start_server = bootstrapModule.start_server;
+    module.isRunning = bootstrapModule.isRunning;
+    module.stopServer = bootstrapModule.stopServer;
+    module.startServer = bootstrapModule.startServer;
 
     return module;
 end

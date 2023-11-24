@@ -45,35 +45,35 @@ end
 registerNewError("ALREADY_INSTALLED_ERROR");
 registerNewError("SNAPD_INSTALL_ERROR");
 
-function module.is_certbot_installed()
+function module.isCertbotInstalled()
     if not snapPackageManager.isSnapdInstalled() then
         return false;
     end
 
-    return snapPackageManager.is_package_installed("certbot");
+    return snapPackageManager.isPackageInstalled("certbot");
 end
 
-function module.create_certbot_symlink()
+function module.createCertbotSymlink()
     if not linux.exists("/usr/bin/certbot") then
-        linux.exec_command_with_proc_ret_code("ln -s /snap/bin/certbot /usr/bin/certbot");
+        linux.execCommandWithProcRetCode("ln -s /snap/bin/certbot /usr/bin/certbot");
     end
 end
 
-function module.install_certbot()
+function module.installCertbot()
     if not snapPackageManager.isSnapdInstalled() then
         if not snapPackageManager.installSnapd() then
             return module.errors.SNAPD_INSTALL_ERROR;
         end
     end
 
-    if module.is_certbot_installed() then
-        module.create_certbot_symlink();
+    if module.isCertbotInstalled() then
+        module.createCertbotSymlink();
 
         return module.errors.ALREADY_INSTALLED_ERROR;
     end
 
-    if snapPackageManager.install_package("certbot", true) then
-        module.create_certbot_symlink();
+    if snapPackageManager.installPackage("certbot", true) then
+        module.createCertbotSymlink();
 
         return true;
     end
@@ -81,8 +81,8 @@ function module.install_certbot()
     return false;
 end
 
-function module.get_cert_datas(domain)
-    local retLines, retCode = linux.exec_command_with_proc_ret_code(domain and ("certbot certificates -d "..tostring(domain)) or ("certbot certificates"), true);
+function module.getCertDatas(domain)
+    local retLines, retCode = linux.execCommandWithProcRetCode(domain and ("certbot certificates -d "..tostring(domain)) or ("certbot certificates"), true);
 
     if retCode ~= 0 then
         return false;
@@ -125,7 +125,7 @@ registerNewError("CONFIG_INIT_ERROR");
 registerNewError("EXEC_FAILED");
 registerNewError("CERTBOT_TIMEOUT_ERROR");
 
-function module.try_ssl_certification_creation(method, domain, webserverType)
+function module.trySSLCertificateCreation(method, domain, webserverType)
     if webserverType ~= "nginx" and webserverType ~= "apache" then
         return module.errors.INVALID_WEBSERVER_TYPE;
     end
@@ -134,16 +134,16 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local websites = {};
 
         if webserverType == "nginx" then
-            nginx.init_dirs();
+            nginx.initDirs();
 
-            websites = nginx.server_impl.get_current_available_websites();
+            websites = nginx.serverImpl.getCurrentAvailableWebsites();
         elseif webserverType == "apache" then
-            apache.init_dirs();
+            apache.initDirs();
 
-            websites = apache.server_impl.get_current_available_websites();
+            websites = apache.serverImpl.getCurrentAvailableWebsites();
         end
 
-        if not module.install_certbot() then
+        if not module.installCertbot() then
             return module.errors.CERTBOT_IS_NOT_INSTALLED;
         end
 
@@ -160,7 +160,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
             return module.errors.NON_EXISTENT_WEBSITE;
         end
 
-        local retLines, retCode = linux.exec_command_with_proc_ret_code("certbot certonly --noninteractive "..tostring(dryRunStr).." --agree-tos --register-unsafely-without-email --no-eff-email --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+        local retLines, retCode = linux.execCommandWithProcRetCode("certbot certonly --noninteractive "..tostring(dryRunStr).." --agree-tos --register-unsafely-without-email --no-eff-email --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
         -- local retCode = 0; --FOR TESTING PURPOSES
 
         local hasCertificate = retCode == 0;
@@ -180,7 +180,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local filePathForDHParam = domainPath..dhParamFileName;
 
         if not linux.exists(filePathForDHParam) then
-            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." "..tostring(dhParamBytes), nil, nil, true);
+            local retLines, retCode = linux.execCommandWithProcRetCode("openssl dhparam -out "..tostring(filePathForDHParam).." "..tostring(dhParamBytes), nil, nil, true);
 
             if retCode ~= 0 then
                 return module.errors.OPENSSL_DHPARAM_GENERATING_ERROR, retCode, retLines;
@@ -190,13 +190,13 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local configInit = false;
 
         if webserverType == "nginx" then
-            configInit = nginx.server_impl.init_ssl_for_website(domain, {
+            configInit = nginx.serverImpl.initSSLForWebsite(domain, {
                 certPath = domainPath..certFileName,
                 keyPath = domainPath..keyFileName,
                 dhParamPath = filePathForDHParam
             });
         elseif webserverType == "apache" then
-            configInit = apache.server_impl.init_ssl_for_website(domain, {
+            configInit = apache.serverImpl.initSSLForWebsite(domain, {
                 certPath = domainPath..certFileName,
                 keyPath = domainPath..keyFileName,
                 dhParamPath = filePathForDHParam
@@ -214,16 +214,16 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local websites = {};
 
         if webserverType == "nginx" then
-            nginx.init_dirs();
+            nginx.initDirs();
 
-            websites = nginx.server_impl.get_current_available_websites();
+            websites = nginx.serverImpl.getCurrentAvailableWebsites();
         elseif webserverType == "apache" then
-            apache.init_dirs();
+            apache.initDirs();
 
-            websites = apache.server_impl.get_current_available_websites();
+            websites = apache.serverImpl.getCurrentAvailableWebsites();
         end
 
-        if not module.install_certbot() then
+        if not module.installCertbot() then
             return module.errors.CERTBOT_IS_NOT_INSTALLED;
         end
 
@@ -368,7 +368,7 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local filePathForDHParam = domainPath..dhParamFileName;
 
         if not linux.exists(filePathForDHParam) then
-            local retLines, retCode = linux.exec_command_with_proc_ret_code("openssl dhparam -out "..tostring(filePathForDHParam).." "..tostring(dhParamBytes), nil, nil, true);
+            local retLines, retCode = linux.execCommandWithProcRetCode("openssl dhparam -out "..tostring(filePathForDHParam).." "..tostring(dhParamBytes), nil, nil, true);
 
             if retCode ~= 0 then
                 return module.errors.OPENSSL_DHPARAM_GENERATING_ERROR, retCode, retLines;
@@ -378,13 +378,13 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
         local configInit = false;
 
         if webserverType == "nginx" then
-            configInit = nginx.server_impl.init_ssl_for_website(domain, {
+            configInit = nginx.serverImpl.initSSLForWebsite(domain, {
                 certPath = domainPath..certFileName,
                 keyPath = domainPath..keyFileName,
                 dhParamPath = filePathForDHParam
             });
         elseif webserverType == "apache" then
-            configInit = apache.server_impl.init_ssl_for_website(domain, {
+            configInit = apache.serverImpl.initSSLForWebsite(domain, {
                 certPath = domainPath..certFileName,
                 keyPath = domainPath..keyFileName,
                 dhParamPath = filePathForDHParam
@@ -402,10 +402,10 @@ function module.try_ssl_certification_creation(method, domain, webserverType)
 end
 
 function module.init()
-    return module.install_certbot();
-    --print("Certbot install ret: "..tostring(module.install_certbot()));
-    --print("certdatas: "..tostring(inspect(module.get_cert_datas())));
-    --print("ssl certificate creation: "..tostring(module.try_ssl_certification_creation("http-01", "lszlo.ltd", "nginx")));
+    return module.installCertbot();
+    --print("Certbot install ret: "..tostring(module.installCertbot()));
+    --print("certdatas: "..tostring(inspect(module.getCertDatas())));
+    --print("ssl certificate creation: "..tostring(module.trySSLCertificateCreation("http-01", "lszlo.ltd", "nginx")));
 end
 
 return module

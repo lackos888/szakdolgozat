@@ -26,19 +26,19 @@ function module.resolveErrorToStr(error)
     return "";
 end
 
-function module.is_iptables_installed()
-    return packageManager.is_package_installed("iptables");
+function module.isIptablesInstalled()
+    return packageManager.isPackageInstalled("iptables");
 end
 
-function module.install_iptables()
-    if module.is_iptables_installed() then
+function module.installIptables()
+    if module.isIptablesInstalled() then
         return true
     end
 
-    return packageManager.install_package("iptables");
+    return packageManager.installPackage("iptables");
 end
-function module.get_current_network_interfaces()
-    local retLines, retCode = linux.exec_command_with_proc_ret_code("ip link show", true, nil, true);
+function module.getCurrentNetworkInterfaces()
+    local retLines, retCode = linux.execCommandWithProcRetCode("ip link show", true, nil, true);
 
     if retCode ~= 0 then
         return false;
@@ -69,8 +69,8 @@ function module.get_current_network_interfaces()
     return netInterfaces;
 end
 
-function module.get_current_ssh_ports()
-    local retLines, retCode = linux.exec_command_with_proc_ret_code("sshd -T", true);
+function module.getCurrentSSHPorts()
+    local retLines, retCode = linux.execCommandWithProcRetCode("sshd -T", true);
 
     if retCode ~= 0 then
         return false;
@@ -124,8 +124,8 @@ local iptablesAliases = {
 };
 
 registerNewError("FAILED_TO_EXEC_IPTABLES_SAVE_COMMAND");
-local function parse_current_rules()
-    local retLines, retCode = linux.exec_command_with_proc_ret_code("iptables-save", true);
+local function parseCurrentRules()
+    local retLines, retCode = linux.execCommandWithProcRetCode("iptables-save", true);
 
     if retCode ~= 0 then
         return module.errors.FAILED_TO_EXEC_IPTABLES_SAVE_COMMAND;
@@ -244,7 +244,7 @@ local function parse_current_rules()
     return parsedStuff;
 end
 
-function module.get_open_ports(interface)
+function module.getOpenPorts(interface)
     interface = interface or "all";
     local ports = {};
     local parsedStuff = module.currentIPTablesRules;
@@ -274,7 +274,7 @@ function module.get_open_ports(interface)
     return ports;
 end
 
-function module.delete_open_port_rule(interface, idx)
+function module.deleteOpenPortRule(interface, idx)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
 
@@ -302,7 +302,7 @@ function module.delete_open_port_rule(interface, idx)
     return false;
 end
 
-function module.get_closed_ports(interface)
+function module.getClosedPorts(interface)
     interface = interface or "all";
     local ports = {};
     local parsedStuff = module.currentIPTablesRules;
@@ -332,7 +332,7 @@ function module.get_closed_ports(interface)
     return ports;
 end
 
-function module.delete_close_port_rule(interface, idx)
+function module.deleteClosePortRule(interface, idx)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
 
@@ -360,7 +360,7 @@ function module.delete_close_port_rule(interface, idx)
     return false;
 end
 
-function module.close_port(interface, protocol, dport, fromIP)
+function module.closePort(interface, protocol, dport, fromIP)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
 
@@ -421,7 +421,7 @@ function module.close_port(interface, protocol, dport, fromIP)
     end
 end
 
-function module.open_port(interface, protocol, dport, fromIP)
+function module.openPort(interface, protocol, dport, fromIP)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
 
@@ -461,7 +461,7 @@ function module.open_port(interface, protocol, dport, fromIP)
         end
 
         for t, v in pairs(tbl) do
-            if general.deep_compare(v, newTbl) then
+            if general.deepCompare(v, newTbl) then
                 return true;
             end
         end
@@ -494,7 +494,7 @@ function module.open_port(interface, protocol, dport, fromIP)
     return true;
 end
 
-function module.list_allowed_outgoing_connections(interface)
+function module.listAllowedOutgoingConnections(interface)
     interface = interface or "all";
     local conn = {};
     local parsedStuff = module.currentIPTablesRules;
@@ -524,7 +524,7 @@ function module.list_allowed_outgoing_connections(interface)
     return conn;
 end
 
-function module.delete_outgoing_rule(interface, idx)
+function module.deleteOutgoingRule(interface, idx)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
 
@@ -552,7 +552,7 @@ function module.delete_outgoing_rule(interface, idx)
     return false;
 end
 
-function module.allow_outgoing_new_connection(interface, protocol, dip, dport)
+function module.allowOutgoingNewConnection(interface, protocol, dip, dport)
     interface = interface or "all";
     local parsedStuff = module.currentIPTablesRules;
 
@@ -616,7 +616,7 @@ function module.allow_outgoing_new_connection(interface, protocol, dip, dport)
     return true;
 end
 
-function module.check_if_inbound_packets_are_being_filtered_already(interface, protocol)
+function module.checkIfInboundPacketsAreBeingFilteredAlready(interface, protocol)
     local rules = module.currentIPTablesRules;
 
     interface = interface or "all";
@@ -665,10 +665,10 @@ function module.check_if_inbound_packets_are_being_filtered_already(interface, p
         return true;
     end
 
-    return general.deep_compare(protocolsToBlock, protocolsBlocked);
+    return general.deepCompare(protocolsToBlock, protocolsBlocked);
 end
 
-function module.tog_only_allow_accepted_packets_inbound(toggle, interface, protocol)
+function module.togOnlyAllowAcceptedPacketsInbound(toggle, interface, protocol)
     local rules = module.currentIPTablesRules;
 
     interface = interface or "all";
@@ -764,7 +764,7 @@ function module.tog_only_allow_accepted_packets_inbound(toggle, interface, proto
     return true;
 end
 
-function module.check_if_outbound_packets_are_being_filtered_already(interface, protocol)
+function module.checkIfOutboundPacketsAreBeingFilteredAlready(interface, protocol)
     local rules = module.currentIPTablesRules;
 
     interface = interface or "all";
@@ -813,10 +813,10 @@ function module.check_if_outbound_packets_are_being_filtered_already(interface, 
         return true;
     end
 
-    return general.deep_compare(protocolsToBlock, protocolsBlocked);
+    return general.deepCompare(protocolsToBlock, protocolsBlocked);
 end
 
-function module.tog_only_allow_accepted_packets_outbound(toggle, interface, protocol)
+function module.togOnlyAllowAcceptedPacketsOutbound(toggle, interface, protocol)
     local rules = module.currentIPTablesRules;
 
     interface = interface or "all";
@@ -914,7 +914,7 @@ function module.tog_only_allow_accepted_packets_outbound(toggle, interface, prot
     return true;
 end
 
-function module.delete_nat_rules(mainInterface, tunnelInterface, forwardTblIdx, forwardTblAllIdx, postroutingTblAllIdx)
+function module.deleteNATRules(mainInterface, tunnelInterface, forwardTblIdx, forwardTblAllIdx, postroutingTblAllIdx)
     local rules = module.currentIPTablesRules;
 
     if not rules["filter"] then
@@ -973,7 +973,7 @@ function module.delete_nat_rules(mainInterface, tunnelInterface, forwardTblIdx, 
     return counter == 3;
 end
 
-function module.get_current_active_nat_for_openvpn()
+function module.getCurrentActiveNATForOpenVPN()
     local rules = module.currentIPTablesRules;
 
     if not rules["filter"] then
@@ -1064,7 +1064,7 @@ function module.get_current_active_nat_for_openvpn()
     return natInterfaceProbably;
 end
 
-function module.init_nat_for_openvpn(mainInterface, tunnelInterface, openvpnSubnet)
+function module.initNATForOpenVPN(mainInterface, tunnelInterface, openvpnSubnet)
     local rules = module.currentIPTablesRules;
 
     openvpnSubnet = tostring(openvpnSubnet).."/16";
@@ -1186,24 +1186,24 @@ function module.loadOurRulesToIptables()
     if not fileHandle then
         return false;
     end
-    fileHandle:write(module.iptables_to_string());
+    fileHandle:write(module.iptablesToString());
     fileHandle:flush();
     fileHandle:close();
 
-    local lines, retCode = linux.exec_command_with_proc_ret_code("iptables-restore "..tostring(tmpFile), true, nil, true);
+    local lines, retCode = linux.execCommandWithProcRetCode("iptables-restore "..tostring(tmpFile), true, nil, true);
     linux.deleteFile(tmpFile);
     
     if retCode ~= 0 then
         print("[iptables loadOurRulesToIptables error] retCode: "..tostring(retCode).." tmpFile: "..tostring(tmpFile));
         print(tostring(lines));
         print("[iptables loadOurRulesToIptables error] generated iptables restore: ");
-        print(tostring(module.iptables_to_string()));
+        print(tostring(module.iptablesToString()));
     end
 
     return retCode == 0;
 end
 
-function module.iptables_to_string()
+function module.iptablesToString()
     local rules = module.currentIPTablesRules;
     local str = "";
 
@@ -1328,41 +1328,41 @@ function module.iptables_to_string()
     return str;
 end
 
-function module.init_module()
-    local parseRulesRet = parse_current_rules();
+function module.initModule()
+    local parseRulesRet = parseCurrentRules();
 
     if not parseRulesRet then
-        print("[iptables init_module error] failed to parse current rules from iptables-save");
+        print("[iptables initModule error] failed to parse current rules from iptables-save");
 
         return parseRulesRet;
     end
 
     module.currentIPTablesRules = parseRulesRet;
 
---[[     print("open ports: "..tostring(inspect(module.get_open_ports())));
+--[[     print("open ports: "..tostring(inspect(module.getOpenPorts())));
 
-    for t, v in pairs(module.get_current_ssh_ports()) do
-        module.open_port(nil, "tcp", v);
+    for t, v in pairs(module.getCurrentSSHPorts()) do
+        module.openPort(nil, "tcp", v);
     end
 
-    print("port opening ret: "..tostring(module.open_port(nil, "tcp", 443, nil)));
-    print("port closing ret: "..tostring(module.close_port(nil, nil, 6666, nil)));
-    print("tog: "..tostring(module.tog_only_allow_accepted_packets_inbound(true, nil, "tcp")));
-    print("tog #2: "..tostring(module.tog_only_allow_accepted_packets_inbound(true, nil, "udp")));
-    print("allow everything #1: "..tostring(module.tog_only_allow_accepted_packets_inbound(false, nil, "tcp")));
-    print("allow everything #2: "..tostring(module.tog_only_allow_accepted_packets_inbound(false, nil, "udp")));
-    print("OpenVPN nat init: "..tostring(module.init_nat_for_openvpn("eth0", "tun0", "10.8.0.0")));
-    print("allow outgoing only whitelisted: "..tostring(module.tog_only_allow_accepted_packets_outbound(true, nil, "tcp")));
-    print("allow outgoing only whitelisted #2: "..tostring(module.tog_only_allow_accepted_packets_outbound(true, nil, "udp")));
-    print("allow 192.168.0.1: "..tostring(module.allow_outgoing_new_connection(nil, "tcp", "192.168.0.1", 80)));
-    print("allow 192.168.0.1 #2: "..tostring(module.allow_outgoing_new_connection(nil, "udp", "192.168.0.1", 80)));
-    print("allow everything #3: "..tostring(module.tog_only_allow_accepted_packets_inbound(true, nil, "tcp")));
-    print("allow everything #4: "..tostring(module.tog_only_allow_accepted_packets_inbound(true, nil, "udp")));
-    print("is inbound filtered: "..tostring(module.check_if_inbound_packets_are_being_filtered_already()));
-    print("is outbound filtered: "..tostring(module.check_if_outbound_packets_are_being_filtered_already()));
-    print("open ports: "..tostring(inspect(module.get_open_ports())));
+    print("port opening ret: "..tostring(module.openPort(nil, "tcp", 443, nil)));
+    print("port closing ret: "..tostring(module.closePort(nil, nil, 6666, nil)));
+    print("tog: "..tostring(module.togOnlyAllowAcceptedPacketsInbound(true, nil, "tcp")));
+    print("tog #2: "..tostring(module.togOnlyAllowAcceptedPacketsInbound(true, nil, "udp")));
+    print("allow everything #1: "..tostring(module.togOnlyAllowAcceptedPacketsInbound(false, nil, "tcp")));
+    print("allow everything #2: "..tostring(module.togOnlyAllowAcceptedPacketsInbound(false, nil, "udp")));
+    print("OpenVPN nat init: "..tostring(module.initNATForOpenVPN("eth0", "tun0", "10.8.0.0")));
+    print("allow outgoing only whitelisted: "..tostring(module.togOnlyAllowAcceptedPacketsOutbound(true, nil, "tcp")));
+    print("allow outgoing only whitelisted #2: "..tostring(module.togOnlyAllowAcceptedPacketsOutbound(true, nil, "udp")));
+    print("allow 192.168.0.1: "..tostring(module.allowOutgoingNewConnection(nil, "tcp", "192.168.0.1", 80)));
+    print("allow 192.168.0.1 #2: "..tostring(module.allowOutgoingNewConnection(nil, "udp", "192.168.0.1", 80)));
+    print("allow everything #3: "..tostring(module.togOnlyAllowAcceptedPacketsInbound(true, nil, "tcp")));
+    print("allow everything #4: "..tostring(module.togOnlyAllowAcceptedPacketsInbound(true, nil, "udp")));
+    print("is inbound filtered: "..tostring(module.checkIfInboundPacketsAreBeingFilteredAlready()));
+    print("is outbound filtered: "..tostring(module.checkIfOutboundPacketsAreBeingFilteredAlready()));
+    print("open ports: "..tostring(inspect(module.getOpenPorts())));
 
-    print("iptables: "..tostring(module.iptables_to_string())); ]]
+    print("iptables: "..tostring(module.iptablesToString())); ]]
 
     return true;
 end
