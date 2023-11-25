@@ -1,63 +1,64 @@
 \Chapter{Tervezés}
 
-A program az OO alapelveket igyekszik követni. Elsősorban modulokból áll, amelyek osztályként is értelmezhetőek. Vannak olyan modulok, amelyekben csak a helyi scopeban elérhető kódok vannak, tehát "private" funkciók. Továbbá vannak olyan modulok, amelyekben szintén vannak további osztályok.
+A program az OO alapelveket igyekszik követni. Elsősorban modulokból áll, amelyek osztályként is értelmezhetőek. Vannak olyan modulok, amelyekben csak a helyi scopeban elérhető kódok vagy változók vannak, tehát "private" elérésűek.
 
-A következőekben a modulok UML diagramját fogom külön-külön bemutatni. Következőképp néznek ki a láthatósági szabályok az UML diagramokon:
-\begin{center}
-	\begin{tikzpicture} % [show background grid]
+A következőekben a modulok UML diagramját fogom külön-külön bemutatni. A következő \myref{fig:visibilityrules} ábrán tekinthetőek meg a láthatósági szabályok az UML diagramokon:
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}
 		\begin {class}[text width=0.35\textwidth]{Láthatósági szabályok}{0, 0}
 			\attribute {- Private}
 			\attribute {+ Public}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{Láthatósági szabályok az UML diagramokon}
+	\label{fig:visibilityrules}
+\end{figure}
 
 \Section{general, apt\_packages, utils modulok felépítése, feladata}
 
-Legelőször a \detokenize{general, linux, apt_packages} és az utils modul került megtervezésre. 
+Legelőször a \detokenize{general, linux, apt_packages} és az utils modul került megtervezésre. Felépítésük \myaref{fig:generalandaptpackages} ábrán látható.
 
-A \texttt{general} modulban olyan funkciók és változók találhatóak, amelyek a legtöbb OS-en működnek, és fontos szerepet töltenek be a program működése közben.
-
-Az \texttt{\detokenize{apt_packages}} modulban Linux-specifikus kód található, a \texttt{linux} modulban implementált néhány funkciót használja. Feladata az apt program segítségével a csomagok menedzselése, telepítése.
-
-\begin{figure}[h]
+\begin{figure}[h!]
 	\centering
-	% \caption{A general és \detokenize{apt_packages} modul felépítése}
-		\begin{tikzpicture}
-			\begin {class}[text width=0.46\textwidth]{general}{0, 0}
-				\attribute {+ \detokenize{lineEnding : string}}
-				\operation {+ \detokenize{getOSType()}}
-				\operation {+ \detokenize{clearScreen()}}
-				\operation {+ \detokenize{sleep(n)}}
-				\operation {+ \detokenize{strSplit(str, sep)}}
-				\operation {+ \detokenize{deepCompare(tbl1, tbl2)}}
-				\operation {+ \detokenize{concatPaths(...) -> varargs}}
-				\operation {+ \detokenize{extractDirFromPath(path)}}
-				\operation {+ \detokenize{readAllFileContents(filePath)}}
-				\operation {+ \detokenize{trim2(s)}}
-			\end {class}
-			\begin {class}[text width=0.44\textwidth]{\detokenize{apt_packages}}{8, 0}
-				\operation {+ \detokenize{isPackageInstalled(packageName)}}
-				\operation {+ \detokenize{installPackage(packageName)}}
-			\end {class}
-		\end {tikzpicture}
+	\begin{tikzpicture}
+		\begin {class}[text width=0.455\textwidth]{general}{0, 0}
+			\attribute {+ \detokenize{lineEnding : string}}
+			\operation {+ \detokenize{getOSType()}}
+			\operation {+ \detokenize{clearScreen()}}
+			\operation {+ \detokenize{sleep(n)}}
+			\operation {+ \detokenize{strSplit(str, sep)}}
+			\operation {+ \detokenize{deepCompare(tbl1, tbl2)}}
+			\operation {+ \detokenize{concatPaths(...) -> varargs}}
+			\operation {+ \detokenize{extractDirFromPath(path)}}
+			\operation {+ \detokenize{readAllFileContents(filePath)}}
+			\operation {+ \detokenize{trim2(s)}}
+		\end {class}
+		\begin {class}[text width=0.44\textwidth]{\detokenize{apt_packages}}{7.8, 0}
+			\operation {+ \detokenize{isPackageInstalled(packageName)}}
+			\operation {+ \detokenize{installPackage(packageName)}}
+		\end {class}
+	\end {tikzpicture}
+	\caption{A general és \detokenize{apt_packages} modul felépítése}
+	\label{fig:generalandaptpackages}
 \end{figure}
 
 \pagebreak
 
-\begin{center}
-	Az \texttt{utils} modul legfőképp debugra volt használva, jelenleg épp nincs alkalmazva a program kódjában, így ezt a modult nem mutatom be.
-\end{center}
+A \texttt{general} modulban olyan funkciók és változók találhatóak, amelyek a legtöbb OS-en működnek, és fontos szerepet töltenek be a program működése közben.
+
+Az \texttt{\detokenize{apt_packages}} modul Linux-specifikus kódokat tartalmaz, a modul feladata az apt program segítségével a csomagok menedzselése, telepítése.
+
+Az \texttt{utils} modul legfőképp debugra volt használva, jelenleg épp nincs alkalmazva a program kódjában, így ezt a modult nem mutatom be.
 
 \Section{linux modul felépítése, feladatai}
 
-\begin{center}
-	A következő UML diagramon a \texttt{linux} nevezetű modult fogom bemutatni, amely linux-specifikus kódrészleteket tartalmaz. Erre a modulra épül a legtöbb modul.
-	
-	\hfill
-	
-	\begin{tikzpicture} % [show background grid]
-		\begin {class}[text width=0.7\textwidth]{linux}{0, 0}
+A következő \myref{fig:linux_module} számú UML diagramon a \texttt{linux} nevezetű modult fogom bemutatni, amely linux-specifikus kódrészleteket tartalmaz. Erre a modulra épül a legtöbb modul.
+
+\begin{figure}[h!]
+\centering
+	\begin{tikzpicture}[scale=0.85, every node/.style={scale=0.85}]
+		\begin {class}[text width=0.9\textwidth]{linux}{0, 0}
 			\operation {+ \detokenize{exists(file)}}
 			\operation {+ \detokenize{isDir(path)}}
 			\operation {+ \detokenize{listDirFiles(path)}}
@@ -83,7 +84,9 @@ Az \texttt{\detokenize{apt_packages}} modulban Linux-specifikus kód található
 			\operation {+ \detokenize{chmod(path, perm, isDir)}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{A linux modul felépítése}
+	\label{fig:linux_module}
+\end{figure}
 
 A \texttt{linux} modul feladatai szerteágazóak:
 
@@ -94,8 +97,6 @@ A \texttt{linux} modul feladatai szerteágazóak:
 	\item vannak benne ownershipet változtató funkciók
 	\item vannak benne fájl és mappa hozzáférési szabályokat változtató funkciók
 \end{itemize}
-
-\pagebreak
 
 \Section{OpenVPN modulok felépítései, feladatai}
 
@@ -114,12 +115,10 @@ Több részmodulra lett szétosztva:
 	kliens certificatet, private keyt hoz létre; kliens konfigot hoz létre, amelybe beembeddeli a generált fájlok tartalmát (így 1 db config filera van szüksége az OpenVPN kliensnek); certificate revoket támogat; továbbá le lehet kérni az összes jelenlegi klienst, amelyek valósak (nincsenek revokeolva)
 \end{itemize}
 
-\begin{center}
-	Maga az OpenVPN \texttt{bootstrap} modul nagyon egyszerű felépítésű:
-	
-	\hfill
-	
-	\begin{tikzpicture} % [show background grid]
+Maga az OpenVPN \texttt{bootstrap} és \texttt{\detokenize{config_handler}} modul nagyon egyszerű felépítésű, amely látható is a következő \myref{fig:openvpn_module} és \myref{fig:openvpn_config_handler_module} ábrán. 
+\begin{figure}[h!]
+\centering
+	\begin{tikzpicture}[scale=0.83, every node/.style={scale=0.83}]
 		\begin {class}[text width=0.7\textwidth]{OpenVPN}{0, 0}
 			\attribute {+ \detokenize{errors : table}}
 			\attribute {+ \detokenize{serverImpl -> }\textbf{OpenVPN\_server\_impl} module}
@@ -131,62 +130,66 @@ Több részmodulra lett szétosztva:
 			\operation {+ \detokenize{initDirs()}}
 		\end {class}
 	\end {tikzpicture}
-	
-	\hfill
-	
-	Hozzá hasonlóan a \texttt{\detokenize{config_handler}} modul is egyszerűen épül fel:
-	
-	\hfill
-	
-	\begin{tikzpicture} % [show background grid]
+	\caption{Az OpenVPN bootstrap modul felépítése}
+	\label{fig:openvpn_module}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+	\begin{tikzpicture}[scale=0.83, every node/.style={scale=0.83}]
 		\begin {class}[text width=0.7\textwidth]{\detokenize{OpenVPN_config_handler}}{0, 0}
 			\operation {+ \detokenize{parseOpenVPNConfig(linesInStr)}}
 			\operation {+ \detokenize{writeOpenVPNConfig(parsedLines)}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{Az \detokenize{OpenVPN_config_handler} bootstrap modul felépítése}
+	\label{fig:openvpn_config_handler_module}
+\end{figure}
 
-\pagebreak
+A \texttt{\detokenize{server_impl}} modul minden OpenVPN szerverrel kapcsolatos művelet magja, ezért sok funkcióval rendelkezik. Felépítése \myaref{fig:openvpn_server_impl_module} ábrán látható. 
 
-\begin{center}
-	A \texttt{\detokenize{server_impl}} modul minden OpenVPN szerverrel kapcsolatos művelet magja, ezért sok funkcióval rendelkezik. A klienseket kezelő \texttt{\detokenize{OpenVPN_clienthandler_impl}} modulban pedig két osztály is helyet foglal az OO alapelveket követve:
-	
-	\begin{figure}[h]
-		\centering
-		\begin{tikzpicture} % [show background grid]
-			\begin {class}[text width=0.7\textwidth]{\detokenize{OpenVPN_server_impl}}{0, 0}
-				\attribute {- \detokenize{bootstrapModule -> }\textbf{\detokenize{OpenVPN}} module}
-				\attribute {- \detokenize{caPass : string}}
-				\attribute {- \detokenize{serverKeyPass : string}}
-				\attribute {- \detokenize{sampleConfigFileContent : string}}
-				\attribute {+ \detokenize{errors : table}}
-				\operation {- \detokenize{registerNewError(errorName)}}
-				\operation {- \detokenize{getConfigFilePath(openVPNConfigDir)}}
-				\operation {+ \detokenize{constructor(_bootstrapModule)}}
-				\operation {+ \detokenize{resolveErrorToStr(error)}}
-				\operation {+ \detokenize{getEasyRSADir()}}
-				\operation {+ \detokenize{getCAPass()}}
-				\operation {+ \detokenize{getOpenVPNBaseConfigDir()}}
-				\operation {+ \detokenize{isEasyRSAInstalled()}}
-				\operation {+ \detokenize{formatPathInsideEasyRSAInstallCache(path)}}
-				\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-				\operation {+ \detokenize{initDirs()}}
-				\operation {+ \detokenize{installEasyRSA()}}
-				\operation {+ \detokenize{getEasyRSAPKiDir()}}
-				\operation {+ \detokenize{initEasyRSA()}}
-				\operation {+ \detokenize{enableAllAutostartInDefault()}}
-				\operation {+ \detokenize{getOpenVPNSubnet()}}
-				\operation {+ \detokenize{checkServerConfig(homeDir, openVPNConfigDir)}}
-				\operation {+ \detokenize{checkOpenVPNUserExistence()}}
-				\operation {+ \detokenize{createOpenVPNUser(homeDir)}}
-				\operation {+ \detokenize{updateExistingOpenVPNUser()}}
-				\operation {+ \detokenize{getOpenVPNHomeDir()}}
-				\operation {+ \detokenize{initializeServer()}}
-			\end {class}
-		\end {tikzpicture}
-	\end{figure}
-	
-	\begin{tikzpicture} % [show background grid]
+A klienseket kezelő \texttt{\detokenize{OpenVPN_clienthandler_impl}} modulban pedig két osztály is helyet foglal az OO alapelveket követve. Felépítése \myaref{fig:openvpn_clienthandler_impl_module} ábrán látható.
+
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}[scale=0.84, every node/.style={scale=0.84}]
+		\begin {class}[text width=1\textwidth]{\detokenize{OpenVPN_server_impl}}{0, 0}
+			\attribute {- \detokenize{bootstrapModule -> }\textbf{\detokenize{OpenVPN}} module}
+			\attribute {- \detokenize{caPass : string}}
+			\attribute {- \detokenize{serverKeyPass : string}}
+			\attribute {- \detokenize{sampleConfigFileContent : string}}
+			\attribute {+ \detokenize{errors : table}}
+			\operation {- \detokenize{registerNewError(errorName)}}
+			\operation {- \detokenize{getConfigFilePath(openVPNConfigDir)}}
+			\operation {+ \detokenize{constructor(_bootstrapModule)}}
+			\operation {+ \detokenize{resolveErrorToStr(error)}}
+			\operation {+ \detokenize{getEasyRSADir()}}
+			\operation {+ \detokenize{getCAPass()}}
+			\operation {+ \detokenize{getOpenVPNBaseConfigDir()}}
+			\operation {+ \detokenize{isEasyRSAInstalled()}}
+			\operation {+ \detokenize{formatPathInsideEasyRSAInstallCache(path)}}
+			\operation {+ \detokenize{formatPathInsideBasedir(path)}}
+			\operation {+ \detokenize{initDirs()}}
+			\operation {+ \detokenize{installEasyRSA()}}
+			\operation {+ \detokenize{getEasyRSAPKiDir()}}
+			\operation {+ \detokenize{initEasyRSA()}}
+			\operation {+ \detokenize{enableAllAutostartInDefault()}}
+			\operation {+ \detokenize{getOpenVPNSubnet()}}
+			\operation {+ \detokenize{checkServerConfig(homeDir, openVPNConfigDir)}}
+			\operation {+ \detokenize{checkOpenVPNUserExistence()}}
+			\operation {+ \detokenize{createOpenVPNUser(homeDir)}}
+			\operation {+ \detokenize{updateExistingOpenVPNUser()}}
+			\operation {+ \detokenize{getOpenVPNHomeDir()}}
+			\operation {+ \detokenize{initializeServer()}}
+		\end {class}
+	\end {tikzpicture}
+	\caption{Az \detokenize{OpenVPN_server_impl} modul felépítése}
+	\label{fig:openvpn_server_impl_module}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[scale=0.84, every node/.style={scale=0.84}]
 		\begin {class}[text width=0.458\textwidth]{\detokenize{OpenVPN_clienthandler_impl}}{0, 0}
 			\attribute {- \detokenize{clientObjects : table}}
 			\attribute {- \detokenize{validClients : table}}
@@ -200,7 +203,7 @@ Több részmodulra lett szétosztva:
 			\operation {+ \detokenize{updateRevokeCRLForOpenVPNDaemon()}}
 			\operation {+ \detokenize{getValidClients()}}
 		\end {class}
-		\begin {class}[text width=0.44\textwidth]{\detokenize{Client}}{8.25, 0}
+		\begin {class}[text width=0.44\textwidth]{\detokenize{Client}}{8, 0}
 			\attribute {- \detokenize{clientObjects : table}}
 			\attribute {- \detokenize{validClients : table}}
 			\attribute {- \detokenize{clientSampleConfig : string}}
@@ -211,10 +214,11 @@ Több részmodulra lett szétosztva:
 			\operation {+ \detokenize{revoke()}}
 			\operation {+ \detokenize{isValidClient()}}	
 		\end {class}
-		
 		\unidirectionalAssociation{OpenVPN_clienthandler_impl}{}{}{Client}
 	\end {tikzpicture}
-\end{center}
+	\caption{Az \detokenize{OpenVPN_clienthandler_impl} modul felépítése}
+	\label{fig:openvpn_clienthandler_impl_module}
+\end{figure}
 
 \pagebreak
 
@@ -230,10 +234,13 @@ Az nginx-et kezelő modulok is több részre lettek osztva. Az összes modul a p
 	\item \textbf{\detokenize{config_handler}}: nginx szerver konfigját kezelő modul, config parselést és writeolást implementál. A parser és writer az eredeti nginx parser kódja alapján épült, amely megtalálható a \cite{nginx_parser} hivatkozás alatt
 \end{itemize}
 
-\begin{center}
-	Az nginx \texttt{bootstrap} modul ezesetben is egyszerű felépítésű:
+Az nginx \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, amely látszik \myaref{fig:nginx_module} ábráról is. 
 
-	\begin{tikzpicture} % [show background grid]
+Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kissé bonyolultabb, mivel az nginx syntaxa is komplikáltabb. Két osztályt tartalmaz. Felépítése \myaref{fig:nginx_config_handler_module} ábrán látható.
+
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[scale=0.87, every node/.style={scale=0.87}]
 		\begin {class}[text width=0.45\textwidth]{nginx}{0, 0}
 			\attribute {+ \detokenize{errors : table}}
 			\attribute {+ \detokenize{serverImpl -> }\textbf{nginx\_server\_impl} module}
@@ -245,40 +252,44 @@ Az nginx-et kezelő modulok is több részre lettek osztva. Az összes modul a p
 			\operation {+ \detokenize{initDirs()}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{Az nginx bootstrap modul felépítése}
+	\label{fig:nginx_module}
+\end{figure}
 
-Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kissé bonyolultabb, mivel az nginx syntaxa is komplikáltabb. Két osztályt tartalmaz.
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[scale=0.87, every node/.style={scale=0.87}]
+		\begin {class}[text width=0.45\textwidth]{\detokenize{nginx_config_handler}}{0, 0}
+			\attribute {+ \detokenize{nginxConfigHandler -> }\textbf{nginxConfigHandler} class}
+			\operation {- \detokenize{concatArgsProperlyForBlockName(args)}}
+			\operation {- \detokenize{parseNginxConfig(linesInStr)}}
+			\operation {- \detokenize{formatDataAccordingQuoting(tbl)}}
+			\operation {- \detokenize{doPaddingWithBlockDeepness(blockDeepness)}}
+			\operation {- \detokenize{writeNginxConfig(parsedLines)}}
+		\end {class}
 
-\hfill
-
-\begin{tikzpicture} % [show background grid]
-	\begin {class}[text width=0.45\textwidth]{\detokenize{nginx_config_handler}}{0, 0}
-		\attribute {+ \detokenize{nginxConfigHandler -> }\textbf{nginxConfigHandler} class}
-		\operation {- \detokenize{concatArgsProperlyForBlockName(args)}}
-		\operation {- \detokenize{parseNginxConfig(linesInStr)}}
-		\operation {- \detokenize{formatDataAccordingQuoting(tbl)}}
-		\operation {- \detokenize{doPaddingWithBlockDeepness(blockDeepness)}}
-		\operation {- \detokenize{writeNginxConfig(parsedLines)}}
-	\end {class}
-
-	\begin {class}[text width=0.44\textwidth]{\detokenize{nginxConfigHandler}}{7.5, 0}
-		\operation {+ \detokenize{new(linesInStr, paramToLine)}}
-		\operation {+ \detokenize{getParsedLines()}}
-		\operation {+ \detokenize{getParamsToIdx()}}
-		\operation {+ \detokenize{insertNewData(dataTbl, pos)}}
-		\operation {+ \detokenize{deleteData(pos)} - jelenleg nem használt}
-		\operation {+ \detokenize{toString()}}
-	\end {class}
-	
-	\unidirectionalAssociation{nginx_config_handler}{}{}{nginxConfigHandler}	
-\end {tikzpicture}
+		\begin {class}[text width=0.44\textwidth]{\detokenize{nginxConfigHandler}}{7.5, 0}
+			\operation {+ \detokenize{new(linesInStr, paramToLine)}}
+			\operation {+ \detokenize{getParsedLines()}}
+			\operation {+ \detokenize{getParamsToIdx()}}
+			\operation {+ \detokenize{insertNewData(dataTbl, pos)}}
+			\operation {+ \detokenize{deleteData(pos)} - jelenleg nem használt}
+			\operation {+ \detokenize{toString()}}
+		\end {class}
+		
+		\unidirectionalAssociation{nginx_config_handler}{}{}{nginxConfigHandler}	
+	\end {tikzpicture}
+	\caption{Az \detokenize{nginx_config_handler} modul felépítése}
+	\label{fig:nginx_config_handler_module}
+\end{figure}
 
 \pagebreak
 
-\begin{center}
-	A következő ábrán látható a \texttt{\detokenize{nginx_server_impl}} modul felépítése:
+A következő \myref{fig:nginx_server_impl_module} ábrán látható a \texttt{\detokenize{nginx_server_impl}} modul felépítése:
 
-	\begin{tikzpicture} % [show background grid]
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[scale=0.95, every node/.style={scale=0.95}]
 		\begin {class}[text width=0.7\textwidth]{\detokenize{nginx_server_impl}}{0, 0}
 			\attribute {- \detokenize{sampleConfigForWebsite : string}}
 			\attribute {+ \detokenize{nginxUser : string}}
@@ -303,7 +314,9 @@ Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kiss�
 			\operation {+ \detokenize{initSSLForWebsite(webUrl, certDetails)}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{Az \detokenize{nginx_server_impl} modul felépítése}
+	\label{fig:nginx_server_impl_module}
+\end{figure}
 
 \Section{apache modulok felépítései, feladatai}
 
@@ -322,74 +335,77 @@ A modulok leírásai, feladatokkal:
 
 \pagebreak
 
-Az apache \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, a \texttt{\detokenize{config_handler}} pedig három osztályt tartalmaz. A \texttt{\detokenize{server_impl}} modul hasonló bonyolultságú az \\\texttt{\detokenize{nginx_server_impl}} modulhoz:
+Az apache \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, a \texttt{\detokenize{config_handler}} pedig három osztályt tartalmaz. A \texttt{\detokenize{server_impl}} modul hasonló bonyolultságú az \\\texttt{\detokenize{nginx_server_impl}} modulhoz. Felépítésük megtekinthető \myaref{fig:apache_modules} ábrán.
 	
-\hfill
-	
-\begin{tikzpicture} % [show background grid]
-	\begin {class}[text width=0.45\textwidth]{apache}{0, 0}
-		\attribute {+ \detokenize{errors : table}}
-		\attribute {+ \detokenize{serverImpl -> }\textbf{apache\_server\_impl} module}
-		\operation {+ \detokenize{isInstalled()}}
-		\operation {+ \detokenize{install()}}
-		\operation {+ \detokenize{isRunning()}}
-		\operation {+ \detokenize{stopServer()}}
-		\operation {+ \detokenize{startServer()}}
-		\operation {+ \detokenize{initDirs()}}
-	\end {class}
-	
-	\begin {class}[text width=0.45\textwidth]{\detokenize{apache_config_handler}}{7.6, 0}
-		\attribute {+ \detokenize{apacheConfigHandler -> }\textbf{apacheConfigHandler} class}
-		\attribute {+ \detokenize{apacheEnvvarsHandler -> }\textbf{apacheEnvvarsHandler} class}
-		\operation {- \detokenize{parseApacheConfig(linesInStr)}}
-		\operation {- \detokenize{doPaddingWithBlockDeepness(blockDeepness)}}
-		\operation {- \detokenize{formatDataAccordingQuoting(tbl)}}
-		\operation {- \detokenize{writeApacheConfig(parsedLines)}}
-		\operation {- \detokenize{parse_envvar_args_from_line(line)}}
-		\operation {- \detokenize{escapeMagic(s)}}
-	\end {class}
-	
-	\begin {class}[text width=0.45\textwidth]{\detokenize{apacheConfigHandler}}{0, -5}
-		\operation {+ \detokenize{new(linesInStr, paramToLine)}}
-		\operation {+ \detokenize{getParsedLines()}}
-		\operation {+ \detokenize{getParamsToIdx()}}
-		\operation {+ \detokenize{insertNewData(dataTbl, pos)}}
-		\operation {+ \detokenize{deleteData(pos)} - jelenleg nem használt}
-		\operation {+ \detokenize{toString()}}
-	\end {class}
-	
-	\begin {class}[text width=0.45\textwidth]{\detokenize{apacheEnvvarsHandler}}{7.6, -7}
-		\operation {+ \detokenize{new(linesInStr)}}
-		\operation {+ \detokenize{getArgs()}}
-		\operation {+ \detokenize{toString()}}
-	\end {class}
-	
-	\begin {class}[text width=0.45\textwidth]{\detokenize{apache_server_impl}}{4.5, -10.3}
-		\attribute {+ \detokenize{apacheUser : string}}
-		\attribute {+ \detokenize{apacheUserComment : string}}
-		\attribute {+ \detokenize{apacheUserShell : string}}
-		\attribute {+ \detokenize{baseDir : string}}
-		\attribute {+ \detokenize{errors : table}}
-		\attribute {- \detokenize{sampleConfigForWebsite : string}}
-		\operation {- \detokenize{resolveErrorToStr(error)}}
-		\operation {+ \detokenize{constructor(_bootstrapModule)}}
-		\operation {+ \detokenize{formatPathInsideBasedir(path)}}
-		\operation {+ \detokenize{checkApacheUserExistence()}}
-		\operation {+ \detokenize{createApacheUser(homeDir)}}
-		\operation {+ \detokenize{updateExistingApacheUser()}}
-		\operation {+ \detokenize{getApacheHomeDir()}}
-		\operation {+ \detokenize{getApacheMasterConfigPathFromDaemon()}}
-		\operation {+ \detokenize{initDirs()}}
-		\operation {+ \detokenize{initializeServer()}}
-		\operation {+ \detokenize{createNewWebsite(websiteUrl)}}
-		\operation {+ \detokenize{deleteWebsite(websiteUrl)}}
-		\operation {+ \detokenize{getCurrentAvailableWebsites()}}
-		\operation {+ \detokenize{initSSLForWebsite(webUrl, certDetails)}}
-	\end {class}
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[scale=0.95, every node/.style={scale=0.95}]
+		\begin {class}[text width=0.45\textwidth]{apache}{0, 0}
+			\attribute {+ \detokenize{errors : table}}
+			\attribute {+ \detokenize{serverImpl -> }\textbf{apache\_server\_impl} module}
+			\operation {+ \detokenize{isInstalled()}}
+			\operation {+ \detokenize{install()}}
+			\operation {+ \detokenize{isRunning()}}
+			\operation {+ \detokenize{stopServer()}}
+			\operation {+ \detokenize{startServer()}}
+			\operation {+ \detokenize{initDirs()}}
+		\end {class}
+		
+		\begin {class}[text width=0.45\textwidth]{\detokenize{apache_config_handler}}{7.6, 0}
+			\attribute {+ \detokenize{apacheConfigHandler -> }\textbf{apacheConfigHandler} class}
+			\attribute {+ \detokenize{apacheEnvvarsHandler -> }\textbf{apacheEnvvarsHandler} class}
+			\operation {- \detokenize{parseApacheConfig(linesInStr)}}
+			\operation {- \detokenize{doPaddingWithBlockDeepness(blockDeepness)}}
+			\operation {- \detokenize{formatDataAccordingQuoting(tbl)}}
+			\operation {- \detokenize{writeApacheConfig(parsedLines)}}
+			\operation {- \detokenize{parse_envvar_args_from_line(line)}}
+			\operation {- \detokenize{escapeMagic(s)}}
+		\end {class}
+		
+		\begin {class}[text width=0.45\textwidth]{\detokenize{apacheConfigHandler}}{0, -6.5}
+			\operation {+ \detokenize{new(linesInStr, paramToLine)}}
+			\operation {+ \detokenize{getParsedLines()}}
+			\operation {+ \detokenize{getParamsToIdx()}}
+			\operation {+ \detokenize{insertNewData(dataTbl, pos)}}
+			\operation {+ \detokenize{deleteData(pos)} - jelenleg nem használt}
+			\operation {+ \detokenize{toString()}}
+		\end {class}
+		
+		\begin {class}[text width=0.45\textwidth]{\detokenize{apacheEnvvarsHandler}}{7.6, -7}
+			\operation {+ \detokenize{new(linesInStr)}}
+			\operation {+ \detokenize{getArgs()}}
+			\operation {+ \detokenize{toString()}}
+		\end {class}
+		
+		\begin {class}[text width=0.45\textwidth]{\detokenize{apache_server_impl}}{7.6, -10.3}
+			\attribute {+ \detokenize{apacheUser : string}}
+			\attribute {+ \detokenize{apacheUserComment : string}}
+			\attribute {+ \detokenize{apacheUserShell : string}}
+			\attribute {+ \detokenize{baseDir : string}}
+			\attribute {+ \detokenize{errors : table}}
+			\attribute {- \detokenize{sampleConfigForWebsite : string}}
+			\operation {- \detokenize{resolveErrorToStr(error)}}
+			\operation {+ \detokenize{constructor(_bootstrapModule)}}
+			\operation {+ \detokenize{formatPathInsideBasedir(path)}}
+			\operation {+ \detokenize{checkApacheUserExistence()}}
+			\operation {+ \detokenize{createApacheUser(homeDir)}}
+			\operation {+ \detokenize{updateExistingApacheUser()}}
+			\operation {+ \detokenize{getApacheHomeDir()}}
+			\operation {+ \detokenize{getApacheMasterConfigPathFromDaemon()}}
+			\operation {+ \detokenize{initDirs()}}
+			\operation {+ \detokenize{initializeServer()}}
+			\operation {+ \detokenize{createNewWebsite(websiteUrl)}}
+			\operation {+ \detokenize{deleteWebsite(websiteUrl)}}
+			\operation {+ \detokenize{getCurrentAvailableWebsites()}}
+			\operation {+ \detokenize{initSSLForWebsite(webUrl, certDetails)}}
+		\end {class}
 
-	\unidirectionalAssociation{apache_config_handler}{}{}{apacheConfigHandler}
-	\unidirectionalAssociation{apache_config_handler}{}{}{apacheEnvvarsHandler}
-\end {tikzpicture}
+		\unidirectionalAssociation{apache_config_handler}{}{}{apacheConfigHandler}
+		\unidirectionalAssociation{apache_config_handler}{}{}{apacheEnvvarsHandler}
+	\end {tikzpicture}
+	\caption{Az apache implementáció moduljainak felépítése}
+	\label{fig:apache_modules}
+\end{figure}
 
 \pagebreak
 
@@ -405,12 +421,11 @@ Az \texttt{apt} esetében a függőségek külön rakódnak fel a csomagok felte
 
 A \texttt{snapd} esetében egy teljes archívumot tölt le a rendszer, ebben benne van a csomag összes függősége pont azzal a verzióval, amellyel a csomag fejlesztői szerették volna. Ez az archívum egy "zárt térbe" kerül kicsomagolásra, és limitált hozzáférése van magához a rendszerhez (hasonlóan a Docker-alkalmazásokhoz). Frissítéskor a fejlesztő adja ki a frissítéseket, nem validálják őket külön, ezáltal gyorsabban eljut a userekhez. \cite{snap_vs_apt}
 
-\begin{center}
-	A \texttt{certbot} modul UML diagramja:
+A \texttt{certbot} modul UML diagramja a következő \myref{fig:certbot_module} ábrán látható:
 	
-	\hfill
-	
-	\begin{tikzpicture} % [show background grid]
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}%[scale=0.95, every node/.style={scale=0.95}]
 		\begin {class}[text width=0.6\textwidth]{\detokenize{certbot}}{0, 0}
 			\attribute {- \detokenize{errors : table}}
 			\attribute {- \detokenize{certFileName : string}}
@@ -428,7 +443,9 @@ A \texttt{snapd} esetében egy teljes archívumot tölt le a rendszer, ebben ben
 			\operation {+ \detokenize{init()}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{A certbot modul felépítése}
+	\label{fig:certbot_module}
+\end{figure}
 
 \Section{snapd modul felépítése, feladata}
 
@@ -436,12 +453,11 @@ A snapd modul egyszerű felépítésű. Feladata maga a snapd feltelepítése az
 
 \pagebreak
 
-\begin{center}
-	A \texttt{snapd} modul UML diagramja:
+A \texttt{snapd} modul UML diagramja a következő \myref{fig:snapd_module} ábrán található meg:
 	
-	\hfill
-	
-	\begin{tikzpicture} % [show background grid]
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}%[scale=0.95, every node/.style={scale=0.95}]
 		\begin {class}[text width=0.6\textwidth]{\detokenize{snapd}}{0, 0}
 			\operation {+ \detokenize{isSnapdInstalled()}}
 			\operation {+ \detokenize{installSnapd()}}
@@ -449,16 +465,19 @@ A snapd modul egyszerű felépítésű. Feladata maga a snapd feltelepítése az
 			\operation {+ \detokenize{installPackage(packageName, classic)}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{A snapd modul felépítése}
+	\label{fig:snapd_module}
+\end{figure}
 
 \Section{iptables modul felépítése, feladata}
 
 Ez a modul kezeli a tűzfalszabályokat az \texttt{iptables} frontend segítségével. Funkcionalitása maga az iptables telepítése, a portok nyitása/zárása, kimenő/bemenő csomagok szűrése, továbbá a NAT előkészítése az OpenVPN szerver számára. 
 
-\begin{center}
-	A modul UML diagramja:
+A modul UML diagramja \myaref{fig:iptables_module} ábrán tekinthető meg:
 
-	\begin{tikzpicture} % [show background grid]
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[scale=0.9, every node/.style={scale=0.9}]
 		\begin {class}[text width=0.9\textwidth]{\detokenize{iptables}}{0, 0}
 			\attribute {- \detokenize{iptablesAliases : table}}
 			\attribute {+ \detokenize{errors : table}}
@@ -489,4 +508,6 @@ Ez a modul kezeli a tűzfalszabályokat az \texttt{iptables} frontend segítség
 			\operation {+ \detokenize{initModule()}}
 		\end {class}
 	\end {tikzpicture}
-\end{center}
+	\caption{Az iptables modul felépítése}
+	\label{fig:iptables_module}
+\end{figure}

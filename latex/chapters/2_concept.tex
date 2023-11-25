@@ -1,9 +1,18 @@
 \Chapter{Koncepció}
 
+
+
 \Section{Felhasznált programnyelv}
 A program elkészítéséhez a felhasznált programnyelv a Lua, tesztelésre és az implementációra az 5.3.5 verzió lett használva.
 
 A \textbf{Lua} egy könnyű, magas szintű programozási nyelv, amelyet főképp a könnyű beágyazhatóság jegyében fejlesztettek ki. A legelső verzióját 1993-ban adták ki. Cross-platform, mivel implementációja Ansi C-ben íródott. Saját virtuális géppel és bytecode formátummal rendelkezik.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.1]{images/Lua-Logo.svg}
+\caption{A Lua logója}
+\end{figure}
+
 A scriptek futtatás előtt bytecode-ra fordítódnak át, majd úgy kerülnek átadásra az interpreternek. Mi magunk is lefordíthatjuk a Lua forráskódunkat a luac bináris segítségével.
 Ezt akkor szokták megtenni, ha fel akarják gyorsítani a script futását, vagy ha nem szeretnék, hogy idegenek ismerjék a forráskódot.
 
@@ -14,6 +23,12 @@ Széleskörű C API található felhasználásához, azonban nem csak erre a nye
 Az interpreterje önmagában eléggé jó teljesítménnyel rendelkezik, jónéhány benchmark kimutatása szerint a Lua élvonalon jár teljesítmény szempontjából az interpretált scriptnyelvek között. Nem csak végletekig-csiszolt "benchmarkra szánt" programokban jó a teljesítménye, hanem a való életben való felhasználása közben is. Nagyobb sebességért a LuaJIT branchet is lehet használni.
 
 A \textbf{LuaJIT} a Lua olyan verziója, amely Just-In-Time compilert tartalmaz, alapjaiban is gyorsabb, mint a Lua. A LuaJIT bytecode formátuma teljesen más, mint a sima Lua-é, gyorsabb az instrukciók dekódolása. A virtuális gépe is közvetlenül Assembly-ben íródott. A LuaJIT implementáció szinten nem kötődik hivatalosan a Lua programnyelvhez, attól független, más emberek fejlesztik. \cite {luajit}
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.15]{images/luajit-logo.jpg}
+\caption{A LuaJIT logója}
+\end{figure}
 
 A Lua programnyelvhez csomagkezelő is készült, amelyet LuaRocksnak hívnak, funkcionalitása hasonló a NodeJS \texttt{npm} csomagkezelőjéhez.
 
@@ -316,7 +331,24 @@ Csak privilegizált programok tudják általában ezt a C API hívást meghívni
 Az Internet sokaságában sok hasonló funkcionalitást implementáló alkalmazást lelhetünk fel.
 
 \SubSection{Apache2 és nginx}
-Többféle neves implementáció is létezik az Apache2 és nginx kezelésére. Legelőször személy szerint a \textbf{VHCS} vagyis a Virtual Hosting Control Systemmel találkoztam jópár évvel ezelőtt. A VHCS már nincs aktívan fejlesztve, az utolsó kiadott verzió belőle a 2.4.8-as verzió, amely 2009-ben jelent meg. \cite{vhcs} Többféle szervert is tudott kezelni, néhány ezek közül: Apache, ProFTPD, MySQL, Bind. A későbbiekben az ispCP projekt erre épült. \cite{ispcp} 
+Többféle neves implementáció is létezik az Apache2 és nginx kezelésére. 
+
+\begin{figure}[h]
+	\caption{A webszerverek logói}
+	\centering
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[scale=0.35]{images/apache_httpd_logo.png}
+		\caption{Az apache logója}
+	\end{subfigure}%
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[scale=0.35]{images/nginx_logo.png}
+		\caption{Az nginx logója}
+	\end{subfigure}%
+\end{figure}
+
+Legelőször személy szerint a \textbf{VHCS} vagyis a Virtual Hosting Control Systemmel találkoztam jópár évvel ezelőtt. A VHCS már nincs aktívan fejlesztve, az utolsó kiadott verzió belőle a 2.4.8-as verzió, amely 2009-ben jelent meg. \cite{vhcs} Többféle szervert is tudott kezelni, néhány ezek közül: Apache, ProFTPD, MySQL, Bind. A későbbiekben az ispCP projekt erre épült. \cite{ispcp} 
 
 Az \textbf{ispCP} projektből alakult ki az \textbf{i-MSCP}, amelynek a legutolsó kiadott verziója 2018-ban lett kiadva \cite{imscp}. Ez már több featureval rendelkezik:
 \begin{itemize}
@@ -346,12 +378,12 @@ Sok daemont, szervert kezel \cite{ispconfig2}:
 \end{itemize}
 
 A következő táblázatban a myVestaCP implementáció kerül összehasonlítása az ISPConfig-gal.
-A \textbf{myVestaCP} szintén nyílt forráskódú, a \textbf{vestaCP} forkolt, továbbfejlesztett változata.
+A \textbf{myVestaCP} szintén nyílt forráskódú, a \textbf{vestaCP} forkolt, továbbfejlesztett változata. A két implementáció összehasonlítása \myaref{tab:ispconfig_vs_myvestacp} táblázatban látható:
 
 \begin{table}[h]
 \centering
 \caption{ISPConfig \cite{ispconfig2} összehasonlítása myVestaCP-vel \cite{myvestacp}}
-\label{tab:ispconfig}
+\label{tab:ispconfig_vs_myvestacp}
 \begin{tabularx}{\linewidth}{l|L|L}
  & ISPConfig & myVestaCP \\
 \hline
@@ -372,6 +404,12 @@ Testreszabhatóság & Léteznek hozzá modulok, pluginok & Léteznek hozzá modu
 \SubSection{Tűzfal}
 Tűzfalak terén a Linux rendszerekben a legelterjedtebb netfilter implementációk jelenleg az iptables és az nftables. 
 
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{images/netfilter-logo3.png}
+\caption{A netfilter logója - ezt használja az iptables is}
+\end{figure}
+
 Az \textbf{iptables} legelső releaseja 1998-ban jelent meg, a legutolsó stabil kiadása 2022. május 13.-án került kiadásra. C-ben íródott. \cite{iptables}
 
 Többféle táblát használ a parancsok feldolgozására, tud csomagokat szűrni (ki és bemenő, továbbá átirányított csomagokat), csomagok tartalmát módosítani, átirányítani. Tud NAT-ot is implementálni. \cite{iptables_man}
@@ -379,21 +417,22 @@ Többféle táblát használ a parancsok feldolgozására, tud csomagokat szűrn
 Az \textbf{nftables} a Linux kernel 3.13-as verziójától érhető el, pontosabban 2014 január 19.-e óta. Az nftables néhány iptables-hez köthető maradandó örökséget cserél le, tudja többnyire ugyan azt a funkcionalitást, mint az \texttt{iptables}. Előnye az iptables-hez képest, hogy kevesebb kód duplikációval rendelkezik, és könnyebb az új protokollokra való kibővítése. \cite{nftables}
 Jobban skálázható is, jobb a teljesítménye az iptablesnél, főleg akkor, ha például iptables-ban sok saját magunk által definiált chain-t (láncot) használtunk.
 
-Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egyszerre mindkettőt használhatjuk. Az \texttt{iptables -V} parancsot lefuttatva megnézhetjük, hogy milyen iptablessel dolgozunk. Az újabb verziókon az iptables igazából nftables backendet használ, ezt a következőképp láthatjuk:
+Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egyszerre mindkettőt használhatjuk. Az \texttt{iptables -V} parancsot lefuttatva megnézhetjük, hogy milyen iptablessel dolgozunk. Az újabb verziókon az iptables igazából nftables backendet használ, ezt a következőképp láthatjuk \myref{fig:iptables_nftables} ábrán:
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1.0]{images/iptables_nftables.png}
 \caption{Debian 11-es rendszeren használt iptables, amely nftables backenddel dolgozik}
+\label{fig:iptables_nftables}
 \end{figure}
 
 Létezik iptables szabálylánc konvertáló program is, amellyel meglévő szabályainkat nftables syntaxra konvertálhatjuk. 
 
-Az elkészítendő program az \texttt{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \texttt{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \texttt{iptables}-t használják fel, a következő táblázatban kettőt fogok összehasonlítani:
+Az elkészítendő program az \texttt{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \texttt{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \texttt{iptables}-t használják fel, a következő \myref{tab:ufw_vs_firewalld} táblázatban kettőt fogok összehasonlítani:
 
 \begin{table}[h]
 \centering
 \caption{ufw összehasonlítása firewalld-vel}
-\label{tab:ispconfig}
+\label{tab:ufw_vs_firewalld}
 \begin{tabularx}{\linewidth}{l|L|L}
  & ufw & firewalld \\
 \hline
@@ -410,12 +449,17 @@ Testreszabhatóság & nincsenek hozzá pluginok & nincsenek hozzá pluginok \\
 \end{table}
 
 \SubSection{OpenVPN}
-A következő táblázatban (\ref{tab:openvpn_apps}) a saját implementációmat, amely OpenVPN Community szervert használ, hasonlítom össze az OpenVPN Access Server-rel.
+A következő kétoldalas \ref{tab:openvpn_apps} táblázatban a saját implementációmat, amely OpenVPN Community szervert használ, hasonlítom össze az OpenVPN Access Server-rel.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{images/openvpn-logo.png}
+\caption{Az OpenVPN logója}
+\end{figure}
 
 Fontos megemlíteni, hogy OpenVPN szerver menedzser implementáció több is létezik, létezik C\#-ban írt, létezik Bash Scriptben írt is. A minél nagyobb cross-platform támogatás lehetősége miatt azonban úgy gondolom mégis helyt áll a program létezése, a Lua nyelv egyszerűsége, nagyszerű cross-platform támogatása miatt. Értelemszerűen a Bash Script implementációk csak Linuxra korlátozódnak. GitHubon létezik web alapú interface is az OpenVPN Community Serverhez.
 
-\pagebreak
-\begin{table}[t]
+\begin{table}[h]
 \caption{Az OpenVPN Access Server összehasonlítása saját implementációval}
 \label{tab:openvpn_apps}
 \begin{tabularx}{\textwidth}{l|L|L}
@@ -434,6 +478,16 @@ Többfaktoros hitelesítés & beépített lehetőségek, továbbá pluginokkal b
 Access Control (ACL) & beépített lehetőségek & saját auth scripttel, vagy tűzfallal kivitelezhető \\
 \hline
 Tunnel átirányítás & beépített lehetőségek: full-tunnel és split-tunnel & megoldható a kliens konfigurálásával (a \texttt{route} program használatával), továbbá szerveroldali konfigurálással (redirect-gateway) \\
+\end{tabularx}
+\end{table}
+
+\pagebreak
+
+\begin{table}[h]
+\caption{A \ref{tab:openvpn_apps} táblázat folytatása}
+\label{tab:openvpn_apps2}
+\begin{tabularx}{\textwidth}{l|L|L}
+ & OpenVPN Access Server \cite{openvpnaccessserver} & Saját implementáció (OpenVPN Community) \\
 \hline
 Support & professzionális support ticketing rendszerrel & OpenVPN community fórum, Community Ticket report \\
 \hline

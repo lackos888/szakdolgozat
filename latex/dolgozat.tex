@@ -11,15 +11,16 @@
 \usepackage{url}
 \usepackage{tikz}
 \usepackage{pgf-umlcd}
+\usepackage{subcaption}
 
 %% fix inconsistent class name box heights
 %\tikzset{
 %    umlcd style class/.append style={
 %        execute at begin node=\strut}}
 %% fix inconsistent operation/attribute row heights
-%\usepackage{xpatch}
-%\xpatchcmd{\pgfumlcd@operation}{\break}{\break\strut}{}{}
-%\xpatchcmd{\pgfumlcd@attribute}{\break}{\break\strut}{}{}
+\usepackage{xpatch}
+\xpatchcmd{\pgfumlcd@operation}{\break}{\break\strut}{}{}
+\xpatchcmd{\pgfumlcd@attribute}{\break}{\break\strut}{}{}
 
 \usepackage{hyperref}
 
