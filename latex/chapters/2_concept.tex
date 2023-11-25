@@ -417,7 +417,7 @@ Többféle táblát használ a parancsok feldolgozására, tud csomagokat szűrn
 Az \textbf{nftables} a Linux kernel 3.13-as verziójától érhető el, pontosabban 2014 január 19.-e óta. Az nftables néhány iptables-hez köthető maradandó örökséget cserél le, tudja többnyire ugyan azt a funkcionalitást, mint az \texttt{iptables}. Előnye az iptables-hez képest, hogy kevesebb kód duplikációval rendelkezik, és könnyebb az új protokollokra való kibővítése. \cite{nftables}
 Jobban skálázható is, jobb a teljesítménye az iptablesnél, főleg akkor, ha például iptables-ban sok saját magunk által definiált chain-t (láncot) használtunk.
 
-Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egyszerre mindkettőt használhatjuk. Az \texttt{iptables -V} parancsot lefuttatva megnézhetjük, hogy milyen iptablessel dolgozunk. Az újabb verziókon az iptables igazából nftables backendet használ, ezt a következőképp láthatjuk \myref{fig:iptables_nftables} ábrán:
+Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egyszerre mindkettőt használhatjuk. Az \texttt{iptables -V} parancsot lefuttatva megnézhetjük, hogy milyen iptablessel dolgozunk. Az újabb verziókon az iptables igazából nftables backendet használ, ezt a következőképp láthatjuk \myaref{fig:iptables_nftables} ábrán:
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1.0]{images/iptables_nftables.png}
