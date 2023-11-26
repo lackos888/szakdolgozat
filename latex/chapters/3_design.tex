@@ -1,6 +1,6 @@
 \Chapter{Tervezés}
 
-A program az OO alapelveket igyekszik követni. Elsősorban modulokból áll, amelyek osztályként is értelmezhetőek. Vannak olyan modulok, amelyekben csak a helyi scopeban elérhető kódok vagy változók vannak, tehát "private" elérésűek.
+A program az OO alapelveket igyekszik követni. Elsősorban modulokból áll, amelyek osztályként is értelmezhetőek. Vannak olyan modulok, amelyekben csak a helyi scopeban elérhető kódok vagy változók vannak, tehát "private" elérésűek. Vannak olyan modulok, amelyekben több osztályok is találhatóak.
 
 A következőekben a modulok UML diagramját fogom külön-külön bemutatni. A következő \myref{fig:visibilityrules} ábrán tekinthetőek meg a láthatósági szabályok az UML diagramokon:
 \begin{figure}[h!]
@@ -148,7 +148,7 @@ Maga az OpenVPN \texttt{bootstrap} és \texttt{\detokenize{config_handler}} modu
 
 A \texttt{\detokenize{server_impl}} modul minden OpenVPN szerverrel kapcsolatos művelet magja, ezért sok funkcióval rendelkezik. Felépítése \myaref{fig:openvpn_server_impl_module} ábrán látható. 
 
-A klienseket kezelő \texttt{\detokenize{OpenVPN_clienthandler_impl}} modulban pedig két osztály is helyet foglal az OO alapelveket követve. Felépítése \myaref{fig:openvpn_clienthandler_impl_module} ábrán látható.
+A klienseket kezelő \texttt{\detokenize{OpenVPN_clienthandler_impl}} modulban pedig két osztály is helyet foglal az OO alapelveket követve. Struktúrája \myaref{fig:openvpn_clienthandler_impl_module} ábrán látható.
 
 \begin{figure}[h]
 	\centering
@@ -236,7 +236,7 @@ Az nginx-et kezelő modulok is több részre lettek osztva. Az összes modul a p
 
 Az nginx \texttt{bootstrap} modul ezesetben is egyszerű felépítésű, amely látszik \myaref{fig:nginx_module} ábráról is. 
 
-Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kissé bonyolultabb, mivel az nginx syntaxa is komplikáltabb. Két osztályt tartalmaz. Felépítése \myaref{fig:nginx_config_handler_module} ábrán látható.
+Azonban a \texttt{\detokenize{config_handler}} modul ebben az esetben már kissé bonyolultabb, mivel az nginx syntaxa is komplikáltabb. Két osztályt tartalmaz. Struktúrája \myaref{fig:nginx_config_handler_module} ábrán látható.
 
 \begin{figure}[h!]
 	\centering

@@ -1,8 +1,25 @@
 \Chapter{Koncepció}
 
+A fejezet egyik célja bemutatni a program létrehozásához alkalmazott technológiát: a Lua programozási nyelv alapvető tulajdonságait, sajátosságait.
+Ezen kívül ismertetem a programtól elvárt működést részleteibe menően.
+Megvizsgálom a jelenleg elkészítendő eszközhöz hasonló, Interneten fellelhető alternatívákat, továbbá OpenVPN esetében összehasonlítom a már elérhető OpenVPN Access Serverrel szemben a saját eszközöm koncepcióját.
 
+A Lua egy már régóta használt programozási nyelv. Rövid történetét, működését, tulajdonságait \myaref{sect:used_language} alfejezetben mutatom be.
+Dolgozatomhoz előnyös választásnak bizonyult, hiszen az így elkészült eszköz nem korlátozódik egyetlen platformra, lehetőséget biztosítva a későbbi, több platformot támogató továbbfejlődésre is.
+Ezen kívül scriptnyelvekre jellemző módon egyszerűségéből adódóan ideális a tervezett programhoz hasonló eszközök létrehozására. Úgy gondolom, hogy szintaxisa könnyen értelmezhető, továbbá felépítése is könnyebben átlátható néhány scriptnyelvnél.
+
+A dolgozatomban részletesen kifejtem a Lua sajátosságait, melyeket szükséges volt elmélyülten tanulmányoznom ahhoz, hogy elkészítsem az implementációmat.
+Többek között kifejtem a metatáblák működésének elvét és használhatóságát, osztályok és öröklődések implementációját, konstruktorokat és objektum példányosítást, destruktort, és az osztályokon belüli láthatósági szabályokat.
+
+A \myref{sect:how_it_should_work} alfejezetben kifejtem a programtól elvárt működést, ahogy a megvalósítás előtt megterveztem.
+Ebben teljeskörűen felsorolom és részletezem, mik azok, amiket az eszközömnek tudnia kell.
+Így például részletezem az OpenVPN szerver, a webszerverek, a Linux tűzfal kezelésének módját, és az ezeken belül elvárt funkcionalitásokat.
+Külön foglalkozom a chroot és tls-crypt jelentésével és lényegével.
+
+A fejezet végén ismertetem a tervezett programhoz hasonló funkcionalitást tartalmazó alternatívákat \myaref{sect:similar_apps} alfejezetben.
 
 \Section{Felhasznált programnyelv}
+\label{sect:used_language}
 A program elkészítéséhez a felhasznált programnyelv a Lua, tesztelésre és az implementációra az 5.3.5 verzió lett használva.
 
 A \textbf{Lua} egy könnyű, magas szintű programozási nyelv, amelyet főképp a könnyű beágyazhatóság jegyében fejlesztettek ki. A legelső verzióját 1993-ban adták ki. Cross-platform, mivel implementációja Ansi C-ben íródott. Saját virtuális géppel és bytecode formátummal rendelkezik.
@@ -37,6 +54,7 @@ Előszeretettel használják a játékfejlesztők is, több neves játékban is 
 \pagebreak
 
 \Section{Lua sajátosság: metatáblák}
+\label{sect:metatables}
 Az előző szekcióban kifejtettem, hogy néhány programozási paradigma nincs előre implementálva, ezeket nekünk kell implementálunk. Öröklődést, osztályokat metatáblák segítségével tudunk implementálni.
 A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata típus adatok tárolására szolgál, a C API készíti, és az eltárolt adatok memóriacíme alapján működik (ez lehet akár az alap Lua IO library által megnyitott fájlok handleja, amelyek garbage collect esetén bezárják a file handleket a \detokenize{__}\textbf{gc} metametódus segítségével); vagy például játékok esetében akár játékosadat, járműadat, satöbbi).
 
@@ -263,6 +281,7 @@ A definiált funkciók folyton arra a "self" változóra fognak hivatkozni, amel
 Emiatt a ":" használatát mellőznünk kell, csak a "." használatával tudjuk használni a funkciókat. Definiáltunk egy olyan funkciót is, amely szintén "private" láthatóságú, ez az \texttt{extra} nevű funkció. \cite {classes}
 
 \Section{Programtól elvárt működés}
+\label{sect:how_it_should_work}
 
 A program a szerverek konfigurációja közben igyekszik a jelenleg elérhető legjobb biztonsági megoldások alkalmazására, titkosítás, SSL beállítás és egyéb dolgok terén (például chroot, tls-crypt).
 
@@ -328,6 +347,7 @@ A chroot\texttt{(const char *path)} egy olyan C API hívás, amely a jelenlegi g
 Csak privilegizált programok tudják általában ezt a C API hívást meghívni. Vigyázni kell programozói szempontból a használatával, mivel ez igazából csak a védelem egy alapját adhatja meg, bizonyos módszerekkel kikerülhető.
 
 \Section{Hasonló alkalmazások}
+\label{sect:similar_apps}
 Az Internet sokaságában sok hasonló funkcionalitást implementáló alkalmazást lelhetünk fel.
 
 \SubSection{Apache2 és nginx}
