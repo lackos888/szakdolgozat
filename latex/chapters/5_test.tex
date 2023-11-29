@@ -20,20 +20,22 @@ Ezután nincs más dolgunk, mint lefuttatni magát az alkalmazást:
 # lua main.lua
 \end{verbatim}
 
-Ha nem rendelkezünk root jogosultságokkal, akkor az alkalmazás hibával tér vissza:
+Ha nem rendelkezünk root jogosultságokkal, akkor az alkalmazás hibával tér vissza, ez látható \myaref{fig:root_required} ábrán.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/root_required.png}
 \caption{root jogosultságok hiányára figyelmeztető hiba}
+\label{fig:root_required}
 \end{figure}
 
-A program sikeres lefuttatása után a főmenübe érkezünk, ahol 4 lehetőségünk van:
+A program sikeres lefuttatása után a főmenübe érkezünk, amit megtekinthetünk \myaref{fig:main_menu} ábrán.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/main_menu.png}
-\caption{a program főmenüje}
+\caption{A program főmenüje}
+\label{fig:main_menu}
 \end{figure}
 
 A program összes menüjében úgy navigálhatunk, hogy beírjuk a sorszámot (például 1, vagy 1.) és ENTER-t nyomunk. A program törekszik arra, hogy minden instrukciót megadjon a felhasználó számára a használatára vonatkozóan. Ha hibába ütközik, kiírja a hiba kódját, továbbá lehetséges forrását.
@@ -42,127 +44,131 @@ A program összes menüjében úgy navigálhatunk, hogy beírjuk a sorszámot (p
 
 \Section{OpenVPN}
 
-\SubSection{Konfigurálás, telepítés előtt}
-Az OpenVPN menüjébe érve ezt a képet kapjuk eleinte, ha nincs feltelepítve:
+Az OpenVPN menüjébe érve \myaref{fig:openvpn_before_install} ábrán látható menüpontok jelennek meg eleinte, ha nincs feltelepítve.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/openvpn_install.png}
 \caption{OpenVPN főmenü - még feltelepítés előtt}
+\label{fig:openvpn_before_install}
 \end{figure}
 
-Ekkor csak szimplán kiválasztjuk az egyes menüpontot, és feltelepítődik magától az OpenVPN, ekkor frissülni fog a menü erre:
+Ekkor csak szimplán kiválasztjuk az egyes menüpontot, és feltelepítődik magától az OpenVPN, ekkor frissülni fog a menü \myaref{fig:openvpn_preconfig} ábrán látható módon.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/openvpn_preconfig.png}
 \caption{OpenVPN főmenü - még konfigurálás előtt}
+\label{fig:openvpn_preconfig}
 \end{figure}
 
 \SubSection{Konfigurálás, telepítés után}
-Konfiguráljuk be a szervert telepítés után. Konfigurálás után a program mappájában létrejön egy openvpn mappa, amely az easyrsa programot tartalmazza. Itt található meg a saját Certificate Authority-nk, amellyel a kliensek és a szerver certificatejét, private keyét kezeli a program.
+Konfiguráljuk be a szervert telepítés után. Konfigurálás után a program mappájában létrejön egy openvpn mappa, amely az easyrsa programot tartalmazza. Itt található meg a saját tanusítványkezelőnk (Certificate Authority-nk), amellyel a kliensek és a szerver tanusítványát, privát kulcsát kezeli a program.
 
-Konfigurálás után több menüpont is rendelkezésünkre fog állni:
+Konfigurálás után több menüpont is rendelkezésünkre fog állni, ezeket \myaref{fig:openvpn_after_install} ábrán tudjuk megtekinteni.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/openvpn_after_install.png}
 \caption{OpenVPN főmenü - telepítés, konfigurálás után}
+\label{fig:openvpn_after_install}
 \end{figure}
 
 A 3. menüpontban tudjuk megtekinteni a jelenleg már konfigurált klienseinket, további menüpontok nyílnak onnan: vissza tudjuk vonni egy kliens hozzáférését az OpenVPN szerverhez, továbbá ki tudjuk iratni a kliens konfigját. A kliens konfigja teljesen kimásolható, csak az IP-címet kell átírni benne a saját szerverünk IP-címére. Mindent tartalmaz beágyazva (a certificatet, kulcsfájlokat, tls-crypt fájlt, satöbbit).
 Ha egy kliens hozzáférését visszavonjuk, akkor a hozzá generált certificatek, kulcsok revokeolásra kerülnek, és a kliens neve újra felhasználható lesz.
-
 
 A 4. menüpontban tudunk új klienst létrehozni, két adatot kér be: a kliens nevét, amellyel azonosíthatjuk és egy jelszót a privát kulcsához. A jelszó megadása biztonsági okokból kötelező. A kliens nevének egyedinek kell lennie, duplikáció nem megengedett.
 
 \pagebreak
 
 \Section{Webszerverek}
-A webszerverek menüjébe érve választhatunk \texttt{Apache} és \texttt{nginx} között is. A két webszerver kezelőfelülete között nincs különbség, teljesen egy kódstruktúrára is épülnek, ezért egyben fogom bemutatni őket. Értelemszerűen ha nincs feltelepítve az adott webszerver, akkor a telepítést fogja felajánlani:
+A webszerverek menüjébe érve választhatunk \textit{Apache} és \textit{nginx} között is. A két webszerver kezelőfelülete között nincs különbség, teljesen egy kódstruktúrára is épülnek, ezért egyben fogom bemutatni őket. Értelemszerűen ha nincs feltelepítve az adott webszerver, akkor \myaref{fig:web_before_install} ábrán látható módon a telepítést fogja felajánlani.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/web_before_install.png}
 \caption{Webszerver főmenü - telepítés előtt}
+\label{fig:web_before_install}
 \end{figure}
 
-Telepítés után a következő menüpontokat láthatjuk:
+Telepítés után több menüpont elérhető lesz, ez \myaref{fig:web_after_install} ábrán látható.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/web_after_install.png}
 \caption{Webszerver főmenü - telepítés után}
+\label{fig:web_after_install}
 \end{figure}
 
 A 2. menüpontban tudjuk kezelni a meglévő weboldalainkat, amint kiválasztottunk egyet, utána további menüpontokhoz jutunk:
 
 \begin{itemize}
-	\item a legelső menüpont a weboldal törlését jelenti, ez kitörli a weboldal konfigurációját és magát a weboldalt tartalmazó www mappát is
-	\item a második menüpont pedig az SSL certificatek certbot általi generálását szolgálja. 
+	\item a legelső menüpont a weboldal törlését jelenti, ez kitörli a weboldal konfigurációját és magát a weboldalt tartalmazó www mappát is,
+	\item a második menüpont pedig az SSL certificatek certbot általi generálását szolgálja.
 	Több lehetőség is van a certificatek generálására: HTTP-01 challenge, amely egy fájl automatikus elhelyezésével működik; vagy DNS-01 challenge, amelynél a saját névszerverünknél (DNS szerverünknél) beállítások módosítására is szükségünk van. A DNS-01-et akkor célszerű választani, ha valamiért a 80-as portot nem tudjuk használni.
 \end{itemize}
 
-A 3. menüpontban tudunk új weboldalakat létrehozni, ehhez magára csak a weboldal címére van szükség. Automatikusan létrehozza a program a weboldal konfigurációját, a weboldal www-dirjét, továbbá egy index.html fájlt:
+A 3. menüpontban tudunk új weboldalakat létrehozni, ehhez magára csak a weboldal címére van szükség. Automatikusan létrehozza a program a weboldal index.html fájlját, a weboldal konfigurációját, továbbá a weboldal www-dirjét, amely \myaref{fig:website_config_dir_examples} látható nginx esetében.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/website_config_dir_examples.png}
 \caption{Weboldal konfigurációjának helye, weboldal www-dirje nginx esetén}
+\label{fig:website_config_dir_examples}
 \end{figure}
 
 \pagebreak
 
 \Section{iptables}
 
-\SubSection{Feltelepítés előtt}
-Az iptables menüpontot választva, ha nincs még feltelepítve a frontend, akkor felajánlja a program:
+Az iptables menüpontot választva, ha nincs még feltelepítve a frontend, akkor felajánlja a program \myaref{fig:iptables_before_install} ábrán látható módon.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/iptables_before_install.png}
 \caption{iptables feltelepítése előtt}
+\label{fig:iptables_before_install}
 \end{figure}
 
-\SubSection{Feltelepítés után}
-
-Feltelepítés után több menüpont is a szemünk elé tárul:
+Feltelepítés után több menüpont is a szemünk elé tárul, a menüpontok \myaref{fig:iptables_mainmenu} ábrán tekinthetőek meg.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/iptables_mainmenu.png}
 \caption{iptables főmenüje}
+\label{fig:iptables_mainmenu}
 \end{figure}
 
-A menüpontok magukért beszélnek. Minden menüpont kiválasztása után felugrik egy interface kiválasztó felület, amellyel az adott funkcionalitást leszűkíthetjük egy interfacera.
+A menüpontok magukért beszélnek. Minden menüpont kiválasztása után felugrik egy interfészt kiválasztó felület, amellyel az adott funkcionalitást leszűkíthetjük egy interfészre. Az interfészválasztás \myaref{fig:iptables_interface_select} ábrán látható.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=1]{images/iptables_interface_select.png}
 \caption{iptables - interface választása}
+\label{fig:iptables_interface_select}
 \end{figure}
 
-Ha az összes interfacet választjuk, akkor a program szigorúan azt kezeli, amikor egy szabály ténylegesen mindenre érvényes. Ez azt jelenti iptables esetén, hogy nem adunk meg interfacet hozzá (nem manuálisan adja hozzá a program minden egyes interfacehoz az adott szabályt). Ez azt jelenti, hogy az adott szabály az interfacek változása esetén is megmarad. 
+Ha az összes interfészt választjuk, akkor a program szigorúan azt kezeli, amikor egy szabály ténylegesen mindenre érvényes. Ez azt jelenti iptables esetén, hogy nem adunk meg interfészt hozzá (nem adja hozzá manuálisan a program minden egyes interfacehoz az adott szabályt). Ez azt jelenti, hogy az adott szabály az interfészek változása esetén is megmarad. 
 
-Érdemes ezt figyelembevenni a program használatakor, mert például a nyitott portok lehet, hogy az "all" (vagyis az összes) interfacera vonatkozóan vannak kinyitva, és így nem mutatja ki másik interface-n való nyitott portok lekérdezésekor.
+Érdemes ezt figyelembevenni a program használatakor, mert például a nyitott portok lehet, hogy az "all" (vagyis az összes) interfészre vonatkozóan vannak kinyitva, és így nem mutatja ki másik interfészen való nyitott portok lekérdezésekor.
 
 \pagebreak
 
-\texttt{Port nyitáskor} három adatra lesz szükségünk az interface kiválasztása után: a \texttt{protokollra} (tcp/udp/all), a \texttt{port számára} és a \texttt{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, bármely IP tud csatlakozni erre a portra.
+\texttt{Port nyitáskor} három adatra van szükségünk az interface kiválasztása után: a \textit{protokollra} (tcp/udp/all), a \textit{port számára} és a \textit{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, bármely IP tud csatlakozni erre a portra.
 
-\texttt{Port záráskor} is három adatra lesz szükségünk az interface kiválasztása után: a \texttt{protokollra} (tcp/udp/all), a \texttt{port számára} és a \texttt{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, mindegyik IP le lesz tiltva erről a portról.
+\texttt{Port záráskor} is három adatra van szükségünk az interface kiválasztása után: a \textit{protokollra} (tcp/udp/all), a \textit{port számára} és a \texttt{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, mindegyik IP le lesz tiltva erről a portról.
 
-\texttt{Kifelé irányuló új kapcsolat engedélyezésekor} is három adat lesz szükséges: \\a \texttt{protokoll} (tcp/udp/all), a \texttt{port számára} és a \texttt{külső IP-címre}. Ha a port száma üresen marad, akkor a teljes IP-címet engedélyezi kifelé irányuló új kapcsolatként.
+\texttt{Kifelé irányuló új kapcsolat engedélyezésekor} is három adat szükséges: \\a \textit{protokoll} (tcp/udp/all), a \textit{port száma} és a \textit{külső IP-cím}. Ha a port száma üresen marad, akkor a teljes IP-címet engedélyezi kifelé irányuló új kapcsolatként.
 
-A "\texttt{nyitott portok}", "\texttt{zárt portok}" és "\texttt{engedélyezett kimenő kapcsolatok}", továbbá a "\texttt{OpenVPN NAT setup}" menüpont alatt tudjuk ellenőrzni a már meglévő beállításainkat. Ezekben a menüpontokban tudjuk törölni is a már létrehozott szabályokat is.
+A "\texttt{Nyitott portok}", "\texttt{Zárt portok}" és "\texttt{Engedélyezett kimenő kapcsolatok}", továbbá a "\texttt{OpenVPN NAT setup}" menüpont alatt tudjuk ellenőrzni a már meglévő beállításainkat. Ezekben a menüpontokban tudjuk törölni is a már létrehozott szabályokat is.
 
-Az interface alapú togglek menüpontban van két, a működés szempontjából nagyon fontos beállítás: itt lehet beállítani, hogy minden bejövő, vagy kimenő kapcsolat szűrve legyen-e. Ha egy adott portot kinyitunk, és nem tiltjuk le az összes nem engedélyezett bejövő kapcsolatot, akkor a port nyitás szabály jelenleg épp nem lesz effektív (azonban ígyis megmarad a későbbiekre). Szintén ez vonatkozik a kimenő kapcsolatokra is: ha hozzáadunk egy engedélyezett kimenő kapcsolatot, de nem tiltjuk le a nem engedélyezett kimenő kapcsolatokat, akkor a szabály nem lesz effektív.
+Az interfész alapú togglek menüpontban van két, a működés szempontjából nagyon fontos beállítás: itt lehet beállítani, hogy minden bejövő, vagy kimenő kapcsolat szűrve legyen-e. Ha egy adott portot kinyitunk, és nem tiltjuk le az összes nem engedélyezett bejövő kapcsolatot, akkor a port nyitás szabály jelenleg épp nem lesz effektív (azonban ígyis megmarad a későbbiekre). Szintén ez vonatkozik a kimenő kapcsolatokra is: ha hozzáadunk egy engedélyezett kimenő kapcsolatot, de nem tiltjuk le a nem engedélyezett kimenő kapcsolatokat, akkor a szabály nem lesz effektív.
 
-Az \texttt{OpenVPN NAT setup} menüpontban tudunk NAT-szabályokat létrehozni az\\ OpenVPN szerverünkhöz, ha feltelepítettük és bekonfiguráltuk a program segítségével. Automatikusan felismeri, ha már van meglétező NAT szabályunk létrehozva, kilistázza azokat és törölni is tudjuk őket. 
+Az \texttt{OpenVPN NAT setup} menüpontban tudunk NAT-szabályokat létrehozni az\\ OpenVPN szerverünkhöz, ha feltelepítettük és bekonfiguráltuk a program segítségével. Automatikusan felismeri, ha már van létező NAT szabályunk létrehozva, kilistázza azokat és törölni is tudjuk őket. 
 
 \SubSection{Minden forgalom átirányítása OpenVPN szerveren keresztül}
 
-A NAT bekonfigurálása után, ha minden forgalmat át akarunk irányítani az\\ OpenVPN szerverünkön keresztül a kliens felől, ne felejtsük el a \texttt{\detokenize{net.ipv4.ip_forward}} flaget beállítani a Linux szerveren. Alapértelmezésként a program csak kommentként adja hozzá azt az option-t az OpenVPN szerver konfigurációjához, amely átirányít minden forgalmat a VPN csatornára, ezt kell uncommentelnünk:
+A NAT bekonfigurálása után, ha minden forgalmat át akarunk irányítani az\\ OpenVPN szerverünkön keresztül a kliens felől, ne felejtsük el a \textit{\detokenize{net.ipv4.ip_forward}} flaget beállítani a Linux szerveren. Továbbá a program alapértelmezésként csak kommentként adja hozzá azt az beállítást az OpenVPN szerver konfigurációjához, amely átirányít minden forgalmat a VPN csatornára, ezt kell kikommentelnünk:
 
 \begin{verbatim}
 # nano /etc/openvpn/server_openvpn_serv.conf # ez az alapértelmezett

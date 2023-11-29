@@ -2,7 +2,7 @@
 
 A dolgozat célja, hogy egy olyan Lua nyelvben általam készített eszközt mutasson be, amely könnyebbé teszi GNU/Linux disztribúciókon a szerverüzemeltetést.
 
-Habár ez az eszköz kifejezetten Linuxra az Ubuntu és Debian disztribúción való felhasználásra készült, a Lua programnyelv miatt könnyedén bővíthető több disztribúció kezelésére is. A Lua programnyelv cross-platform, így futtatható akár Linuxon és Windowson is, néhány részegységet akár Windows-kompatibilissé is lehetne tenni.
+Habár ez az eszköz kifejezetten Linuxra, az Ubuntu és Debian disztribúción való felhasználásra készült, a Lua programnyelv miatt könnyedén bővíthető több disztribúció kezelésére is. A Lua programnyelv cross-platform, így futtatható akár Linuxon és Windowson is, néhány részegységet akár Windows-kompatibilissé is lehetne tenni.
 
 A program által támogatott kiszolgálói szoftverek közé tartozik az OpenVPN, az Apache2, továbbá az nginx. Támogatja továbbá az \textit{iptables} csomagszűrő programot is.
 
@@ -17,24 +17,18 @@ A legtöbb VPN-szolgáltató OpenVPN szervert használ szolgáltatásaihoz (pél
 
 Érdemes manapság VPN-t használni több okból kifolyólag is \cite{usageofvpn}, például:
 \begin{itemize}
-  \item lehallgatás elleni védelmet biztosít (publikus hálózat esetén ez nagy előny)
-  \item nagyobb biztonságot adhat a távoli munkához, például ha rácsatlakozunk a munkahelyi hálózatra
-  \item IP címet tudunk változtatni vele (akár más ország IP címét is felvehetjük), ezáltal bizonyos kedvezményekben részesülhetünk
+  \item lehallgatás elleni védelmet biztosít (publikus hálózat esetén ez nagy előny),
+  \item nagyobb biztonságot adhat a távoli munkához, például ha rácsatlakozunk a munkahelyi hálózatra,
+  \item IP címet tudunk változtatni vele (akár más ország IP címét is felvehetjük), ezáltal bizonyos kedvezményekben részesülhetünk.
 \end{itemize}
 
 \medskip
 Az Apache2 és az nginx napjaink kettő legpopulárisabb webszervere. \cite{webservermarketshare}
 
-Mind a két szerver platformfüggetlen, nyílt forráskódú webszerver implementáció. Alkalmazásuk teljesen ingyenes, konfigurációjuk könnyen értelmezhető. Főbb különbség köztük a processzek és szálak használata.
-
-Az Apache2 koncepciója legfőképp processzek és szálak használatára épül, akár új szálat is létrehozhat egy kérés feldolgozása érdekében.
-
-Az nginx ezzel szemben esemény (aszinkron) alapú processz, akár több kérést is feldolgozhat egy szálon.
+Mind a két szerver platformfüggetlen, nyílt forráskódú webszerver implementáció. Alkalmazásuk teljesen ingyenes, konfigurációjuk könnyen értelmezhető. Főbb különbség köztük a processzek és szálak használata. Az Apache2 koncepciója legfőképp processzek és szálak használatára épül, akár új szálat is létrehozhat egy kérés feldolgozása érdekében. Az nginx ezzel szemben esemény (aszinkron) alapú processz, akár több kérést is feldolgozhat egy szálon.
 
 \medskip
-A szerverek üzemeltetése mellett természetesen fontos a többrétegű \textit{védelem} is, amelynek egyik alapeleme a tűzfal. A tűzfalat a Linux kernel \textit{netfilter} csomagja tartalmazza, az \textit{iptables}/\textit{ip6tables} csomagszűrő program segítségével konfigurálható. A dolgozat ennek a programnak a kezelését is megkönnyíti.
+A szerverek üzemeltetése mellett természetesen fontos a többrétegű \textit{védelem} is, amelynek egyik alapeleme a tűzfal. A tűzfalat a Linux kernel \textit{netfilter} csomagja tartalmazza, az \textit{iptables}/\textit{ip6tables} csomagszűrő program segítségével konfigurálható. \cite{netfilter_iptables} A dolgozat ennek a programnak a kezelését is megkönnyíti.
 
 \medskip
-Az Interneten sok segítség található ezen alkalmazások telepítéséről, alkalmazásáról, azonban úgy gondolom, hogy a program így is segítséget tud nyújtani.
-
-Könnyebb, gyorsabb a szerverprogramok telepítése, konfigurálása, és nem utolsó sorban a Linux kezelésében nem annyira jártas felhasználók saját maguk által létrehozott példák tanulmányozásán keresztül tudják tanulni a rendszer használatát, a szerverprogramok konfigurálását.
+Az Interneten sok leírás található ezen alkalmazások telepítéséről, alkalmazásáról, azonban úgy gondolom, hogy a program így is segítséget tud nyújtani. Könnyebb, gyorsabb a szerverprogramok telepítése, konfigurálása, és nem utolsó sorban a Linux kezelésében nem annyira jártas felhasználók saját maguk által létrehozott példák tanulmányozásán keresztül tudják tanulni a rendszer használatát, a szerverprogramok konfigurálását.

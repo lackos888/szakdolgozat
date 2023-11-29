@@ -10,7 +10,7 @@ local certFileName = "fullchain.pem";
 local keyFileName = "privkey.pem";
 local dhParamFileName = "dhparam.pem";
 local dryRunStr = ""; --dry-run if debugging;
-local dhParamBytes = "1024"; --in real life it could be 4096 aswell, decreased to speed up generation
+local dhParamBytes = 1024; --in real life it could be 4096 aswell, decreased to speed up generation
 
 local module = {
     ["errors"] = {}
