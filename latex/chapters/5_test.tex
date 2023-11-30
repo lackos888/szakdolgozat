@@ -156,13 +156,13 @@ Ha az összes interfészt választjuk, akkor a program szigorúan azt kezeli, am
 
 \texttt{Port nyitáskor} három adatra van szükségünk az interface kiválasztása után: a \textit{protokollra} (tcp/udp/all), a \textit{port számára} és a \textit{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, bármely IP tud csatlakozni erre a portra.
 
-\texttt{Port záráskor} is három adatra van szükségünk az interface kiválasztása után: a \textit{protokollra} (tcp/udp/all), a \textit{port számára} és a \texttt{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, mindegyik IP le lesz tiltva erről a portról.
+\texttt{Port záráskor} is három adatra van szükségünk az interface kiválasztása után: a \textit{protokollra} (tcp/udp/all), a \textit{port számára} és a \textit{bejövő IP-címre}. Ha a bejövő IP-cím üresen marad, mindegyik IP le lesz tiltva erről a portról.
 
 \texttt{Kifelé irányuló új kapcsolat engedélyezésekor} is három adat szükséges: \\a \textit{protokoll} (tcp/udp/all), a \textit{port száma} és a \textit{külső IP-cím}. Ha a port száma üresen marad, akkor a teljes IP-címet engedélyezi kifelé irányuló új kapcsolatként.
 
 A "\texttt{Nyitott portok}", "\texttt{Zárt portok}" és "\texttt{Engedélyezett kimenő kapcsolatok}", továbbá a "\texttt{OpenVPN NAT setup}" menüpont alatt tudjuk ellenőrzni a már meglévő beállításainkat. Ezekben a menüpontokban tudjuk törölni is a már létrehozott szabályokat is.
 
-Az interfész alapú togglek menüpontban van két, a működés szempontjából nagyon fontos beállítás: itt lehet beállítani, hogy minden bejövő, vagy kimenő kapcsolat szűrve legyen-e. Ha egy adott portot kinyitunk, és nem tiltjuk le az összes nem engedélyezett bejövő kapcsolatot, akkor a port nyitás szabály jelenleg épp nem lesz effektív (azonban ígyis megmarad a későbbiekre). Szintén ez vonatkozik a kimenő kapcsolatokra is: ha hozzáadunk egy engedélyezett kimenő kapcsolatot, de nem tiltjuk le a nem engedélyezett kimenő kapcsolatokat, akkor a szabály nem lesz effektív.
+Az "\texttt{Interface alapú togglek}" menüpontban van két, a működés szempontjából nagyon fontos beállítás: itt lehet beállítani, hogy minden bejövő, vagy kimenő kapcsolat szűrve legyen-e. Ha egy adott portot kinyitunk, és nem tiltjuk le az összes nem engedélyezett bejövő kapcsolatot, akkor a port nyitás szabály jelenleg épp nem lesz effektív (azonban ígyis megmarad a későbbiekre). Szintén ez vonatkozik a kimenő kapcsolatokra is: ha hozzáadunk egy engedélyezett kimenő kapcsolatot, de nem tiltjuk le a nem engedélyezett kimenő kapcsolatokat, akkor a szabály nem lesz effektív.
 
 Az \texttt{OpenVPN NAT setup} menüpontban tudunk NAT-szabályokat létrehozni az\\ OpenVPN szerverünkhöz, ha feltelepítettük és bekonfiguráltuk a program segítségével. Automatikusan felismeri, ha már van létező NAT szabályunk létrehozva, kilistázza azokat és törölni is tudjuk őket. 
 
@@ -185,6 +185,6 @@ A \detokenize{net.ipv4.ip_forward} flaget pedig a sysctl.conf szerkesztésével 
 # nano /etc/sysctl.conf
 # sysctl -p
 \end{verbatim}
-Ha nincs a flag a fájlban, írjuk bele: "\detokenize{net.ipv4.ip_forward = 1}" ha van, akkor pedig kapcsoljuk be (írjuk át 1-re).
+Ha nincs a flag a fájlban, írjuk bele: "\detokenize{net.ipv4.ip_forward = 1}" ha van, akkor pedig kapcsoljuk be (írjuk át 1-re). A beállítások után újra kell indítani az OpenVPN szervert.
 
 

@@ -8,14 +8,14 @@ A legelsők közt készült el a \textit{linux} modul megvalósítása, mivel t�
 
 \begin{lua}
 function module.exists(file)
-    local ok, err, code = os.rename(file, file)
-    if not ok then
-		return code == 13 or code == 17
-    end
-    return ok, err
+  local ok, err, code = os.rename(file, file)
+  if not ok then
+    return code == 13 or code == 17
+  end
+  return ok, err
 end
 function module.isDir(path)
-    return module.exists(path.."/")
+  return module.exists(path.."/")
 end
 \end{lua}
 
@@ -25,46 +25,46 @@ Ez a kód úgy nézi meg a fájlok létezését, hogy megpróbálja a fájlokat 
 
 \begin{lua}
 function module.execCommand(cmd)
-    local handle = io.popen(cmd);
-    local result = handle:read("*a");
-    handle:close();
-    return result;
+  local handle = io.popen(cmd);
+  local result = handle:read("*a");
+  handle:close();
+  return result;
 end
 \end{lua}
 
 Az \texttt{\detokenize{execCommand}} egyszerű implementációjú, amely az \textit{io} standard library popen funkcióját használja meg egy processz megnyitására. Ez egy handlet ad. A read megvárja míg lefut a processz, majd az \textit{\detokenize{*a}} paraméter segítségével mindent kiolvas a pipeból. A végén lezáródik a handle. Windows rendszeren is tökéletesen működik.
 
-A következő funkció az \texttt{\detokenize{execCommandWithProcRetCode}}. Itt a forráskódból kivettem az üres sorokat a kompaktabb kód érdekében. Működése nagyban hasonlít az \texttt{\detokenize{execCommand}}-hoz, azzal a kivétellel, hogy ez az implementáció felhasznál bizonyos Bash-script elemeket. Például az \textit{export} funkciót az environment variablek beállítására, vagy a \textit{\detokenize{$?}} változót a process return kód lekérésére. Támogatja az stderr átirányítását is stdout-ba (ez a \texttt{\detokenize{2>&1}} paraméter) cross-platform módon, a többi Bash alapú megoldás kivételével. A return code-t az utolsó sorba iratja ki, ezt olvassa be magától, és vágja ki az alap program outputjából.
+A következő funkció az \texttt{\detokenize{execCommandWithProcRetCode}}. Itt a forráskódból kivettem az üres sorokat a kompaktabb kód érdekében. Működése nagyban hasonlít az \texttt{\detokenize{execCommand}}-hoz, azzal a kivétellel, hogy ez az implementáció felhasznál bizonyos Bash-script elemeket. Például az \textit{export} funkciót az environment variablek beállítására, vagy a \textit{\detokenize{$?}} változót a process return kód lekérésére. Támogatja az stderr átirányítását is stdout-ba (ez a \texttt{\detokenize{2>&1}} paraméter) cross-platform módon, a többi Bash alapú megoldás kivételével. A return code-t az utolsó sorba iratja ki, ezt olvassa be magától, és vágja ki a visszatért sorok közül.
 \begin{lua}
 function module.execCommandWithProcRetCode(cmd, linesReturned, envVariables, redirectStdErrToStdIn)
-    local exportCmd = "";
-    if envVariables then
-        for k, v in pairs(envVariables) do
-            exportCmd = exportCmd.." export "..tostring(k).."="..tostring(v).."; ";
-        end
+  local exportCmd = "";
+  if envVariables then
+    for k, v in pairs(envVariables) do
+      exportCmd = exportCmd.." export "..tostring(k).."="..tostring(v).."; ";
     end
-    local handle = io.popen(exportCmd..cmd..tostring(redirectStdErrToStdIn and " 2>&1" or "").."; echo $?");
-    handle:flush();
-    local overallReturn = "";
-    local lastLine = "";
-    local newLineChar = "\n";
-    local lineNum = 0;
-    for line in handle:lines() do
-        overallReturn = overallReturn .. line .. newLineChar;
-        lastLine = line;
-        lineNum = lineNum + 1;
-    end
-    handle:close();
-    local retCode = tonumber(lastLine);
-    if lineNum == 1 then
-        overallReturn = "";
-    else
-        overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine - #newLineChar * 2); --skip return code line
-    end
-    if linesReturned then
-        return overallReturn, retCode;
-    end
-    return retCode;
+  end
+  local handle = io.popen(exportCmd..cmd..tostring(redirectStdErrToStdIn and " 2>&1" or "").."; echo $?");
+  handle:flush();
+  local overallReturn = "";
+  local lastLine = "";
+  local newLineChar = "\n";
+  local lineNum = 0;
+  for line in handle:lines() do
+    overallReturn = overallReturn .. line .. newLineChar;
+    lastLine = line;
+    lineNum = lineNum + 1;
+  end
+  handle:close();
+  local retCode = tonumber(lastLine);
+  if lineNum == 1 then
+    overallReturn = "";
+  else
+    overallReturn = string.sub(overallReturn, 1, #overallReturn - #lastLine - #newLineChar * 2); --skip return code line
+  end
+  if linesReturned then
+    return overallReturn, retCode;
+  end
+  return retCode;
 end
 \end{lua}
 
@@ -77,8 +77,8 @@ A legfontosabb, hogy általában a legtöbb processz \textit{0}-s értékkel fog
 
 \begin{lua}
 function module.checkIfUserExists(userName)
-    local retCodeForId = module.execCommandWithProcRetCode("id "..userName);
-    return retCodeForId == 0;
+  local retCodeForId = module.execCommandWithProcRetCode("id "..userName);
+  return retCodeForId == 0;
 end
 \end{lua}
 
@@ -87,26 +87,26 @@ Ebben az esetben a \texttt{\detokenize{checkIfUserExists}} funkció az alapján 
 Vagy másik példaként az \textit{mkdir} parancs \textit{0}-s (néhány táblázat szerint: \textbf{Success}) visszatérési értékkel tér vissza akkor, ha sikerült létrehozni egy új jegyzéket, vagy \textit{1}-es (néhány táblázat szerint: \textbf{Operation not permitted}) visszatérési értékkel tér vissza akkor, ha már létezik az a jegyzék, amit létre szeretnénk hozni. A programkód is ez alapján dönti el, hogy sikeres-e a jegyzék létrehozása:
 \begin{lua}
 function module.mkDir(path)
-    local retCodeForMkdir = module.execCommandWithProcRetCode("mkdir "..path);
-    return retCodeForMkdir == 0 or retCodeForMkdir == 1; --new dir successfully created/already exists
+  local retCodeForMkdir = module.execCommandWithProcRetCode("mkdir "..path);
+  return retCodeForMkdir == 0 or retCodeForMkdir == 1; --new dir successfully created/already exists
 end
 \end{lua}
 
 Ez szintén hasonlóan működhet olyan programoknál is, amelyek nem rendszerprogramok, hanem valaki más készítette őket. Például a \textit{certbot} is különböző processz visszatérési értékkel térhet vissza az adott művelet sikerességétől függően:
 \begin{lua}
 function module.trySSLCertificateCreation(method, domain, webserverType)
-    ...
-    local retLines, retCode = linux.execCommandWithProcRetCode("certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
-    ...
-    local hasCertificate = retCode == 0;
-    ...
+  ...
+  local retLines, retCode = linux.execCommandWithProcRetCode("certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --webroot --webroot-path "..tostring(websiteData.rootPath).." -d "..tostring(domain), true, nil, true);
+  ...
+  local hasCertificate = retCode == 0;
+  ...
 end
 \end{lua}
 
 \pagebreak
 \Section{Háttérben futó processz eredményeire való várás}
 
-A program tervezése, implementálása során belefutottam egy nehézségbe, amely a Lua alapvető kialakításából fakad: a Lua alapvetően egy szálon fut, és nem eseményalapú felépítésű. Létezik \textit{coroutine} beépített library, azonban az \textit{könnyű szál} alapú implementáció. Egyszerre csak egy coroutine futhat, és maga a coroutine kezdeményezheti azt, hogy épp felfüggesztve, suspendelve legyen (tehát visszaadja az irányítást az őt futtató kódnak, vagy más coroutinenak). Emiatt a coroutine sem volt megoldás erre a nehézségre.
+A program tervezése, implementálása során belefutottam egy nehézségbe, amely a Lua alapvető kialakításából fakad: a Lua alapvetően egy szálon fut, és nem eseményalapú felépítésű. Létezik \textit{coroutine} beépített függvénykönyvtár, azonban az \textit{könnyű szál} alapú implementáció. Egyszerre csak egy coroutine futhat, és maga a coroutine kezdeményezheti azt, hogy épp felfüggesztve, suspendelve legyen (tehát visszaadja az irányítást az őt futtató kódnak, vagy más coroutinenak). Emiatt a coroutine sem volt megoldás erre a nehézségre.
 
 A \textit{certbot} modul tervezése, implementálása közben jött elő ez a nehézség. A \textit{HTTP-01} challenget könnyen lehetett implementálni úgy, hogy megvártuk az újonnan létrehozott processz futási eredményeit, mivel az támogatta a nem-interaktív módot. Azonban a \textit{DNS-01} challenget nem lehet ilyen könnyen implementálni.
 
@@ -125,42 +125,42 @@ A kommunikáció maga a két processz között úgy történik, hogy elindul az 
 A Lua kódból néhány részletet kiemelve így néz ki az implementáció:
 \begin{lua}
 function module.trySSLCertificateCreation(method, domain, webserverType)
-    ...
-    local tempFileName = os.tmpname();
-    local tempFileNameForStdOut = os.tmpname();
+  ...
+  local tempFileName = os.tmpname();
+  local tempFileNameForStdOut = os.tmpname();
 
-    local certbotPIDStuff = general.readAllFileContents("certbot_pid.txt");
+  local certbotPIDStuff = general.readAllFileContents("certbot_pid.txt");
 
-    if certbotPIDStuff then
-        os.execute("kill -9 "..tostring(certbotPIDStuff));
-    end
+  if certbotPIDStuff then
+    os.execute("kill -9 "..tostring(certbotPIDStuff));
+  end
 
-    linux.deleteFile("certbot_pid.txt");
+  linux.deleteFile("certbot_pid.txt");
 
-    local formattedCmd = "(certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
-    os.execute(formattedCmd);
+  local formattedCmd = "(certbot certonly -n "..tostring(dryRunStr).." --agree-tos --no-eff-email --email \"\" --manual --preferred-challenges dns --manual-auth-hook \"sh ./authenticator.sh \""..tostring(tempFileName).."\"\" -d "..tostring(domain).." > \""..tostring(tempFileNameForStdOut).."\" 2>&1; echo $? > \""..tostring(tempFileName).."\") & echo $! > certbot_pid.txt";
+  os.execute(formattedCmd);
 
-    if not linux.exists("certbot_pid.txt") then
-        return module.EXEC_FAILED;
-    end
-    ...
-    --fajlolvasas, cleanup
-    ...
+  if not linux.exists("certbot_pid.txt") then
+    return module.errors.EXEC_FAILED;
+  end
+  ...
+  --fajlolvasas, cleanup
+  ...
 end
 \end{lua}
 
 Authentikátor szkript részlet:
 \begin{lua}
 while true do
-    local fileHandle = io.open(fileName, "r");
-    if fileHandle then
-        local readStr = fileHandle:read("*a");
-        fileHandle:close();
-        if readStr:find("ready", 0, true) == 1 then
-            break;
-        end
+  local fileHandle = io.open(fileName, "r");
+  if fileHandle then
+    local readStr = fileHandle:read("*a");
+    fileHandle:close();
+    if readStr:find("ready", 0, true) == 1 then
+      break;
     end
-    sleep(1);
+  end
+  sleep(1);
 end
 \end{lua}
 \pagebreak
@@ -184,15 +184,15 @@ Kódrészlet OpenVPN szerver konfiguráció összeállítására a programból:
 \begin{lua}
 function module.checkServerConfig(homeDir, openVPNConfigDir)
 ...
-    local configFileContent, paramsToLines = config_handler.parseOpenVPNConfig(sampleConfigFileContent);
-    if paramsToLines["user"] then
-        local paramTbl = configFileContent[paramsToLines["user"]];
-        paramTbl["params"][2].val = module["openvpn_user"];
-    end
+  local configFileContent, paramsToLines = config_handler.parseOpenVPNConfig(sampleConfigFileContent);
+  if paramsToLines["user"] then
+    local paramTbl = configFileContent[paramsToLines["user"]];
+    paramTbl["params"][2].val = module["openvpn_user"];
+  end
 ...
-    configFileHandle:write(config_handler.writeOpenVPNConfig(configFileContent));
-    configFileHandle:flush();
-    configFileHandle:close();
+  configFileHandle:write(config_handler.writeOpenVPNConfig(configFileContent));
+  configFileHandle:flush();
+  configFileHandle:close();
 ...
 end
 \end{lua}
@@ -211,7 +211,7 @@ Az előző oldalon látható kódrészlet egy teljesen új konfigurációs fájl
 
 Az \textit{\detokenize{apache_config_handler}}, és az \textit{\detokenize{nginx_config_handler}} modulok már OO alapelveket követnek, azonban itt is fontos a két tábla felépítése. Az OpenVPN szerverhez képest a két szerver konfigurációs fájljai bonyolultabb és kiterjedtebb szintaxisú. Bár a konfigurációs fájl értelmező és író ugyanúgy két táblával dolgozik, megfigyelhető, hogy sokkal több paramétert tartalmaz egy adott sort leíró tábla.
 
-A \textit{parsedLines} felépítése Apache és nginx esetén szintén egyszerű array, minden array elem egy tábla (és egy sor), amelyben a következő paraméterek szerepelhetnek (akár több is egyszerre):
+A \textit{parsedLines} felépítése Apache és nginx esetén szintén egyszerű tömb, minden tömb elem egy tábla (és egy sor), amelyben a következő paraméterek szerepelhetnek (akár több is egyszerre):
 
 \begin{itemize}
     \item \textbf{spacer}: Üres sort jelent. Ha ez létezik, akkor a többi lentebb sorolt paraméter biztosan nem létezik az adott elemtáblában,
@@ -220,7 +220,7 @@ A \textit{parsedLines} felépítése Apache és nginx esetén szintén egyszerű
     \item \textbf{paramName}: Adott sorban található beállítás nevét tartalmazza (például nginx esetében include, Apache esetében ServerName), egy táblában, amely ugyan úgy épül fel, mint az args paraméter. Természetesen mellé feldolgozódik az args paraméter is.
     \item \textbf{comment}: Ez tartalmazza az adott sorban található kommentet. Ha az \textit{args} tábla nem létezik, akkor maga az egész sor egy komment sor, ha létezik, akkor pedig a paraméterek után van a komment elhelyezve nginx esetén. Az Apache nem támogat kommenteket a sorok végén, az optionok és argumentumok után,
     \item \textbf{blockDeepness}: Megadja, hogy az adott sor mennyire van eltolva indent-ügyileg,
-    \item \textbf{args}: több elem esetében is használatos paraméter (például Apache esetében blockStartnál is, paramName-nél pedig mindkettő implementációnál), amely egy tábla, és az adott művelethez tartalmaz paramétereket:
+    \item \textbf{args}: Több elem esetében is használatos paraméter (például Apache esetében blockStartnál is, paramName-nél pedig mindkettő implementációnál), amely egy tábla, és az adott művelethez tartalmaz paramétereket:
         \begin{itemize}
             \item \textbf{quoteStatus}: lehet \textit{d}, ekkor duplaidézőjelben van a paraméter; lehet \textit{s}, ekkor két sima idézőjel között van a paraméter,
             \item \textbf{multipleLine}: Apache esetében használatos, ha egy paraméter több sort is magába ölel (Apache-ban támogatott a több sor a \texttt{\detokenize{\\}} jelölés segítségével),
@@ -233,24 +233,24 @@ A két modul használata valamelyest eltér az előző OpenVPN konfigurációt k
 A következőekben két rövid kódrészletet fogok mutatni Apache és nginx esetében is a modulok használatáról. Nginx esetében a következőképp kerül beállításra az SSL egyik beállítása:
 \begin{lua}
 function module.initSSLForWebsite(webUrl, certDetails)
-    ...
-    --Redirect unencrypted connections
-    local blockName = 'if ($scheme != "https")';
-    local blockStartSchemeIdx = paramsToIdx["block:"..tostring(blockName)];
-    if not blockStartSchemeIdx then
+  ...
+  --Redirect unencrypted connections
+  local blockName = 'if ($scheme != "https")';
+  local blockStartSchemeIdx = paramsToIdx["block:"..tostring(blockName)];
+  if not blockStartSchemeIdx then
     local blockDeepness = serverNameData.blockDeepness;
-        configInstance:insertNewData({["comment"] = " Redirect unencrypted connections", blockDeepness = serverNameData.blockDeepness}, posStart);
-        posStart = posStart + 1;
-        configInstance:insertNewData({["blockStart"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
-        posStart = posStart + 1;
-        blockDeepness = blockDeepness + 1;
-        configInstance:insertNewData({["paramName"] = {data = 'rewrite'}, block = blockName, blockDeepness = blockDeepness, args = {{data = "^"}, {data = "https://$host$request_uri?"}, {data = "permanent"}}}, posStart);
-        posStart = posStart + 1;
-        blockDeepness = blockDeepness - 1;
-        configInstance:insertNewData({["blockEnd"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
-        posStart = posStart + 1;
-    end
-    ...
+    configInstance:insertNewData({["comment"] = " Redirect unencrypted connections", blockDeepness = serverNameData.blockDeepness}, posStart);
+    posStart = posStart + 1;
+    configInstance:insertNewData({["blockStart"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
+    posStart = posStart + 1;
+    blockDeepness = blockDeepness + 1;
+    configInstance:insertNewData({["paramName"] = {data = 'rewrite'}, block = blockName, blockDeepness = blockDeepness, args = {{data = "^"}, {data = "https://$host$request_uri?"}, {data = "permanent"}}}, posStart);
+    posStart = posStart + 1;
+    blockDeepness = blockDeepness - 1;
+    configInstance:insertNewData({["blockEnd"] = blockName, block = serverNameData.block, blockDeepness = serverNameData.blockDeepness, args = {}}, posStart);
+    posStart = posStart + 1;
+  end
+  ...
 end
 \end{lua}
 A kódrészlet megkeresi a \detokenize{'if ($scheme != "https")'} blokkot az adott weboldal nginx-konfigurációjában. Ha nem találja meg beszúr egy kommentet, majd azután beszúr egy blokk-kezdést. A blokkba beilleszti a \detokenize{'rewrite ^ https://$host$request_uri? permanent'} parancsot, majd lezárja a blokkot a parancs után. Mindezeket indentálva teszi, így a konfiguráció jól átlátható marad. A beállítás maga azt jelenti, hogy minden HTTP-n keresztüli csatlakozást átirányít HTTPS-re.
@@ -266,30 +266,30 @@ A gyakorlatban \myaref{fig:inserted_block_nginx} ábrán látható módon néz k
 Apache esetében is hasonlóan működik a konfiguráció módosítása. Ott azonban teljesen külön blokkot kell csinálni az SSL konfigurációnak, teljesen új beállításokkal, továbbá a jelenlegi beállítások hozzáfűzésével, ezért az azt beállító kódrészlet hosszabb az nginx-implementációtól. Rövid kódrészlet az Apache SSL beállításából:
 \begin{lua}
 function module.initSSLForWebsite(webUrl, certDetails)
-    ...
-    blockDeepness = blockDeepness + 1;
-    configInstance:insertNewData({
-        blockStart = "VirtualHost",
+  ...
+  blockDeepness = blockDeepness + 1;
+  configInstance:insertNewData({
+    blockStart = "VirtualHost",
+      args = {
+          {data = "*:443"}
+      },
+      blockDeepness = blockDeepness
+  });
+  ...
+  configInstance:insertNewData({
+      paramName = {data = "Include"},
         args = {
-            {data = "*:443"}
+          {data = pathForLetsEncryptApacheConfig, quoteStatus = "d"},
         },
-        blockDeepness = blockDeepness
-    });
-    ...
-    configInstance:insertNewData({
-        paramName = {data = "Include"},
-        args = {
-            {data = pathForLetsEncryptApacheConfig, quoteStatus = "d"},
-        },
-        blockDeepness = blockDeepness
-    });
-    ...
-    blockDeepness = blockDeepness - 1;
-    configInstance:insertNewData({
-        blockEnd = "VirtualHost",
-        blockDeepness = blockDeepness
-    });
-    ...
+       blockDeepness = blockDeepness
+  });
+  ...
+  blockDeepness = blockDeepness - 1;
+  configInstance:insertNewData({
+    blockEnd = "VirtualHost",
+    blockDeepness = blockDeepness
+  });
+  ...
 end
 \end{lua}
 
@@ -307,7 +307,7 @@ A példakódban a VirtualHost blokk létrehozását láthatjuk, amelybe egy Incl
 
 Az összes modul, továbbá a main.lua-ban található felhasználói interface is különböző modulokat használ fel. Ezeket a modulokat a \texttt{require} funkcióval lehet betölteni. A \texttt{require} funkció működése hasonló a \texttt{dofile} funkcióhoz, azonban két főbb különbség is van köztük. 
 
-Az egyik az, hogy a require funkció egy megadott path-on belül keresi a betöltendő fájlt, a másik pedig, a require funkció nem engedi ugyanazon fájl duplikált betöltését. Tehát ha már egyszer betöltöttünk egy modult, akkor nem tölti be mégegyszer teljesen, hanem elcachezi egy táblában a már betöltött fájlt. Ha azonban több virtuális path-ot (például: \texttt{\detokenize{?;?.lua}} foo.lua helyett), nevet használunk ugyanazon fájlra, akkor többször is betöltődnek, mivel más lesz a fájl neve, viszont a tartalom ugyan az marad. \cite{require}
+Az egyik az, hogy a require funkció egy megadott path-on belül keresi a betöltendő fájlt, a másik pedig, a require funkció nem engedi ugyanazon fájl duplikált betöltését. Tehát ha már egyszer betöltöttünk egy modult, akkor nem tölti be mégegyszer teljesen, hanem eltárolja egy táblában a már betöltött fájlt. Ha azonban több virtuális path-ot (például: \texttt{\detokenize{?;?.lua}} foo.lua helyett), nevet használunk ugyanazon fájlra, akkor többször is betöltődnek, mivel más lesz a fájl neve, viszont a tartalom ugyan az marad. \cite{require}
 
 A program kódjában a main.lua-ban van megadva, hogy milyen megadott path mentén keresi meg az adott betöltendő fájlt:
 

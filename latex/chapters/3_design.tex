@@ -9,7 +9,7 @@ A program use-case diagramja \myaref{fig:usecase_diagram} ábrán található.
 
 \begin{figure}[!h]
 \centering
-\includegraphics[scale=0.42]{images/usecase_diagram.png}
+\includegraphics[width=0.73\paperwidth]{images/usecase_diagram.png}
 \caption{A program use-case diagramja}
 \label{fig:usecase_diagram}
 \end{figure}
@@ -35,7 +35,7 @@ Feltelepítés után több dolgot is elő kell készíteni:
 	\item ezek után pedig újra kell indítanunk a szervert.
 \end{itemize}
 
-Az előkészületek után lehet új kliens tanusítványt és privát kulcsot létrehozni, ezt a \textit{build-client-full} paraméterrel lehet megtenni az EasyRSA-ban. Célszerű jelszót használni a kulcs titkosításához. Ezután pedig egy minta konfiguráció módosításával tudjuk bekonfigurálni az új kliensünk konfigurációját, amelyet használhat az OpenVPN client segítségével. Ha valamely kliens hozzáférést vissza szeretnénk vonni, a \textit{revoke} EasyRSA paraméter van a segítségünkre. Ezután le kell futtatni a \textit{gen-crl} parancsot is, hogy tudja az OpenVPN szerver, mely kliens tanusítványok lettek visszavonva. A kliensek listája az EasyRSA mappájában az index.txt-ben található meg, ezt kell beolvasnunk ahhoz, hogy a jelenlegi kliensek listáját megkapjuk.
+Az előkészületek után lehet új kliens tanusítványt és privát kulcsot létrehozni, ezt a \textit{build-client-full} paraméterrel lehet megtenni az EasyRSA-ban. Célszerű jelszót használni a kulcs titkosításához. Ezután pedig egy minta konfiguráció módosításával tudjuk bekonfigurálni az új kliensünk konfigurációját, amelyet használhat az OpenVPN kliens segítségével. Ha valamely kliens hozzáférést vissza szeretnénk vonni, a \textit{revoke} EasyRSA paraméter van a segítségünkre. Ezután le kell futtatni a \textit{gen-crl} parancsot is, hogy tudja az OpenVPN szerver, mely kliens tanusítványok lettek visszavonva. A kliensek listája az EasyRSA mappájában az index.txt-ben található meg, ezt kell beolvasnunk ahhoz, hogy a jelenlegi kliensek listáját megkapjuk.
 
 \SubSection{Apache use-case leírása}
 
@@ -67,7 +67,7 @@ Itt is a csomag telepítésével kezdünk, ha még nincs feltelepítve az nginx 
 
 A csomag sikeres telepítése után szintén több dolgot szükséges előkészíteni:
 \begin{itemize}
-	\item létre kell hozni egy felhasználót \textit{\detokenize{/bin/false}} shellel, amelyben futhat maga az Apache2 daemon; ha ez már létezik, akkor beállításait frissíteni kell,
+	\item létre kell hozni egy felhasználót \textit{\detokenize{/bin/false}} shellel, amelyben futhat maga az nginx daemon; ha ez már létezik, akkor beállításait frissíteni kell,
 	\item létre kell hoznunk egy jegyzéket a weboldalak konfigurációinak tárolására (websiteconfigs), továbbá egy jegyzéket, ahol később a weboldalak tartalmai lesznek (wwwdatas),
 	\item be kell állítani a megfelelő jogosultságokat (chown és chmod) a fájlokon, jegyzékeken,
 	\item be kell konfigurálnunk a szervert úgy, hogy betöltse a saját weboldalunk konfigurációs fájljait (include beállítás), továbbá be kell állítanunk, hogy a daemon az újonnan létrehozott felhasználót használja (user paraméter).
@@ -93,19 +93,19 @@ Az iptables használatához először meg kell győződnünk róla, hogy már fe
 
 Új portot az \textit{\detokenize{iptables -A INPUT -i interf}é\detokenize{sz -p protokoll --dport port --source }ipcím\detokenize{ -j ACCEPT}} parancs segítségével tudunk engedélyezni. Ebben a parancsban a source paraméter elhagyható. Ezt a szabályt célszerű legelőlre beszúrni.
 
-Portot lezárni az \textit{\detokenize{iptables -A INPUT -i interf}é\detokenize{sz -p protokoll --dport port --source }ipcím\detokenize{ -j DROP}} parancs segítségével tudunk engedélyezni. Ebben a parancsban a source paraméter elhagyható. Ez a szabály bárhova beszúrható.
+Portot lezárni az \textit{\detokenize{iptables -A INPUT -i interf}é\detokenize{sz -p protokoll --dport port --source }ipcím\detokenize{ -j DROP}} parancs segítségével tudunk. Ebben a parancsban a source paraméter elhagyható. Ez a szabály bárhova beszúrható.
 
 Új kimenő kapcsolatot az \textit{\detokenize{iptables -A OUTPUT -i interf}é\detokenize{sz -p protokoll --dport port --destination }ipcím\detokenize{ -j ACCEPT}} parancs segítségével tudunk engedélyezni. Ezt a szabályt célszerű legelőlre beszúrni. A protokoll és a port paraméter kihagyható.
 
-Minden bejövő kapcsolatot, kivéve az engedélyezettet az \textit{\detokenize{iptables -A INPUT -i interf}é\detokenize{sz -j DROP}} paranccsal tudunk letiltani. Ezt a szabályt a szabályok levégére kell beszúrnunk.
-Minden kimenő kapcsolatot, kivéve az engedélyezettet az \textit{\detokenize{iptables -A OUTPUT -i interf}é\detokenize{sz -j DROP}} paranccsal tudunk letiltani. Ezt a szabályt a szabályok levégére kell beszúrnunk.
+Minden bejövő kapcsolatot, kivéve az engedélyezetteket az \textit{\detokenize{iptables -A INPUT -i interf}é\detokenize{sz -j DROP}} paranccsal tudunk letiltani. Ezt a szabályt a szabályok levégére kell beszúrnunk.
+Minden kimenő kapcsolatot, kivéve az engedélyezetteket az \textit{\detokenize{iptables -A OUTPUT -i interf}é\detokenize{sz -j DROP}} paranccsal tudunk letiltani. Ezt a szabályt a szabályok levégére kell beszúrnunk.
 
 Az előzőleg példaként adott parancsoknál az interfész paraméter mindenhol kihagyható (ekkor mindegyikre vonatkozni fog).
 
 OpenVPN NAT-ot a következő parancsokkal tudunk engedélyezni:
 \begin{itemize}
 	\item \detokenize{iptables -A FORWARD -i IF_MAIN -o IF_TUNNEL -m state --state ESTABLISHED,RELATED -j ACCEPT}, ahol az \detokenize{IF_MAIN} a fő interfészünk, az \detokenize{IF_TUNNEL} pedig általában a tun0 interfész,
-	\item \detokenize{iptables -A FORWARD -s YOUR_OPENVPN_SUBNET -o $IF_MAIN -j ACCEPT}, ahol az \detokenize{YOUR_OPENVPN_SUBNET} az OpenVPN szerverünk IP címét és subnetjét tartalmazza,
+	\item \detokenize{iptables -A FORWARD -s YOUR_OPENVPN_SUBNET -o IF_MAIN -j ACCEPT}, ahol az \detokenize{YOUR_OPENVPN_SUBNET} az OpenVPN szerverünk IP címét és subnetjét tartalmazza,
 	\item \detokenize{iptables -t nat -A POSTROUTING -s YOUR_OPENVPN_SUBNET -o}\\\detokenize{IF_MAIN -j MASQUERADE}, ahol az \detokenize{YOUR_OPENVPN_SUBNET} az \\OpenVPN szerverünk IP címét és subnetjét tartalmazza, továbbá az \detokenize{IF_MAIN} a fő interfészt.
 \end{itemize}
 
@@ -398,7 +398,7 @@ Azonban a \detokenize{config_handler} modul ebben az esetben már kissé bonyolu
 
 \pagebreak
 
-A következő \myref{fig:nginx_server_impl_module} ábrán látható a \detokenize{nginx_server_impl} modul felépítése:
+A következő \myref{fig:nginx_server_impl_module} ábrán látható a \detokenize{nginx_server_impl} modul felépítése.
 
 \begin{figure}[h!]
 	\centering
@@ -497,7 +497,7 @@ Az Apache bootstrap modul ezesetben is egyszerű felépítésű, a \detokenize{c
 			\attribute {+ \detokenize{baseDir : string}}
 			\attribute {+ \detokenize{errors : table}}
 			\attribute {- \detokenize{sampleConfigForWebsite : string}}
-			\operation {- \detokenize{resolveErrorToStr(error)}}
+			\operation {+ \detokenize{resolveErrorToStr(error)}}
 			\operation {+ \detokenize{constructor(_bootstrapModule)}}
 			\operation {+ \detokenize{formatPathInsideBasedir(path)}}
 			\operation {+ \detokenize{checkApacheUserExistence()}}

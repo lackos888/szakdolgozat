@@ -24,6 +24,8 @@ A program elkészítéséhez a felhasznált programnyelv a Lua, tesztelésre és
 
 A \textbf{Lua} egy könnyű, magas szintű programozási nyelv, amelyet főképp az egyszerűen beágyazhatóság jegyében fejlesztettek ki. A legelső verzióját 1993-ban adták ki. Cross-platform, mivel implementációja ANSI C-ben íródott. Saját virtuális géppel és bytecode formátummal rendelkezik. A nyelv logója \myaref{fig:lua_logo} ábrán látható.
 
+\pagebreak
+
 \begin{figure}[h]
 \centering
 \includegraphics[scale=0.1]{images/Lua-Logo.svg}
@@ -60,7 +62,7 @@ Előszeretettel használják a játékfejlesztők is, több neves játékban is 
 \Section{Metatáblák}
 \label{sect:metatables}
 Az előző szekcióban kifejtettem, hogy néhány programozási paradigma nincs előre implementálva, ezeket nekünk kell implementálunk. Öröklődést, osztályokat metatáblák segítségével tudunk implementálni.
-A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata típus adatok tárolására szolgál, a C API készíti, és az eltárolt adatok memóriacíme alapján működik (ez lehet akár az alap Lua IO library által megnyitott fájlok handleja, amelyek garbage collect esetén bezárják a file handleket a \detokenize{__}\textbf{gc} metametódus segítségével); vagy például játékok esetében akár játékosadat, járműadat).
+A nyelvben minden táblának és userdatának lehet metatáblája. Az userdata típus adatok tárolására szolgál, a C API készíti, és az eltárolt adatok memóriacíme alapján működik (ez lehet akár az alap Lua IO függvénykönyvtár által megnyitott fájlok handleja, amelyek garbage collect esetén bezáródnak a \detokenize{__}\textbf{gc} metametódus segítségével; vagy például játékok esetében akár játékosadat, járműadat).
 
 A metatábla egy olyan szokványos Lua tábla, amely meghatározza bizonyos műveletek viselkedését. Értelemszerűen egy metatáblát több táblára is fel lehet használni. A metatáblák legközelebbi rokonjai véleményem szerint a JavaScript nyelv Proxy-jai, azonban hasonlítanak a C++ nyelvben használt operátor túlterhelésre is. 
 
@@ -68,7 +70,7 @@ A metatáblákban találhatóak meg a metametódusok, amelyek meghívódhatnak b
 
 A metatáblák beállíthatóak a \textit{setmetatable} funkcióval, továbbá lekérhetőek a \textit{getmetatable} funkcióval. A metatáblákon belüli értéklekérésre célszerű a \textit{rawget} funkciót használni, ez kikerüli a további metatáblákat az értéklekéréskor.
 
-Alapvetőleg csak tábláknak és userdata-knak van metatáblájuk. Minden más típusú adat saját \textit{-a típusának megfelelő-} metatáblát használ (például van külön számoknak, szövegeknek, satöbbi). Alapvetőleg egy értéknek nincs metatáblája, viszont például a beépített string library hozzáad a szöveg típusú értékeknek saját metatáblát, ezzel használható például a string:sub, string:gsub funkció is.
+Alapvetőleg csak tábláknak és userdata-knak van metatáblájuk. Minden más típusú adat saját \textit{-a típusának megfelelő-} metatáblát használ (például van külön számoknak, szövegeknek, satöbbi). Alapvetőleg egy értéknek nincs metatáblája, viszont például a beépített string függvénykönyvtár hozzáad a szöveg típusú értékeknek saját metatáblát, ezzel használható például a string:sub, string:gsub funkció is.
 
 Néhány érdekesebb, akár a program által is felhasznált metametódusok:
 \begin{itemize}
@@ -108,7 +110,7 @@ A következő kódrészlet egy példa táblaműveletre:
 \begin{lua}
 Account = {balance = 0}
 function Account.withdraw(value)
-	Account.balance = Account.balance - value
+  Account.balance = Account.balance - value
 end
 \end{lua}
 Ebben a példakódban létrehozunk egy Account táblát, amelyben van egy withdraw funkció. Ez a withdraw funkció a globális \texttt{Account} táblára vonatkozik, onnan fog értéket levonni. Ha megváltoztatjuk a nevét a táblának, vagy nil-lel tesszük egyenlővé, máris nem fog működni az alábbi kód.
@@ -119,7 +121,7 @@ A következő példakódban kiküszöböljük ezen problémákat, átnevezhetőv
 Account = {balance = 0}
 
 function Account.withdraw(self, value)
-	self.balance = self.balance - value
+  self.balance = self.balance - value
 end 
 
 a1 = Account; Account = nil
@@ -141,14 +143,14 @@ Viszont ebben a nyelvben létezik a \texttt{self} kulcsszó, változó. A self v
 
 A Lua nyelvben a self változót kétféle képpen használhatjuk:
 
-\hspace{10mm}\texttt{1}. megoldás: az előző példakódban tárgyalt 1. argument bevezetése. Abban a példakódban a self argumentumnevet igazából bármire kicserélhetjük, mivel a Lua nyelv akkor is oda fogja rakni első argumentként az objektumot, ha úgy használjuk, hogy: \texttt{Account:withdraw(v)}.
+\hspace{10mm}\texttt{1}. megoldás: az előző példakódban tárgyalt 1. argument bevezetése. Abban a példakódban a self argumentumnevet igazából bármire kicserélhetjük, mivel a Lua nyelv akkor is oda fogja rakni első argumentként az objektumot, ha úgy használjuk, hogy: \texttt{Account:withdraw(value)}.
 
 \hspace{10mm}\texttt{2}. megoldás:
 \begin{lua}
 Account = {balance = 0}
 
 function Account:withdraw(value)
-	self.balance = self.balance - value
+  self.balance = self.balance - value
 end
 
 a1 = Account; Account = nil
@@ -172,19 +174,19 @@ A korábban említett \detokenize{__}\textbf{index} metódus segítségével tud
 Account = {}
 
 function Account:new(o)
-	o = o or {}   -- create object if user does not provide one
-	setmetatable(o, self)
-	self.__index = self
-	return o
+  o = o or {}   -- create object if user does not provide one
+  setmetatable(o, self)
+  self.__index = self
+  return o
 end
 
 function Account:withdraw(value)
-	if value > self.balance then error "insufficient funds" end
-	self.balance = self.balance - value
+  if value > self.balance then error "insufficient funds" end
+  self.balance = self.balance - value
 end
 
 function Account:deposit(value)
-	self.balance = self.balance + value
+  self.balance = self.balance + value
 end
 
 a = Account:new{balance = 0}
@@ -216,20 +218,20 @@ s:deposit(100.00) --ebben az esetben a self parameter az "s"-re mutat. Az "s" me
 --mivel a Lua nem talalja meg a deposit funkciot SpecialAccountban, ezert tovabb megy, es az Accountban megtalalja, meghivja azt. Azonban a metodusok felulirhatoak az uj objektumban:
 
 function SpecialAccount:withdraw(value)
-	if value - self.balance >= self:getLimit() then
-		error "insufficient funds"
-	end
-	self.balance = self.balance - value
+  if value - self.balance >= self:getLimit() then
+    error "insufficient funds"
+  end
+  self.balance = self.balance - value
 end
 
 function SpecialAccount:getLimit()
-	return self.limit or 0
+  return self.limit or 0
 end
 
 s:withdraw(200.00) --[[mostmar a Lua interpreternek nem kell az Accountig visszamennie, mivel a SpecialAccountban a withdraw definialva van, ezert azt fogja meghivni. 
 a Lua nyelv erdekessege, hogy nem kell uj osztalyt letrehozni annak, hogy kulonleges viselkedest definialjunk egy adott objektumra. Felul lehet irni az "s" objektum funkcioit is, hogy maskepp viselkedjenek]]
-function s:getLimit ()
-	return self.balance * 0.10
+function s:getLimit()
+  return self.balance * 0.10
 end
 
 s:withdraw(200.00) --ekkor a Lua a SpecialAccount withdrawjat fogja meghivni, viszont a getLimit funkcio a "self" miatt az "s" objektum felulirt funkcioja lesz, azt fogja meghivni.
@@ -237,35 +239,35 @@ s:withdraw(200.00) --ekkor a Lua a SpecialAccount withdrawjat fogja meghivni, vi
 \pagebreak
 \SubSection{Láthatósági szabályok osztályokon belül}
 A többi nyelvhez hasonlóan itt is lehet alapszintű láthatóságot beállítani az osztályokon belül. Alapvetőleg ez sincs implementálva a nyelvben, azonban a Lua flexibilis nyelvnek készült, ezáltal mi magunk elkészíthetjük. Egy tábla helyett két táblát fogunk használni egy objektum reprezentálására:
-egyet az állapotára, a másikat pedig interfaceként, amelyen keresztül interaktálni tudunk vele. A belső \textit{-állapot-} táblát pedig csak a definiált funkciók érik el. Az előzőekhez hasonló példakód:
+egyet az állapotára, a másikat pedig interfészként, amelyen keresztül interaktálni tudunk vele. A belső \textit{-állapot-} táblát pedig csak a definiált funkciók érik el. Az előzőekhez hasonló példakód:
 
 \begin{lua}
 function newAccount(initialBalance)
-	local self = {balance = initialBalance, LIM = 10000.00}
+  local self = {balance = initialBalance, LIM = 10000.00}
 
-	local withdraw = function(value)
-		self.balance = self.balance - value
-	end
+  local withdraw = function(value)
+    self.balance = self.balance - value
+  end
 
-	local deposit = function(value)
-		self.balance = self.balance + value
-	end
+  local deposit = function(value)
+    self.balance = self.balance + value
+  end
 	
-	local extra = function()
-		if self.balance > self.LIM then
-			return self.balance * 0.10
-		else
-			return 0
-		end
-	end
+  local extra = function()
+    if self.balance > self.LIM then
+      return self.balance * 0.10
+    else
+      return 0
+    end
+  end
 
-	local getBalance = function() return self.balance + extra() end
+  local getBalance = function() return self.balance + extra() end
 
-	return {
-		withdraw = withdraw,
-		deposit = deposit,
-		getBalance = getBalance
-	}
+  return {
+    withdraw = withdraw,
+    deposit = deposit,
+    getBalance = getBalance
+  }
 end
 
 acc1 = newAccount(100.00)
@@ -274,7 +276,7 @@ print(acc1.getBalance())     --> 60
 \end{lua}
 Ebben a példakódban a \textit{newAccount} a konstruktorunk, amely vár egy értéket, hogy a bankszámlánk mennyi pénzzel indul. Létrehoz egy belső táblát, amely csak a belső scopen belül létezik, self néven. Ez lesz az állapot tábla. Minden benne tárolt érték "private" láthatóságúak. 
 
-A többi funkciót ugyan abban a belső scopeban definiálja, ezért alapvetőleg nem is lennének elérhetőek kívülről, azonban egy új tábla hozódik létre, az interface tábla return valueként, mely elérhetővé teszi ebben a belső scopeban létrehozott funkciókat.
+A többi funkciót ugyan abban a belső scopeban definiálja, ezért alapvetőleg nem is lennének elérhetőek kívülről, azonban egy új tábla hozódik létre, az interfész tábla return valueként, mely elérhetővé teszi ebben a belső scopeban létrehozott funkciókat.
 
 Ebben az esetben a \texttt{self} kulcsszó nem a szokványos változó lesz, hanem egy elnevezett változó a belső scopeban. 
 
@@ -342,7 +344,7 @@ Többféle előnye is van:
 \begin{itemize}
 	\item nehezebb megkülönböztetni az OpenVPN csomagjait,
 	\item több biztonságot ad azzal, hogy a TLS kapcsolódást is titkosítja már,
-	\item Man-in-the-middle támadás ellen is védhet, továbbá DoS/DDoS támadások ellen is.
+	\item közbeékelődéses támadás ellen is védhet, továbbá túlterheléses támadások ellen is.
 \end{itemize}
 
 \SubSection{Mi az a chroot?} \label{ref:chroot}
@@ -453,7 +455,7 @@ Jónéhány Linux disztribúcióban, például a Debian újabb verzióiban egysz
 
 Létezik iptables szabálylánc konvertáló program is, amellyel meglévő szabályainkat nftables szintaxisra konvertálhatjuk. 
 
-Az elkészítendő program az \texttt{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \texttt{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az \texttt{iptables}-t használják fel, a következő \myref{tab:ufw_vs_firewalld} táblázatban kettőt fogok összehasonlítani
+Az elkészítendő program az \textit{iptables} backendet használja, mivel az a régebbi rendszereken is használható, továbbá még mindig elterjedt az \textit{nftables} mellett is. Többféle elterjedt tűzfal implementáció is van, amelyek az iptables-t használják fel, a következő \myref{tab:ufw_vs_firewalld} táblázatban kettőt fogok összehasonlítani
 
 	\begin{table}[h]
 	\centering
@@ -477,12 +479,13 @@ Az elkészítendő program az \texttt{iptables} backendet használja, mivel az a
 \pagebreak
 
 \SubSection{OpenVPN}
-A következő \ref{tab:openvpn_apps} táblázatban a saját implementációmat, amely OpenVPN Community szervert használ, hasonlítom össze az OpenVPN Access Server-rel.
+A következő \ref{tab:openvpn_apps} táblázatban a saját implementációmat, amely OpenVPN Community szervert használ, hasonlítom össze az OpenVPN Access Server-rel. Az OpenVPN logója \myaref{fig:openvpn_logo} ábrán látható.
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=0.5]{images/openvpn-logo.png}
-\caption{Az OpenVPN logója}
+\caption{Az OpenVPN logója \cite{openvpn_logo}}
+\label{fig:openvpn_logo}
 \end{figure}
 
 Fontos megemlíteni, hogy OpenVPN szerver menedzser implementáció több is létezik, létezik C\#-ban írt, létezik Bash Scriptben írt is. A minél nagyobb cross-platform támogatás lehetősége miatt azonban úgy gondolom mégis helyt áll a program létezése, a Lua nyelv egyszerűsége, nagyszerű cross-platform támogatása miatt. Értelemszerűen a Bash Script implementációk csak Linuxra korlátozódnak. GitHubon létezik web alapú interface is az OpenVPN Community Serverhez.
